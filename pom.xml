@@ -28,6 +28,14 @@
             <version>5.12.2</version>
             <scope>test</scope>
         </dependency>
+
+        <!-- Code generation (test scope) -->
+        <dependency>
+            <groupId>com.squareup</groupId>
+            <artifactId>javapoet</artifactId>
+            <version>1.13.0</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
