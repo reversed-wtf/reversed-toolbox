@@ -13,6 +13,11 @@ final class MD5Function implements HashFunction {
         }
     });
 
+    static final MD5Function INSTANCE = new MD5Function();
+
+    private MD5Function() {
+    }
+
     @Override
     public HashCode hash(Bytes input) {
         var digest = DIGEST.get();
