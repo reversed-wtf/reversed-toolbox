@@ -1,4 +1,4 @@
-package wtf.reversed.toolbox.hashing;
+package wtf.reversed.toolbox.hash;
 
 import java.security.*;
 

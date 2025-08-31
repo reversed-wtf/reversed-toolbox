@@ -1,4 +1,4 @@
-package wtf.reversed.toolbox.compression;
+package wtf.reversed.toolbox.compress;
 
 import org.tukaani.xz.*;
 import wtf.reversed.toolbox.util.*;

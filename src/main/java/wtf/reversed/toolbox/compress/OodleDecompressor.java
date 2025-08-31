@@ -1,4 +1,4 @@
-package wtf.reversed.toolbox.compression;
+package wtf.reversed.toolbox.compress;
 
 import java.io.*;
 import java.lang.foreign.*;
