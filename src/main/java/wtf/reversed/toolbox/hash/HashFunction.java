@@ -1,33 +1,31 @@
 package wtf.reversed.toolbox.hash;
 
+import wtf.reversed.toolbox.collect.*;
+
 import java.nio.charset.*;
 
-public abstract sealed class HashFunction
-    permits Fnv1aFunction, Murmur3Function, Md5Function {
+public sealed interface HashFunction
+    permits FNV1a64, MurmurHash3x64, MD5Function {
 
-    public static HashFunction fnv1a_64() {
-        return new Fnv1aFunction();
+    static HashFunction fnv1a64() {
+        return new FNV1a64();
     }
 
-    public static HashFunction murmur3_128(int seed) {
-        return new Murmur3Function(seed);
+    static HashFunction murmur3(int seed) {
+        return new MurmurHash3x64(seed);
     }
 
-    public static HashFunction md5() {
-        return new Md5Function();
+    static HashFunction md5() {
+        return new MD5Function();
     }
 
-    public abstract HashCode hash(byte[] input, int off, int len);
+    HashCode hash(Bytes input);
 
-    public HashCode hash(byte[] input) {
-        return hash(input, 0, input.length);
-    }
-
-    public HashCode hash(CharSequence input, Charset charset) {
-        return hash(input.toString().getBytes(charset));
-    }
-
-    public HashCode hash(CharSequence input) {
+    default HashCode hash(CharSequence input) {
         return hash(input, StandardCharsets.UTF_8);
+    }
+
+    default HashCode hash(CharSequence input, Charset charset) {
+        return hash(Bytes.wrap(input.toString().getBytes(charset)));
     }
 }

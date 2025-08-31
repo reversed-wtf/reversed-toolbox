@@ -1,8 +1,10 @@
 package wtf.reversed.toolbox.hash;
 
+import wtf.reversed.toolbox.collect.*;
+
 import java.security.*;
 
-final class Md5Function extends HashFunction {
+final class MD5Function implements HashFunction {
     private static final ThreadLocal<MessageDigest> DIGEST = ThreadLocal.withInitial(() -> {
         try {
             return MessageDigest.getInstance("MD5");
@@ -12,9 +14,9 @@ final class Md5Function extends HashFunction {
     });
 
     @Override
-    public HashCode hash(byte[] input, int off, int len) {
-        MessageDigest digest = DIGEST.get();
-        digest.update(input, off, len);
+    public HashCode hash(Bytes input) {
+        var digest = DIGEST.get();
+        digest.update(input.asBuffer());
         return HashCode.ofBytes(digest.digest());
     }
 }
