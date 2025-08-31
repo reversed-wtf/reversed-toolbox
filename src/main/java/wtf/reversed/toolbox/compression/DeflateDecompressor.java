@@ -1,9 +1,8 @@
 package wtf.reversed.toolbox.compression;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.zip.DataFormatException;
-import java.util.zip.Inflater;
+import java.io.*;
+import java.nio.*;
+import java.util.zip.*;
 
 final class DeflateDecompressor extends Decompressor {
     @Override

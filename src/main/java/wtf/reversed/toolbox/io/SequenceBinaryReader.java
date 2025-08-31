@@ -1,11 +1,8 @@
 package wtf.reversed.toolbox.io;
 
-import java.io.EOFException;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.List;
-import java.util.NavigableMap;
-import java.util.TreeMap;
+import java.io.*;
+import java.nio.*;
+import java.util.*;
 
 final class SequenceBinaryReader extends BufferedBinaryReader {
     private final NavigableMap<Long, BinaryReader> readers = new TreeMap<>(Long::compareUnsigned);

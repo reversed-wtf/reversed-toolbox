@@ -1,13 +1,11 @@
 package wtf.reversed.toolbox.io;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Random;
+import java.io.*;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 class SequenceBinaryReaderTest {
     @Test

@@ -1,10 +1,9 @@
 package wtf.reversed.toolbox.io;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
+import java.io.*;
+import java.nio.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 

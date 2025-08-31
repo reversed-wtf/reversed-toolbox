@@ -1,9 +1,8 @@
 package wtf.reversed.toolbox.io;
 
-import java.io.EOFException;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.SeekableByteChannel;
+import java.io.*;
+import java.nio.*;
+import java.nio.channels.*;
 
 final class ChannelBinaryReader extends BufferedBinaryReader {
     private final SeekableByteChannel channel;

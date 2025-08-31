@@ -1,10 +1,8 @@
 package wtf.reversed.toolbox.io;
 
-import java.io.EOFException;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.Objects;
+import java.io.*;
+import java.nio.*;
+import java.util.*;
 
 abstract class BufferedBinaryReader implements BinaryReader {
     private static final int DEFAULT_BUFFER_SIZE = 0x4000;

@@ -2,12 +2,9 @@ package wtf.reversed.toolbox.io;
 
 import wtf.reversed.toolbox.util.Arrays;
 
-import java.io.EOFException;
-import java.io.IOException;
-import java.nio.ByteOrder;
-import java.util.List;
-import java.util.NavigableMap;
-import java.util.TreeMap;
+import java.io.*;
+import java.nio.*;
+import java.util.*;
 
 /**
  * A reader for compressed data split into chunks.

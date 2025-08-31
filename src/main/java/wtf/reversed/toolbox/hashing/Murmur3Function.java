@@ -1,7 +1,6 @@
 package wtf.reversed.toolbox.hashing;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
+import java.nio.*;
 
 final class Murmur3Function extends HashFunction {
     private final int seed;

@@ -1,9 +1,8 @@
 package wtf.reversed.toolbox.compression;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.file.Path;
+import java.io.*;
+import java.nio.*;
+import java.nio.file.*;
 
 public abstract sealed class Decompressor implements Closeable
     permits DeflateDecompressor, LZ4Decompressor, LZMADecompressor, OodleDecompressor {

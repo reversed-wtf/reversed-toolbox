@@ -1,10 +1,9 @@
 package wtf.reversed.toolbox.compression;
 
-import java.io.IOException;
-import java.lang.foreign.Arena;
-import java.lang.foreign.MemorySegment;
-import java.nio.ByteBuffer;
-import java.nio.file.Path;
+import java.io.*;
+import java.lang.foreign.*;
+import java.nio.*;
+import java.nio.file.*;
 
 final class OodleDecompressor extends Decompressor {
     private final Arena arena;

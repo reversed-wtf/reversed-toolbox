@@ -1,6 +1,6 @@
 package wtf.reversed.toolbox.type;
 
-import java.text.NumberFormat;
+import java.text.*;
 
 public final class FileCount extends Amount.OfLong<FileCount> {
     public static final FileCount ZERO = new FileCount(0);

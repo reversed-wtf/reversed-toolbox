@@ -1,8 +1,7 @@
 package wtf.reversed.toolbox.compression;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
+import java.io.*;
+import java.nio.*;
 
 final class LZ4Decompressor extends Decompressor {
     @Override

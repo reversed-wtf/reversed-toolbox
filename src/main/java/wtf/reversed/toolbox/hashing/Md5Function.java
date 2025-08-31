@@ -1,7 +1,6 @@
 package wtf.reversed.toolbox.hashing;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.security.*;
 
 final class Md5Function extends HashFunction {
     private static final ThreadLocal<MessageDigest> DIGEST = ThreadLocal.withInitial(() -> {

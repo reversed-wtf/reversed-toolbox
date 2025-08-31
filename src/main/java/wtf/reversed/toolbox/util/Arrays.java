@@ -1,8 +1,7 @@
 package wtf.reversed.toolbox.util;
 
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.VarHandle;
-import java.nio.ByteOrder;
+import java.lang.invoke.*;
+import java.nio.*;
 
 public final class Arrays {
     private static final VarHandle asShortLE = MethodHandles.byteArrayViewVarHandle(short[].class, ByteOrder.LITTLE_ENDIAN);

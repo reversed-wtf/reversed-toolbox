@@ -2,9 +2,9 @@ package wtf.reversed.toolbox.io;
 
 import wtf.reversed.toolbox.util.Arrays;
 
-import java.io.EOFException;
-import java.nio.ByteOrder;
-import java.util.Objects;
+import java.io.*;
+import java.nio.*;
+import java.util.*;
 
 final class ByteArrayBinaryReader implements BinaryReader {
     private final byte[] array;

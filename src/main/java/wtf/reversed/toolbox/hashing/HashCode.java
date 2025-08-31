@@ -2,9 +2,8 @@ package wtf.reversed.toolbox.hashing;
 
 import wtf.reversed.toolbox.util.Arrays;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.HexFormat;
+import java.nio.*;
+import java.util.*;
 
 public abstract sealed class HashCode {
     public static HashCode ofBytes(byte[] bytes) {

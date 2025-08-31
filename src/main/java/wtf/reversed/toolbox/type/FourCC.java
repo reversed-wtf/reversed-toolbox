@@ -1,6 +1,6 @@
 package wtf.reversed.toolbox.type;
 
-import java.nio.charset.StandardCharsets;
+import java.nio.charset.*;
 
 public record FourCC(int value) {
     public static FourCC of(String value) {

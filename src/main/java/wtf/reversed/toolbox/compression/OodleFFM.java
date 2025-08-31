@@ -1,8 +1,8 @@
 package wtf.reversed.toolbox.compression;
 
 import java.lang.foreign.*;
-import java.lang.invoke.MethodHandle;
-import java.nio.file.Path;
+import java.lang.invoke.*;
+import java.nio.file.*;
 
 final class OodleFFM {
     private final MethodHandle OodleLZ_Decompress;

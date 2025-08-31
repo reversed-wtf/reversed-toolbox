@@ -1,11 +1,10 @@
 package wtf.reversed.toolbox.compression;
 
-import org.tukaani.xz.LZMAInputStream;
+import org.tukaani.xz.*;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.util.Objects;
+import java.io.*;
+import java.nio.*;
+import java.util.*;
 
 final class LZMADecompressor extends Decompressor {
     @Override

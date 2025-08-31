@@ -1,7 +1,6 @@
 package wtf.reversed.toolbox.hashing;
 
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
+import java.nio.charset.*;
 
 public abstract sealed class HashFunction
     permits Fnv1aFunction, Murmur3Function, Md5Function {
