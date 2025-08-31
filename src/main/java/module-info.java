@@ -1,6 +1,6 @@
 module wtf.reversed.toolbox {
-    // Required for LZMADecompressor
-    requires static org.tukaani.xz;
+    requires static java.compiler;  // Required for WrapperGenerator
+    requires static org.tukaani.xz; // Required for LZMADecompressor
 
     exports wtf.reversed.toolbox.collect;
     exports wtf.reversed.toolbox.compress;
