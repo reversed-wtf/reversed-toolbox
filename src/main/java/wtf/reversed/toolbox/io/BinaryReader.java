@@ -1,5 +1,7 @@
 package wtf.reversed.toolbox.io;
 
+import wtf.reversed.toolbox.util.*;
+
 import java.io.*;
 import java.nio.*;
 import java.nio.charset.*;
@@ -59,7 +61,7 @@ public interface BinaryReader extends Closeable {
     short readShort() throws IOException;
 
     default void readShorts(short[] dst, int off, int len) throws IOException {
-        Objects.checkFromIndexSize(off, len, dst.length);
+        Check.fromIndexSize(off, len, dst.length);
         for (int i = 0; i < len; i++) {
             dst[off + i] = readShort();
         }
@@ -74,7 +76,7 @@ public interface BinaryReader extends Closeable {
     int readInt() throws IOException;
 
     default void readInts(int[] dst, int off, int len) throws IOException {
-        Objects.checkFromIndexSize(off, len, dst.length);
+        Check.fromIndexSize(off, len, dst.length);
         for (int i = 0; i < len; i++) {
             dst[off + i] = readInt();
         }
@@ -89,7 +91,7 @@ public interface BinaryReader extends Closeable {
     long readLong() throws IOException;
 
     default void readLongs(long[] dst, int off, int len) throws IOException {
-        Objects.checkFromIndexSize(off, len, dst.length);
+        Check.fromIndexSize(off, len, dst.length);
         for (int i = 0; i < len; i++) {
             dst[off + i] = readLong();
         }
@@ -104,7 +106,7 @@ public interface BinaryReader extends Closeable {
     float readFloat() throws IOException;
 
     default void readFloats(float[] dst, int off, int len) throws IOException {
-        Objects.checkFromIndexSize(off, len, dst.length);
+        Check.fromIndexSize(off, len, dst.length);
         for (int i = 0; i < len; i++) {
             dst[off + i] = readFloat();
         }
@@ -119,7 +121,7 @@ public interface BinaryReader extends Closeable {
     double readDouble() throws IOException;
 
     default void readDoubles(double[] dst, int off, int len) throws IOException {
-        Objects.checkFromIndexSize(off, len, dst.length);
+        Check.fromIndexSize(off, len, dst.length);
         for (int i = 0; i < len; i++) {
             dst[off + i] = readDouble();
         }

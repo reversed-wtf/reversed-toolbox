@@ -1,8 +1,9 @@
 package wtf.reversed.toolbox.io;
 
+import wtf.reversed.toolbox.util.*;
+
 import java.io.*;
 import java.nio.*;
-import java.util.*;
 
 abstract class BufferedBinaryReader implements BinaryReader {
     private static final int DEFAULT_BUFFER_SIZE = 0x4000;
@@ -53,7 +54,7 @@ abstract class BufferedBinaryReader implements BinaryReader {
 
     @Override
     public void readBytes(byte[] dst, int off, int len) throws IOException {
-        Objects.checkFromIndexSize(off, len, dst.length);
+        Check.fromIndexSize(off, len, dst.length);
 
         int remaining = buffer.remaining();
 

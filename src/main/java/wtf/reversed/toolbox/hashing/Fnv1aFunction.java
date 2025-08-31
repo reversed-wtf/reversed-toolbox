@@ -1,6 +1,6 @@
 package wtf.reversed.toolbox.hashing;
 
-import java.util.*;
+import wtf.reversed.toolbox.util.*;
 
 final class Fnv1aFunction extends HashFunction {
     private static final long FNV_OFFSET_BASIS = 0xcbf29ce484222325L;
@@ -8,7 +8,7 @@ final class Fnv1aFunction extends HashFunction {
 
     @Override
     public HashCode hash(byte[] input, int off, int len) {
-        Objects.checkFromIndexSize(off, len, input.length);
+        Check.fromIndexSize(off, len, input.length);
         long hash = FNV_OFFSET_BASIS;
         for (int i = off; i < len; i++) {
             hash ^= input[i];

@@ -1,10 +1,10 @@
 package wtf.reversed.toolbox.compression;
 
 import org.tukaani.xz.*;
+import wtf.reversed.toolbox.util.*;
 
 import java.io.*;
 import java.nio.*;
-import java.util.*;
 
 final class LZMADecompressor extends Decompressor {
     @Override
@@ -37,7 +37,7 @@ final class LZMADecompressor extends Decompressor {
 
         @Override
         public int read(byte[] b, int off, int len) {
-            Objects.checkFromIndexSize(off, len, b.length);
+            Check.fromIndexSize(off, len, b.length);
             if (!buffer.hasRemaining()) {
                 return -1;
             }

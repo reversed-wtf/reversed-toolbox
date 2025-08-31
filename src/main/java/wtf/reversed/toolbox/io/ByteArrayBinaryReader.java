@@ -1,10 +1,9 @@
 package wtf.reversed.toolbox.io;
 
-import wtf.reversed.toolbox.util.Arrays;
+import wtf.reversed.toolbox.util.*;
 
 import java.io.*;
 import java.nio.*;
-import java.util.*;
 
 final class ByteArrayBinaryReader implements BinaryReader {
     private final byte[] array;
@@ -14,7 +13,7 @@ final class ByteArrayBinaryReader implements BinaryReader {
     private ByteOrder order = ByteOrder.nativeOrder();
 
     ByteArrayBinaryReader(byte[] array, int offset, int length) {
-        Objects.checkFromIndexSize(offset, length, array.length);
+        Check.fromIndexSize(offset, length, array.length);
         this.array = array;
         this.offset = offset;
         this.length = length;
@@ -29,7 +28,7 @@ final class ByteArrayBinaryReader implements BinaryReader {
 
     @Override
     public void readBytes(byte[] dst, int off, int len) {
-        Objects.checkFromIndexSize(off, len, dst.length);
+        Check.fromIndexSize(off, len, dst.length);
         System.arraycopy(array, offset + position, dst, off, len);
         position += len;
     }
