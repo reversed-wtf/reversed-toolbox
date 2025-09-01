@@ -47,11 +47,12 @@ public class Floats extends AbstractList<Float> implements Comparable<Floats>, R
     }
 
     public Floats slice(int fromIndex) {
-        return subList(fromIndex, size());
+        return slice(fromIndex, size());
     }
 
     public Floats slice(int fromIndex, int toIndex) {
-        return subList(fromIndex, toIndex);
+        Check.fromToIndex(fromIndex, toIndex, size());
+        return new Floats(array, this.fromIndex + fromIndex, this.fromIndex + toIndex);
     }
 
     @Override

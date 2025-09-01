@@ -31,9 +31,17 @@ public final class MutableLongs extends Longs {
         return LongBuffer.wrap(array, fromIndex, size());
     }
 
-    public void fill(int fromIndex, int toIndex, long value) {
+    public void fill(long value) {
+        Arrays.fill(array, fromIndex, toIndex, value);
+    }
+
+    public MutableLongs slice(int fromIndex) {
+        return slice(fromIndex, size());
+    }
+
+    public MutableLongs slice(int fromIndex, int toIndex) {
         Check.fromToIndex(fromIndex, toIndex, size());
-        Arrays.fill(array, this.fromIndex + fromIndex, this.fromIndex + toIndex, value);
+        return new MutableLongs(array, this.fromIndex + fromIndex, this.fromIndex + toIndex);
     }
 
     @Override

@@ -47,11 +47,12 @@ public class Doubles extends AbstractList<Double> implements Comparable<Doubles>
     }
 
     public Doubles slice(int fromIndex) {
-        return subList(fromIndex, size());
+        return slice(fromIndex, size());
     }
 
     public Doubles slice(int fromIndex, int toIndex) {
-        return subList(fromIndex, toIndex);
+        Check.fromToIndex(fromIndex, toIndex, size());
+        return new Doubles(array, this.fromIndex + fromIndex, this.fromIndex + toIndex);
     }
 
     @Override

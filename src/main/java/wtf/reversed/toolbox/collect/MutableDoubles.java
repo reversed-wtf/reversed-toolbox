@@ -31,9 +31,17 @@ public final class MutableDoubles extends Doubles {
         return DoubleBuffer.wrap(array, fromIndex, size());
     }
 
-    public void fill(int fromIndex, int toIndex, double value) {
+    public void fill(double value) {
+        Arrays.fill(array, fromIndex, toIndex, value);
+    }
+
+    public MutableDoubles slice(int fromIndex) {
+        return slice(fromIndex, size());
+    }
+
+    public MutableDoubles slice(int fromIndex, int toIndex) {
         Check.fromToIndex(fromIndex, toIndex, size());
-        Arrays.fill(array, this.fromIndex + fromIndex, this.fromIndex + toIndex, value);
+        return new MutableDoubles(array, this.fromIndex + fromIndex, this.fromIndex + toIndex);
     }
 
     @Override

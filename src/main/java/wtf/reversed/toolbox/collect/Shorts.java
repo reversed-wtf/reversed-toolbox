@@ -47,11 +47,12 @@ public class Shorts extends AbstractList<Short> implements Comparable<Shorts>, R
     }
 
     public Shorts slice(int fromIndex) {
-        return subList(fromIndex, size());
+        return slice(fromIndex, size());
     }
 
     public Shorts slice(int fromIndex, int toIndex) {
-        return subList(fromIndex, toIndex);
+        Check.fromToIndex(fromIndex, toIndex, size());
+        return new Shorts(array, this.fromIndex + fromIndex, this.fromIndex + toIndex);
     }
 
     @Override

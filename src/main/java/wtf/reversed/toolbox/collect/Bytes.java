@@ -89,11 +89,12 @@ public class Bytes extends AbstractList<Byte> implements Comparable<Bytes>, Rand
     }
 
     public Bytes slice(int fromIndex) {
-        return subList(fromIndex, size());
+        return slice(fromIndex, size());
     }
 
     public Bytes slice(int fromIndex, int toIndex) {
-        return subList(fromIndex, toIndex);
+        Check.fromToIndex(fromIndex, toIndex, size());
+        return new Bytes(array, this.fromIndex + fromIndex, this.fromIndex + toIndex);
     }
 
     @Override

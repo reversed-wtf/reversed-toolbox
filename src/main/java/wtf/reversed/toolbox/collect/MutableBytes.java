@@ -60,9 +60,17 @@ public final class MutableBytes extends Bytes {
         return ByteBuffer.wrap(array, fromIndex, size());
     }
 
-    public void fill(int fromIndex, int toIndex, byte value) {
+    public void fill(byte value) {
+        java.util.Arrays.fill(array, fromIndex, toIndex, value);
+    }
+
+    public MutableBytes slice(int fromIndex) {
+        return slice(fromIndex, size());
+    }
+
+    public MutableBytes slice(int fromIndex, int toIndex) {
         Check.fromToIndex(fromIndex, toIndex, size());
-        java.util.Arrays.fill(array, this.fromIndex + fromIndex, this.fromIndex + toIndex, value);
+        return new MutableBytes(array, this.fromIndex + fromIndex, this.fromIndex + toIndex);
     }
 
     @Override

@@ -47,11 +47,12 @@ public class Ints extends AbstractList<Integer> implements Comparable<Ints>, Ran
     }
 
     public Ints slice(int fromIndex) {
-        return subList(fromIndex, size());
+        return slice(fromIndex, size());
     }
 
     public Ints slice(int fromIndex, int toIndex) {
-        return subList(fromIndex, toIndex);
+        Check.fromToIndex(fromIndex, toIndex, size());
+        return new Ints(array, this.fromIndex + fromIndex, this.fromIndex + toIndex);
     }
 
     @Override

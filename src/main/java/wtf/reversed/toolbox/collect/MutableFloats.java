@@ -31,9 +31,17 @@ public final class MutableFloats extends Floats {
         return FloatBuffer.wrap(array, fromIndex, size());
     }
 
-    public void fill(int fromIndex, int toIndex, float value) {
+    public void fill(float value) {
+        Arrays.fill(array, fromIndex, toIndex, value);
+    }
+
+    public MutableFloats slice(int fromIndex) {
+        return slice(fromIndex, size());
+    }
+
+    public MutableFloats slice(int fromIndex, int toIndex) {
         Check.fromToIndex(fromIndex, toIndex, size());
-        Arrays.fill(array, this.fromIndex + fromIndex, this.fromIndex + toIndex, value);
+        return new MutableFloats(array, this.fromIndex + fromIndex, this.fromIndex + toIndex);
     }
 
     @Override

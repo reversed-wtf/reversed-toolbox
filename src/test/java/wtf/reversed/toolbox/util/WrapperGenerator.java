@@ -124,20 +124,7 @@ final class WrapperGenerator {
             .build());
 
         // slice methods
-        builder.addMethod(MethodSpec.methodBuilder("slice")
-            .addModifiers(Modifier.PUBLIC)
-            .returns(thisType)
-            .addParameter(int.class, "fromIndex")
-            .addStatement("return subList(fromIndex, size())")
-            .build());
-
-        builder.addMethod(MethodSpec.methodBuilder("slice")
-            .addModifiers(Modifier.PUBLIC)
-            .returns(thisType)
-            .addParameter(int.class, "fromIndex")
-            .addParameter(int.class, "toIndex")
-            .addStatement("return subList(fromIndex, toIndex)")
-            .build());
+        addSliceMethods(builder, thisType);
 
         // Override methods
         addOverrideMethods(builder, className, bufferMethodName, wrapperType, thisType);
@@ -278,6 +265,7 @@ final class WrapperGenerator {
         Class<?> bufferClass,
         boolean addExtraMethods
     ) {
+        var thisType = ClassName.get("", "Mutable" + className);
         var primitiveArrayType = ArrayTypeName.of(TypeName.get(primitiveClass));
         var wrapperTypeName = TypeName.get(wrapperClass);
         var bufferMethodName = bufferClass.getSimpleName().replace("Buffer", "");
@@ -296,14 +284,14 @@ final class WrapperGenerator {
 
         builder.addMethod(MethodSpec.methodBuilder("wrap")
             .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-            .returns(ClassName.get("", "Mutable" + className))
+            .returns(thisType)
             .addParameter(primitiveArrayType, "array")
             .addStatement("return new Mutable$L(array, 0, array.length)", className)
             .build());
 
         builder.addMethod(MethodSpec.methodBuilder("wrap")
             .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-            .returns(ClassName.get("", "Mutable" + className))
+            .returns(thisType)
             .addParameter(primitiveArrayType, "array")
             .addParameter(int.class, "fromIndex")
             .addParameter(int.class, "toIndex")
@@ -312,7 +300,7 @@ final class WrapperGenerator {
 
         builder.addMethod(MethodSpec.methodBuilder("allocate")
             .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-            .returns(ClassName.get("", "Mutable" + className))
+            .returns(thisType)
             .addParameter(int.class, "size")
             .addStatement("return new Mutable$L(new $L[size], 0, size)", className, primitiveClass)
             .build());
@@ -339,12 +327,11 @@ final class WrapperGenerator {
 
         builder.addMethod(MethodSpec.methodBuilder("fill")
             .addModifiers(Modifier.PUBLIC)
-            .addParameter(int.class, "fromIndex")
-            .addParameter(int.class, "toIndex")
             .addParameter(primitiveClass, "value")
-            .addStatement("$T.fromToIndex(fromIndex, toIndex, size())", Check.class)
-            .addStatement("$T.fill(array, this.fromIndex + fromIndex, this.fromIndex + toIndex, value)", java.util.Arrays.class)
+            .addStatement("$T.fill(array, fromIndex, toIndex, value)", java.util.Arrays.class)
             .build());
+
+        addSliceMethods(builder, thisType);
 
         builder.addMethod(override("set")
             .returns(wrapperTypeName)
@@ -375,6 +362,24 @@ final class WrapperGenerator {
             .addStatement("$T.fromIndexSize(offset, $L, size())", CHECK_CLASS, size)
             .addStatement("$T.set$L(array, fromIndex + offset, value, $T.LITTLE_ENDIAN)", ARRAYS_CLASS, upper, ByteOrder.class)
             .addStatement("return this")
+            .build());
+    }
+
+    private static void addSliceMethods(TypeSpec.Builder builder, ClassName thisType) {
+        builder.addMethod(MethodSpec.methodBuilder("slice")
+            .addModifiers(Modifier.PUBLIC)
+            .returns(thisType)
+            .addParameter(int.class, "fromIndex")
+            .addStatement("return slice(fromIndex, size())")
+            .build());
+
+        builder.addMethod(MethodSpec.methodBuilder("slice")
+            .addModifiers(Modifier.PUBLIC)
+            .returns(thisType)
+            .addParameter(int.class, "fromIndex")
+            .addParameter(int.class, "toIndex")
+            .addStatement("$T.fromToIndex(fromIndex, toIndex, size())", CHECK_CLASS)
+            .addStatement("return new $L(array, this.fromIndex + fromIndex, this.fromIndex + toIndex)", thisType)
             .build());
     }
 

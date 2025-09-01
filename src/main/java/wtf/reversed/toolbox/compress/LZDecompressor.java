@@ -23,7 +23,7 @@ abstract sealed class LZDecompressor implements Decompressor
             throw new IllegalArgumentException("Invalid match");
         }
         if (offset == 1) {
-            dst.fill(dstOff, dstOff + length, dst.getByte(dstOff - 1));
+            dst.slice(dstOff, dstOff + length).fill(dst.getByte(dstOff - 1));
         } else if (offset >= length) {
             dst.slice(dstPos, dstPos + length).copyTo(dst, dstOff);
         } else {

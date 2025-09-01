@@ -31,9 +31,17 @@ public final class MutableInts extends Ints {
         return IntBuffer.wrap(array, fromIndex, size());
     }
 
-    public void fill(int fromIndex, int toIndex, int value) {
+    public void fill(int value) {
+        Arrays.fill(array, fromIndex, toIndex, value);
+    }
+
+    public MutableInts slice(int fromIndex) {
+        return slice(fromIndex, size());
+    }
+
+    public MutableInts slice(int fromIndex, int toIndex) {
         Check.fromToIndex(fromIndex, toIndex, size());
-        Arrays.fill(array, this.fromIndex + fromIndex, this.fromIndex + toIndex, value);
+        return new MutableInts(array, this.fromIndex + fromIndex, this.fromIndex + toIndex);
     }
 
     @Override

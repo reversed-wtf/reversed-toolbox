@@ -47,11 +47,12 @@ public class Longs extends AbstractList<Long> implements Comparable<Longs>, Rand
     }
 
     public Longs slice(int fromIndex) {
-        return subList(fromIndex, size());
+        return slice(fromIndex, size());
     }
 
     public Longs slice(int fromIndex, int toIndex) {
-        return subList(fromIndex, toIndex);
+        Check.fromToIndex(fromIndex, toIndex, size());
+        return new Longs(array, this.fromIndex + fromIndex, this.fromIndex + toIndex);
     }
 
     @Override

@@ -31,9 +31,17 @@ public final class MutableShorts extends Shorts {
         return ShortBuffer.wrap(array, fromIndex, size());
     }
 
-    public void fill(int fromIndex, int toIndex, short value) {
+    public void fill(short value) {
+        Arrays.fill(array, fromIndex, toIndex, value);
+    }
+
+    public MutableShorts slice(int fromIndex) {
+        return slice(fromIndex, size());
+    }
+
+    public MutableShorts slice(int fromIndex, int toIndex) {
         Check.fromToIndex(fromIndex, toIndex, size());
-        Arrays.fill(array, this.fromIndex + fromIndex, this.fromIndex + toIndex, value);
+        return new MutableShorts(array, this.fromIndex + fromIndex, this.fromIndex + toIndex);
     }
 
     @Override
