@@ -60,6 +60,11 @@ public final class MutableBytes extends Bytes {
         return ByteBuffer.wrap(array, fromIndex, size());
     }
 
+    public void fill(int fromIndex, int toIndex, byte value) {
+        Check.fromToIndex(fromIndex, toIndex, size());
+        java.util.Arrays.fill(array, this.fromIndex + fromIndex, this.fromIndex + toIndex, value);
+    }
+
     @Override
     public Byte set(int index, Byte element) {
         byte oldValue = getByte(index);

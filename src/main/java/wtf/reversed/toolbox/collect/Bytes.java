@@ -3,6 +3,7 @@ package wtf.reversed.toolbox.collect;
 import wtf.reversed.toolbox.util.*;
 import wtf.reversed.toolbox.util.Arrays;
 
+import java.io.*;
 import java.nio.*;
 import java.util.*;
 
@@ -73,6 +74,10 @@ public class Bytes extends AbstractList<Byte> implements Comparable<Bytes>, Rand
 
     public long getUnsignedInt(int offset) {
         return Integer.toUnsignedLong(getInt(offset));
+    }
+
+    public InputStream asInputStream() {
+        return new ByteArrayInputStream(array, fromIndex, size());
     }
 
     public ByteBuffer asBuffer() {

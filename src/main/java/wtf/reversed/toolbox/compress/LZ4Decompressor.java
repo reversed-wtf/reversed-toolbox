@@ -1,22 +1,29 @@
 package wtf.reversed.toolbox.compress;
 
-import java.io.*;
-import java.nio.*;
+import wtf.reversed.toolbox.collect.*;
 
-final class LZ4Decompressor extends Decompressor {
+import java.io.*;
+
+final class LZ4Decompressor extends LZDecompressor {
+    static LZ4Decompressor INSTANCE = new LZ4Decompressor();
+
+    private LZ4Decompressor() {
+    }
+
     @Override
-    public void decompress(ByteBuffer src, ByteBuffer dst) throws IOException {
+    public void decompress(Bytes src, MutableBytes dst) throws IOException {
         // Special case
-        if (dst.remaining() == 0) {
-            if (src.remaining() != 1 || src.get() != 0) {
+        if (dst.isEmpty()) {
+            if (src.size() != 1 || src.getByte(0) != 0) {
                 throw new IOException("Invalid empty block");
             }
             return /*0*/;
         }
 
-        src.order(ByteOrder.LITTLE_ENDIAN);
+        int srcOff = 0;
+        int dstOff = 0;
         while (true) {
-            int token = src.get();
+            int token = src.getByte(srcOff++);
 
             // Get the literal len
             int literalLength = (token >>> 4) & 0x0F;
@@ -24,67 +31,40 @@ final class LZ4Decompressor extends Decompressor {
                 if (literalLength == 15) {
                     int temp;
                     do {
-                        temp = Byte.toUnsignedInt(src.get());
+                        temp = src.getUnsignedByte(srcOff++);
                         literalLength += temp;
                     } while (temp == 255);
                 }
 
                 // Copy the literal over
-                copyLiteral(src, dst, literalLength);
+                copyLiteral(src, srcOff, dst, dstOff, literalLength);
+                srcOff += literalLength;
+                dstOff += literalLength;
             }
 
             // End of input check
-            if (!src.hasRemaining()) {
+            if (srcOff >= src.size()) {
                 return /*dstPos - targetOffset*/;
             }
 
             // Get the match position, can't start before the output start
-            int offset = Short.toUnsignedInt(src.getShort());
+            int offset = src.getUnsignedShort(srcOff);
+            srcOff += 2;
 
             // Get the match length
             int matchLength = token & 0x0F;
             if (matchLength == 15) {
                 int temp;
                 do {
-                    temp = Byte.toUnsignedInt(src.get());
+                    temp = src.getUnsignedByte(srcOff++);
                     matchLength += temp;
                 } while (temp == 255);
             }
             matchLength += 4;
 
             // Can't copy past the end of the output
-            copyReference(dst, offset, matchLength);
-        }
-    }
-
-    void copy(ByteBuffer src, ByteBuffer dst, int length) {
-        dst.put(dst.position(), src, src.position(), length);
-        dst.position(dst.position() + length);
-        src.position(src.position() + length);
-    }
-
-    void copyLiteral(ByteBuffer src, ByteBuffer dst, int len) throws IOException {
-        if (len <= 0 || src.remaining() < len || dst.remaining() < len) {
-            throw new IOException("Invalid literal");
-        }
-        copy(src, dst, len);
-    }
-
-    void copyReference(ByteBuffer dst, int offset, int length) throws IOException {
-        if (offset <= 0 || dst.position() - offset < 0 || length > dst.remaining()) {
-            throw new IOException("Invalid match");
-        }
-        if (offset == 1) {
-            var b = dst.get(dst.position() - 1);
-            for (var i = 0; i < length; i++) {
-                dst.put(b);
-            }
-        } else if (offset >= length) {
-            dst.put(dst.slice(dst.position() - offset, length));
-        } else {
-            for (int i = 0, pos = dst.position() - offset; i < length; i++) {
-                dst.put(dst.get(pos + i));
-            }
+            copyReference(dst, dstOff, offset, matchLength);
+            dstOff += matchLength;
         }
     }
 }

@@ -1,11 +1,12 @@
 package wtf.reversed.toolbox.compress;
 
+import wtf.reversed.toolbox.collect.*;
+
 import java.io.*;
 import java.lang.foreign.*;
-import java.nio.*;
 import java.nio.file.*;
 
-final class OodleDecompressor extends Decompressor {
+final class OodleDecompressor implements Decompressor {
     private final Arena arena;
     private final OodleFFM library;
 
@@ -15,10 +16,11 @@ final class OodleDecompressor extends Decompressor {
     }
 
     @Override
-    public void decompress(ByteBuffer src, ByteBuffer dst) throws IOException {
+    public void decompress(Bytes src, MutableBytes dst) throws IOException {
         try (var arena = Arena.ofConfined()) {
-            var srcSegment = arena.allocate(src.remaining()).copyFrom(MemorySegment.ofBuffer(src));
-            var dstSegment = arena.allocate(dst.remaining());
+            var srcSegment = arena.allocate(src.size())
+                .copyFrom(MemorySegment.ofBuffer(src.asBuffer()));
+            var dstSegment = arena.allocate(dst.size());
 
             var result = library.OodleLZ_Decompress(
                 srcSegment, srcSegment.byteSize(),
@@ -32,11 +34,12 @@ final class OodleDecompressor extends Decompressor {
                 3 /* OodleLZ_Decode_ThreadPhaseAll */
             );
 
-            if (result != dst.remaining()) {
+            if (result != dst.size()) {
                 throw new IOException("Error decompressing data");
             }
 
-            MemorySegment.ofBuffer(dst).copyFrom(dstSegment);
+            MemorySegment.ofBuffer(dst.asMutableBuffer())
+                .copyFrom(dstSegment);
         }
     }
 

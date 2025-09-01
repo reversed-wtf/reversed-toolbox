@@ -1,40 +1,55 @@
 package wtf.reversed.toolbox.compress;
 
+import wtf.reversed.toolbox.collect.*;
+
 import java.io.*;
-import java.nio.*;
 import java.nio.file.*;
 
-public abstract sealed class Decompressor implements Closeable
-    permits DeflateDecompressor, LZ4Decompressor, LZMADecompressor, OodleDecompressor {
+public sealed interface Decompressor extends Closeable
+    permits DeflateDecompressor, LZDecompressor, LZMADecompressor, NoneDecompressor, OodleDecompressor {
 
-    public static Decompressor deflate() {
-        return new DeflateDecompressor();
+    static Decompressor deflate(boolean nowrap) {
+        return new DeflateDecompressor(nowrap);
     }
 
-    public static Decompressor lz4() {
-        return new LZ4Decompressor();
+    static Decompressor fastLZ() {
+        return FastLZDecompressor.INSTANCE;
     }
 
-    public static Decompressor lzma() {
-        return new LZMADecompressor();
+    static Decompressor lz4() {
+        return LZ4Decompressor.INSTANCE;
     }
 
-    public static Decompressor oodle(Path path) {
+    static Decompressor lzma() {
+        return LZMADecompressor.INSTANCE;
+    }
+
+    static Decompressor none() {
+        return NoneDecompressor.INSTANCE;
+    }
+
+    static Decompressor oodle(Path path) {
         return new OodleDecompressor(path);
     }
 
-    public abstract void decompress(ByteBuffer src, ByteBuffer dst) throws IOException;
+    void decompress(Bytes src, MutableBytes dst) throws IOException;
 
-    public void decompress(byte[] src, int srcLen, byte[] dst, int dstLen) throws IOException {
+    default Bytes decompress(Bytes src, int size) throws IOException {
+        var dst = MutableBytes.allocate(size);
+        decompress(src, dst);
+        return dst;
+    }
+
+    default void decompress(byte[] src, int srcLen, byte[] dst, int dstLen) throws IOException {
         decompress(src, 0, srcLen, dst, 0, dstLen);
     }
 
-    public void decompress(byte[] src, int srcOff, int srcLen, byte[] dst, int dstOff, int dstLen) throws IOException {
-        decompress(ByteBuffer.wrap(src, srcOff, srcLen), ByteBuffer.wrap(dst, dstOff, dstLen));
+    default void decompress(byte[] src, int srcOff, int srcLen, byte[] dst, int dstOff, int dstLen) throws IOException {
+        decompress(Bytes.wrap(src, srcOff, srcOff + srcLen), MutableBytes.wrap(dst, dstOff, dstOff + dstLen));
     }
 
     @Override
-    public void close() throws IOException {
+    default void close() {
         // does nothing by default
     }
 }

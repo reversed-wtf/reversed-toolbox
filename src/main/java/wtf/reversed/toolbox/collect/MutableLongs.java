@@ -3,6 +3,7 @@ package wtf.reversed.toolbox.collect;
 import wtf.reversed.toolbox.util.*;
 
 import java.nio.*;
+import java.util.Arrays;
 
 public final class MutableLongs extends Longs {
     private MutableLongs(long[] array, int fromIndex, int toIndex) {
@@ -28,6 +29,11 @@ public final class MutableLongs extends Longs {
 
     public LongBuffer asMutableBuffer() {
         return LongBuffer.wrap(array, fromIndex, size());
+    }
+
+    public void fill(int fromIndex, int toIndex, long value) {
+        Check.fromToIndex(fromIndex, toIndex, size());
+        Arrays.fill(array, this.fromIndex + fromIndex, this.fromIndex + toIndex, value);
     }
 
     @Override

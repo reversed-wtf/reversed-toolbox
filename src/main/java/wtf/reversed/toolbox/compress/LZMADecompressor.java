@@ -1,49 +1,30 @@
 package wtf.reversed.toolbox.compress;
 
 import org.tukaani.xz.*;
-import wtf.reversed.toolbox.util.*;
+import wtf.reversed.toolbox.collect.*;
 
 import java.io.*;
-import java.nio.*;
 
-final class LZMADecompressor extends Decompressor {
-    @Override
-    public void decompress(ByteBuffer src, ByteBuffer dst) throws IOException {
-        try (LZMAInputStream is = new LZMAInputStream(new ByteBufferInputStream(src))) {
-            while (src.hasRemaining()) {
-                int read = is.read(dst.array(), dst.position(), dst.remaining());
-                if (read != dst.remaining()) {
-                    throw new IOException("Decompression failed");
-                }
-                dst.position(dst.position() + read);
-            }
-        }
+final class LZMADecompressor implements Decompressor {
+    static final LZMADecompressor INSTANCE = new LZMADecompressor();
+
+    private LZMADecompressor() {
     }
 
-    private static final class ByteBufferInputStream extends InputStream {
-        private final ByteBuffer buffer;
+    @Override
+    public void decompress(Bytes src, MutableBytes dst) throws IOException {
+        int offset = 0;
+        byte[] buffer = new byte[4096];
+        try (var in = new LZMAInputStream(src.asInputStream())) {
+            while (true) {
+                int read = in.read(buffer);
+                if (read <= 0) {
+                    break;
+                }
 
-        ByteBufferInputStream(ByteBuffer buffer) {
-            this.buffer = buffer;
-        }
-
-        @Override
-        public int read() {
-            if (!buffer.hasRemaining()) {
-                return -1;
+                Bytes.wrap(buffer, 0, read).copyTo(dst, offset);
+                offset += read;
             }
-            return Byte.toUnsignedInt(buffer.get());
-        }
-
-        @Override
-        public int read(byte[] b, int off, int len) {
-            Check.fromIndexSize(off, len, b.length);
-            if (!buffer.hasRemaining()) {
-                return -1;
-            }
-            int read = Math.min(buffer.remaining(), len);
-            buffer.get(b, off, read);
-            return read;
         }
     }
 }

@@ -1,19 +1,29 @@
 package wtf.reversed.toolbox.compress;
 
+import wtf.reversed.toolbox.collect.*;
+
 import java.io.*;
-import java.nio.*;
 import java.util.zip.*;
 
-final class DeflateDecompressor extends Decompressor {
+record DeflateDecompressor(boolean nowrap) implements Decompressor {
     @Override
-    public void decompress(ByteBuffer src, ByteBuffer dst) throws IOException {
-        try {
-            Inflater inflater = new Inflater();
-            inflater.setInput(src);
-            inflater.inflate(dst);
-            inflater.end();
-        } catch (DataFormatException e) {
-            throw new IOException(e);
+    public void decompress(Bytes src, MutableBytes dst) throws IOException {
+        var srcBuffer = src.asBuffer();
+        var dstBuffer = dst.asMutableBuffer();
+
+        var inflater = new Inflater(nowrap);
+        inflater.setInput(srcBuffer);
+
+        while (!inflater.finished()) {
+            try {
+                int count = inflater.inflate(dstBuffer);
+                if (count == 0) {
+                    break;
+                }
+            } catch (DataFormatException e) {
+                throw new IOException("Invalid compressed data", e);
+            }
         }
+        inflater.end();
     }
 }

@@ -244,6 +244,12 @@ final class WrapperGenerator {
         generateUnsignedGet(classBuilder, int.class, "Byte", "Byte.toUnsignedInt");
         generateUnsignedGet(classBuilder, int.class, "Short", "Short.toUnsignedInt");
         generateUnsignedGet(classBuilder, long.class, "Int", "Integer.toUnsignedLong");
+
+        classBuilder.addMethod(MethodSpec.methodBuilder("asInputStream")
+            .addModifiers(Modifier.PUBLIC)
+            .returns(InputStream.class)
+            .addStatement("return new $T(array, fromIndex, size())", ByteArrayInputStream.class)
+            .build());
     }
 
     private static void generateGet(TypeSpec.Builder classBuilder, Class<?> primitive, String upper, String size) {
@@ -329,6 +335,15 @@ final class WrapperGenerator {
             .addModifiers(Modifier.PUBLIC)
             .returns(bufferClass)
             .addStatement("return $T.wrap(array, fromIndex, size())", bufferClass)
+            .build());
+
+        builder.addMethod(MethodSpec.methodBuilder("fill")
+            .addModifiers(Modifier.PUBLIC)
+            .addParameter(int.class, "fromIndex")
+            .addParameter(int.class, "toIndex")
+            .addParameter(primitiveClass, "value")
+            .addStatement("$T.fromToIndex(fromIndex, toIndex, size())", Check.class)
+            .addStatement("$T.fill(array, this.fromIndex + fromIndex, this.fromIndex + toIndex, value)", java.util.Arrays.class)
             .build());
 
         builder.addMethod(override("set")
