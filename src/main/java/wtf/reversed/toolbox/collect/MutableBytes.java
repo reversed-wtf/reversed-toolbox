@@ -26,6 +26,36 @@ public final class MutableBytes extends Bytes {
         array[fromIndex + index] = value;
     }
 
+    public MutableBytes setShort(int offset, short value) {
+        Check.fromIndexSize(offset, Short.BYTES, size());
+        Arrays.setShort(array, fromIndex + offset, value, ByteOrder.LITTLE_ENDIAN);
+        return this;
+    }
+
+    public MutableBytes setInt(int offset, int value) {
+        Check.fromIndexSize(offset, Integer.BYTES, size());
+        Arrays.setInt(array, fromIndex + offset, value, ByteOrder.LITTLE_ENDIAN);
+        return this;
+    }
+
+    public MutableBytes setLong(int offset, long value) {
+        Check.fromIndexSize(offset, Long.BYTES, size());
+        Arrays.setLong(array, fromIndex + offset, value, ByteOrder.LITTLE_ENDIAN);
+        return this;
+    }
+
+    public MutableBytes setFloat(int offset, float value) {
+        Check.fromIndexSize(offset, Float.BYTES, size());
+        Arrays.setFloat(array, fromIndex + offset, value, ByteOrder.LITTLE_ENDIAN);
+        return this;
+    }
+
+    public MutableBytes setDouble(int offset, double value) {
+        Check.fromIndexSize(offset, Double.BYTES, size());
+        Arrays.setDouble(array, fromIndex + offset, value, ByteOrder.LITTLE_ENDIAN);
+        return this;
+    }
+
     public ByteBuffer asMutableBuffer() {
         return ByteBuffer.wrap(array, fromIndex, size());
     }

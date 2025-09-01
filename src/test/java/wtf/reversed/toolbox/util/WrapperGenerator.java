@@ -30,7 +30,7 @@ final class WrapperGenerator {
         boolean addExtraMethods
     ) throws IOException {
         writeClass(createWrapperClass(className, primitiveClass, wrapperClass, bufferClass, addExtraMethods));
-        writeClass(createMutableWrapperClass(className, primitiveClass, wrapperClass, bufferClass));
+        writeClass(createMutableWrapperClass(className, primitiveClass, wrapperClass, bufferClass, addExtraMethods));
     }
 
     private static TypeSpec createWrapperClass(
@@ -236,17 +236,17 @@ final class WrapperGenerator {
     }
 
     private static void addExtraBytesMethods(TypeSpec.Builder classBuilder) {
-        generateAccess(classBuilder, short.class, "Short", "Short.BYTES");
-        generateAccess(classBuilder, int.class, "Int", "Integer.BYTES");
-        generateAccess(classBuilder, long.class, "Long", "Long.BYTES");
-        generateAccess(classBuilder, float.class, "Float", "Float.BYTES");
-        generateAccess(classBuilder, double.class, "Double", "Double.BYTES");
-        generateUnsignedAccess(classBuilder, int.class, "Byte", "Byte.toUnsignedInt");
-        generateUnsignedAccess(classBuilder, int.class, "Short", "Short.toUnsignedInt");
-        generateUnsignedAccess(classBuilder, long.class, "Int", "Integer.toUnsignedLong");
+        generateGet(classBuilder, short.class, "Short", "Short.BYTES");
+        generateGet(classBuilder, int.class, "Int", "Integer.BYTES");
+        generateGet(classBuilder, long.class, "Long", "Long.BYTES");
+        generateGet(classBuilder, float.class, "Float", "Float.BYTES");
+        generateGet(classBuilder, double.class, "Double", "Double.BYTES");
+        generateUnsignedGet(classBuilder, int.class, "Byte", "Byte.toUnsignedInt");
+        generateUnsignedGet(classBuilder, int.class, "Short", "Short.toUnsignedInt");
+        generateUnsignedGet(classBuilder, long.class, "Int", "Integer.toUnsignedLong");
     }
 
-    private static void generateAccess(TypeSpec.Builder classBuilder, Class<?> primitive, String upper, String size) {
+    private static void generateGet(TypeSpec.Builder classBuilder, Class<?> primitive, String upper, String size) {
         classBuilder.addMethod(MethodSpec.methodBuilder("get" + upper)
             .addModifiers(Modifier.PUBLIC)
             .returns(primitive)
@@ -256,7 +256,7 @@ final class WrapperGenerator {
             .build());
     }
 
-    private static void generateUnsignedAccess(TypeSpec.Builder classBuilder, Class<?> primitive, String upper, String conv) {
+    private static void generateUnsignedGet(TypeSpec.Builder classBuilder, Class<?> primitive, String upper, String conv) {
         classBuilder.addMethod(MethodSpec.methodBuilder("getUnsigned" + upper)
             .addModifiers(Modifier.PUBLIC)
             .returns(primitive)
@@ -269,7 +269,8 @@ final class WrapperGenerator {
         String className,
         Class<?> primitiveClass,
         Class<?> wrapperClass,
-        Class<?> bufferClass
+        Class<?> bufferClass,
+        boolean addExtraMethods
     ) {
         var primitiveArrayType = ArrayTypeName.of(TypeName.get(primitiveClass));
         var wrapperTypeName = TypeName.get(wrapperClass);
@@ -319,6 +320,11 @@ final class WrapperGenerator {
             .addStatement("array[fromIndex + index] = value")
             .build());
 
+        // Add extra methods for MutableBytes
+        if (addExtraMethods) {
+            addExtraMutableBytesMethods(builder, className);
+        }
+
         builder.addMethod(MethodSpec.methodBuilder("asMutableBuffer")
             .addModifiers(Modifier.PUBLIC)
             .returns(bufferClass)
@@ -335,6 +341,26 @@ final class WrapperGenerator {
             .build());
 
         return builder.build();
+    }
+
+    private static void addExtraMutableBytesMethods(TypeSpec.Builder classBuilder, String className) {
+        generateSet(classBuilder, short.class, "Short", "Short.BYTES", className);
+        generateSet(classBuilder, int.class, "Int", "Integer.BYTES", className);
+        generateSet(classBuilder, long.class, "Long", "Long.BYTES", className);
+        generateSet(classBuilder, float.class, "Float", "Float.BYTES", className);
+        generateSet(classBuilder, double.class, "Double", "Double.BYTES", className);
+    }
+
+    private static void generateSet(TypeSpec.Builder classBuilder, Class<?> primitive, String upper, String size, String className) {
+        classBuilder.addMethod(MethodSpec.methodBuilder("set" + upper)
+            .addModifiers(Modifier.PUBLIC)
+            .returns(ClassName.get("", "Mutable" + className))
+            .addParameter(int.class, "offset")
+            .addParameter(primitive, "value")
+            .addStatement("$T.fromIndexSize(offset, $L, size())", CHECK_CLASS, size)
+            .addStatement("$T.set$L(array, fromIndex + offset, value, $T.LITTLE_ENDIAN)", ARRAYS_CLASS, upper, ByteOrder.class)
+            .addStatement("return this")
+            .build());
     }
 
     private static MethodSpec.Builder override(String name) {
