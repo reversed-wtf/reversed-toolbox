@@ -25,14 +25,9 @@ record MurmurHash64B(long seed) implements HashFunction {
             offset += 4;
         }
 
-        switch (length - offset) {
-            case 3:
-                h2 ^= input.getUnsignedByte(offset + 2) << 16;
-            case 2:
-                h2 ^= input.getUnsignedByte(offset + 1) << 8;
-            case 1:
-                h2 ^= input.getUnsignedByte(offset);
-                h2 *= M32;
+        if (length > offset) {
+            h2 ^= readRemainingInt(input, offset);
+            h2 *= M32;
         }
 
         h1 = (h1 ^ (h2 >>> 18)) * M32;
@@ -52,5 +47,17 @@ record MurmurHash64B(long seed) implements HashFunction {
         h *= M32;
         h ^= k;
         return h;
+    }
+
+    private int readRemainingInt(Bytes input, int offset) {
+        if (offset + 4 <= input.size()) {
+            return input.getInt(offset);
+        }
+
+        int result = 0;
+        for (int i = offset; i < input.size(); i++) {
+            result |= input.getUnsignedByte(i) << (i * 8);
+        }
+        return result;
     }
 }
