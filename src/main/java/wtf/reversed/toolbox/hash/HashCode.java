@@ -60,7 +60,7 @@ public abstract sealed class HashCode {
 
         @Override
         public String toString() {
-            return hash.toString();
+            return hash.toString(HexFormat.of());
         }
     }
 
