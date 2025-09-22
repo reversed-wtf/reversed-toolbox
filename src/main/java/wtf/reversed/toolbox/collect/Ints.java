@@ -68,12 +68,12 @@ public class Ints extends AbstractList<Integer> implements Comparable<Ints>, Ran
 
     @Override
     public boolean contains(Object o) {
-        return o instanceof java.lang.Integer value && ArrayUtils.contains(array, fromIndex, toIndex, value);
+        return o instanceof Integer value && ArrayUtils.contains(array, fromIndex, toIndex, value);
     }
 
     @Override
     public int indexOf(Object o) {
-        if (o instanceof java.lang.Integer value) {
+        if (o instanceof Integer value) {
             int index = ArrayUtils.indexOf(array, fromIndex, toIndex, value);
             if (index >= 0) {
                 return index - fromIndex;
@@ -84,7 +84,7 @@ public class Ints extends AbstractList<Integer> implements Comparable<Ints>, Ran
 
     @Override
     public int lastIndexOf(Object o) {
-        if (o instanceof java.lang.Integer value) {
+        if (o instanceof Integer value) {
             int index = ArrayUtils.lastIndexOf(array, fromIndex, toIndex, value);
             if (index >= 0) {
                 return index - fromIndex;

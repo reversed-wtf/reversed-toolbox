@@ -245,6 +245,13 @@ final class WrapperGenerator {
             .returns(String.class)
             .addStatement("return new $T(array, fromIndex, size(), charset)", String.class)
             .build());
+
+        classBuilder.addMethod(MethodSpec.methodBuilder("toString")
+            .addModifiers(Modifier.PUBLIC)
+            .addParameter(HexFormat.class, "format")
+            .returns(String.class)
+            .addStatement("return format.formatHex(array, fromIndex, toIndex)", String.class)
+            .build());
     }
 
     private static void generateGet(TypeSpec.Builder classBuilder, Class<?> primitive, String upper, String size) {

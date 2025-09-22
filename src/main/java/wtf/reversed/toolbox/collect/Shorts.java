@@ -68,12 +68,12 @@ public class Shorts extends AbstractList<Short> implements Comparable<Shorts>, R
 
     @Override
     public boolean contains(Object o) {
-        return o instanceof java.lang.Short value && ArrayUtils.contains(array, fromIndex, toIndex, value);
+        return o instanceof Short value && ArrayUtils.contains(array, fromIndex, toIndex, value);
     }
 
     @Override
     public int indexOf(Object o) {
-        if (o instanceof java.lang.Short value) {
+        if (o instanceof Short value) {
             int index = ArrayUtils.indexOf(array, fromIndex, toIndex, value);
             if (index >= 0) {
                 return index - fromIndex;
@@ -84,7 +84,7 @@ public class Shorts extends AbstractList<Short> implements Comparable<Shorts>, R
 
     @Override
     public int lastIndexOf(Object o) {
-        if (o instanceof java.lang.Short value) {
+        if (o instanceof Short value) {
             int index = ArrayUtils.lastIndexOf(array, fromIndex, toIndex, value);
             if (index >= 0) {
                 return index - fromIndex;

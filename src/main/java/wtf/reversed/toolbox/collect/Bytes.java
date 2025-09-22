@@ -85,6 +85,10 @@ public class Bytes extends AbstractList<Byte> implements Comparable<Bytes>, Rand
         return new String(array, fromIndex, size(), charset);
     }
 
+    public String toString(HexFormat format) {
+        return format.formatHex(array, fromIndex, toIndex);
+    }
+
     public ByteBuffer asBuffer() {
         return ByteBuffer.wrap(array, fromIndex, size()).asReadOnlyBuffer();
     }
@@ -115,12 +119,12 @@ public class Bytes extends AbstractList<Byte> implements Comparable<Bytes>, Rand
 
     @Override
     public boolean contains(Object o) {
-        return o instanceof java.lang.Byte value && ArrayUtils.contains(array, fromIndex, toIndex, value);
+        return o instanceof Byte value && ArrayUtils.contains(array, fromIndex, toIndex, value);
     }
 
     @Override
     public int indexOf(Object o) {
-        if (o instanceof java.lang.Byte value) {
+        if (o instanceof Byte value) {
             int index = ArrayUtils.indexOf(array, fromIndex, toIndex, value);
             if (index >= 0) {
                 return index - fromIndex;
@@ -131,7 +135,7 @@ public class Bytes extends AbstractList<Byte> implements Comparable<Bytes>, Rand
 
     @Override
     public int lastIndexOf(Object o) {
-        if (o instanceof java.lang.Byte value) {
+        if (o instanceof Byte value) {
             int index = ArrayUtils.lastIndexOf(array, fromIndex, toIndex, value);
             if (index >= 0) {
                 return index - fromIndex;

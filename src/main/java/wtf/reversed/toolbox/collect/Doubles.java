@@ -68,12 +68,12 @@ public class Doubles extends AbstractList<Double> implements Comparable<Doubles>
 
     @Override
     public boolean contains(Object o) {
-        return o instanceof java.lang.Double value && ArrayUtils.contains(array, fromIndex, toIndex, value);
+        return o instanceof Double value && ArrayUtils.contains(array, fromIndex, toIndex, value);
     }
 
     @Override
     public int indexOf(Object o) {
-        if (o instanceof java.lang.Double value) {
+        if (o instanceof Double value) {
             int index = ArrayUtils.indexOf(array, fromIndex, toIndex, value);
             if (index >= 0) {
                 return index - fromIndex;
@@ -84,7 +84,7 @@ public class Doubles extends AbstractList<Double> implements Comparable<Doubles>
 
     @Override
     public int lastIndexOf(Object o) {
-        if (o instanceof java.lang.Double value) {
+        if (o instanceof Double value) {
             int index = ArrayUtils.lastIndexOf(array, fromIndex, toIndex, value);
             if (index >= 0) {
                 return index - fromIndex;
