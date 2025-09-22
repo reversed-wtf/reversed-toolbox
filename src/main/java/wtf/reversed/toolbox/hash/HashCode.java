@@ -1,12 +1,11 @@
 package wtf.reversed.toolbox.hash;
 
-import wtf.reversed.toolbox.util.Arrays;
+import wtf.reversed.toolbox.collect.*;
 
-import java.nio.*;
 import java.util.*;
 
 public abstract sealed class HashCode {
-    public static HashCode ofBytes(byte[] bytes) {
+    public static HashCode ofBytes(Bytes bytes) {
         return new BytesHashCode(bytes);
     }
 
@@ -21,75 +20,51 @@ public abstract sealed class HashCode {
     HashCode() {
     }
 
-    public abstract ByteBuffer asBuffer();
+    public abstract Bytes asBytes();
 
     public abstract int asInt();
 
     public abstract long asLong();
 
-    public abstract int bits();
+    static final class BytesHashCode extends HashCode {
+        private final Bytes hash;
 
-    @Override
-    public boolean equals(Object obj) {
-        return obj instanceof HashCode that && bits() == that.bits() && equalsSameBits(that);
-    }
-
-    @Override
-    public abstract int hashCode();
-
-    @Override
-    public abstract String toString();
-
-    abstract boolean equalsSameBits(HashCode that);
-
-    private static final class BytesHashCode extends HashCode {
-        private final byte[] hash;
-
-        BytesHashCode(byte[] hash) {
+        BytesHashCode(Bytes hash) {
             this.hash = hash;
         }
 
         @Override
-        public ByteBuffer asBuffer() {
-            return ByteBuffer
-                .allocate(hash.length)
-                .order(ByteOrder.LITTLE_ENDIAN)
-                .put(hash)
-                .flip();
+        public Bytes asBytes() {
+            return hash;
         }
 
         @Override
         public int asInt() {
-            return Arrays.getInt(hash, 0, ByteOrder.LITTLE_ENDIAN);
+            return hash.getInt(0);
         }
 
         @Override
         public long asLong() {
-            return Arrays.getLong(hash, 0, ByteOrder.LITTLE_ENDIAN);
+            return hash.getLong(0);
         }
 
         @Override
-        public int bits() {
-            return hash.length * Byte.SIZE;
-        }
-
-        @Override
-        boolean equalsSameBits(HashCode that) {
-            return asBuffer().mismatch(that.asBuffer()) == -1;
+        public boolean equals(Object obj) {
+            return obj instanceof BytesHashCode other && hash.equals(other.hash);
         }
 
         @Override
         public int hashCode() {
-            return java.util.Arrays.hashCode(hash);
+            return hash.hashCode();
         }
 
         @Override
         public String toString() {
-            return HexFormat.of().formatHex(hash);
+            return hash.toString();
         }
     }
 
-    private static final class IntHashCode extends HashCode {
+    static final class IntHashCode extends HashCode {
         private final int hash;
 
         IntHashCode(int hash) {
@@ -97,12 +72,8 @@ public abstract sealed class HashCode {
         }
 
         @Override
-        public ByteBuffer asBuffer() {
-            return ByteBuffer
-                .allocate(Integer.BYTES)
-                .order(ByteOrder.LITTLE_ENDIAN)
-                .putInt(hash)
-                .flip();
+        public Bytes asBytes() {
+            return MutableBytes.allocate(Integer.BYTES).setInt(0, hash);
         }
 
         @Override
@@ -116,13 +87,8 @@ public abstract sealed class HashCode {
         }
 
         @Override
-        public int bits() {
-            return Integer.SIZE;
-        }
-
-        @Override
-        boolean equalsSameBits(HashCode that) {
-            return hash == that.asInt();
+        public boolean equals(Object obj) {
+            return obj instanceof IntHashCode other && hash == other.hash;
         }
 
         @Override
@@ -136,7 +102,7 @@ public abstract sealed class HashCode {
         }
     }
 
-    private static final class LongHashCode extends HashCode {
+    static final class LongHashCode extends HashCode {
         private final long hash;
 
         LongHashCode(long hash) {
@@ -144,12 +110,8 @@ public abstract sealed class HashCode {
         }
 
         @Override
-        public ByteBuffer asBuffer() {
-            return ByteBuffer
-                .allocate(Long.BYTES)
-                .order(ByteOrder.LITTLE_ENDIAN)
-                .putLong(hash)
-                .flip();
+        public Bytes asBytes() {
+            return MutableBytes.allocate(Long.BYTES).setLong(0, hash);
         }
 
         @Override
@@ -163,13 +125,8 @@ public abstract sealed class HashCode {
         }
 
         @Override
-        public int bits() {
-            return Long.SIZE;
-        }
-
-        @Override
-        boolean equalsSameBits(HashCode that) {
-            return hash == that.asLong();
+        public boolean equals(Object obj) {
+            return obj instanceof LongHashCode other && hash == other.hash;
         }
 
         @Override

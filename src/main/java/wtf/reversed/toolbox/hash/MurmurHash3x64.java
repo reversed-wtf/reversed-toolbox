@@ -2,8 +2,6 @@ package wtf.reversed.toolbox.hash;
 
 import wtf.reversed.toolbox.collect.*;
 
-import java.nio.*;
-
 record MurmurHash3x64(int seed) implements HashFunction {
     private static final long C1 = 0x87c37b91114253d5L;
     private static final long C2 = 0x4cf5ad432745937fL;
@@ -39,13 +37,11 @@ record MurmurHash3x64(int seed) implements HashFunction {
         h1 += h2;
         h2 += h1;
 
-        // TODO: Replace with MutableBytes if they get the putLong methods
-        return HashCode.ofBytes(ByteBuffer
-            .allocate(16)
-            .order(ByteOrder.LITTLE_ENDIAN)
-            .putLong(0, h1)
-            .putLong(8, h2)
-            .array());
+        MutableBytes bytes = MutableBytes.allocate(16)
+            .setLong(0, h1)
+            .setLong(8, h2);
+
+        return HashCode.ofBytes(bytes);
     }
 
     private long mixK1(long k1) {

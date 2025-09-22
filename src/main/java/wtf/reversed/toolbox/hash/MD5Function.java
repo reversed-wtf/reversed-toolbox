@@ -22,6 +22,6 @@ final class MD5Function implements HashFunction {
     public HashCode hash(Bytes input) {
         var digest = DIGEST.get();
         digest.update(input.asBuffer());
-        return HashCode.ofBytes(digest.digest());
+        return HashCode.ofBytes(Bytes.wrap(digest.digest()));
     }
 }

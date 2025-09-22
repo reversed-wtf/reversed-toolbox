@@ -15,8 +15,8 @@ class MurmurHash3x64Test {
         int seed = Integer.parseUnsignedInt(seedString, 16);
 
         Bytes buffer = XXHashGenerator.generate(length);
-        byte[] actual = new MurmurHash3x64(seed).hash(buffer).asBuffer().array();
-        byte[] expected = HexFormat.of().parseHex(expectedString);
-        assertThat(actual).isEqualTo(expected);
+        Bytes actual = new MurmurHash3x64(seed).hash(buffer).asBytes();
+        Bytes expected = Bytes.wrap(HexFormat.of().parseHex(expectedString));
+        assertThat((Object) actual).isEqualTo(expected);
     }
 }
