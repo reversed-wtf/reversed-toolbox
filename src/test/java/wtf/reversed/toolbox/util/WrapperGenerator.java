@@ -5,6 +5,7 @@ import com.squareup.javapoet.*;
 import javax.lang.model.element.*;
 import java.io.*;
 import java.nio.*;
+import java.nio.charset.*;
 import java.nio.file.*;
 import java.util.*;
 
@@ -237,6 +238,13 @@ final class WrapperGenerator {
             .returns(InputStream.class)
             .addStatement("return new $T(array, fromIndex, size())", ByteArrayInputStream.class)
             .build());
+
+        classBuilder.addMethod(MethodSpec.methodBuilder("toString")
+            .addModifiers(Modifier.PUBLIC)
+            .addParameter(Charset.class, "charset")
+            .returns(String.class)
+            .addStatement("return new $T(array, fromIndex, size(), charset)", String.class)
+            .build());
     }
 
     private static void generateGet(TypeSpec.Builder classBuilder, Class<?> primitive, String upper, String size) {
@@ -351,6 +359,12 @@ final class WrapperGenerator {
         generateSet(classBuilder, long.class, "Long", "Long.BYTES", className);
         generateSet(classBuilder, float.class, "Float", "Float.BYTES", className);
         generateSet(classBuilder, double.class, "Double", "Double.BYTES", className);
+
+        classBuilder.addMethod(MethodSpec.methodBuilder("asOutputStream")
+            .addModifiers(Modifier.PUBLIC)
+            .returns(OutputStream.class)
+            .addStatement("return $T.outputStream(array, fromIndex, size())", ArrayUtils.class)
+            .build());
     }
 
     private static void generateSet(TypeSpec.Builder classBuilder, Class<?> primitive, String upper, String size, String className) {

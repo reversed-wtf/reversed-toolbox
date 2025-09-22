@@ -13,18 +13,8 @@ final class LZMADecompressor implements Decompressor {
 
     @Override
     public void decompress(Bytes src, MutableBytes dst) throws IOException {
-        int offset = 0;
-        byte[] buffer = new byte[4096];
-        try (var in = new LZMAInputStream(src.asInputStream())) {
-            while (true) {
-                int read = in.read(buffer);
-                if (read <= 0) {
-                    break;
-                }
-
-                Bytes.wrap(buffer, 0, read).copyTo(dst, offset);
-                offset += read;
-            }
+        try (var is = new LZMAInputStream(src.asInputStream())) {
+            is.transferTo(dst.asOutputStream());
         }
     }
 }

@@ -1,5 +1,7 @@
 package wtf.reversed.toolbox.util;
 
+import java.io.*;
+
 public final class ArrayUtils {
     private ArrayUtils() {
     }
@@ -483,4 +485,46 @@ public final class ArrayUtils {
 
     // endregion Helpers
 
+    public static OutputStream outputStream(byte[] dst, int off, int len) {
+        Check.fromToIndex(off, len, dst.length);
+        return new WrappingByteArrayOutputStream(dst, off, len);
+    }
+
+    private static final class WrappingByteArrayOutputStream extends OutputStream {
+        private final byte[] buffer;
+        private final int limit;
+        private int position;
+
+        WrappingByteArrayOutputStream(byte[] buffer, int off, int len) {
+            this.buffer = buffer;
+            this.position = off;
+            this.limit = off + len;
+        }
+
+        @Override
+        public void write(int b) throws IOException {
+            ensureOpen();
+            buffer[position++] = (byte) b;
+        }
+
+        @Override
+        public void write(byte[] b, int off, int len) throws IOException {
+            Check.fromIndexSize(off, len, b.length);
+            ensureOpen();
+            int written = Math.min(limit - position, len);
+            System.arraycopy(b, off, buffer, position, written);
+            position += written;
+        }
+
+        @Override
+        public void close() {
+            position = limit;
+        }
+
+        private void ensureOpen() throws IOException {
+            if (position >= limit) {
+                throw new IOException("Stream closed");
+            }
+        }
+    }
 }

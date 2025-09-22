@@ -5,6 +5,7 @@ import wtf.reversed.toolbox.util.Arrays;
 
 import java.io.*;
 import java.nio.*;
+import java.nio.charset.*;
 import java.util.*;
 
 public class Bytes extends AbstractList<Byte> implements Comparable<Bytes>, RandomAccess {
@@ -78,6 +79,10 @@ public class Bytes extends AbstractList<Byte> implements Comparable<Bytes>, Rand
 
     public InputStream asInputStream() {
         return new ByteArrayInputStream(array, fromIndex, size());
+    }
+
+    public String toString(Charset charset) {
+        return new String(array, fromIndex, size(), charset);
     }
 
     public ByteBuffer asBuffer() {

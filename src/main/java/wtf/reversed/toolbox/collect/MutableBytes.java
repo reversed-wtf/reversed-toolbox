@@ -2,6 +2,7 @@ package wtf.reversed.toolbox.collect;
 
 import wtf.reversed.toolbox.util.*;
 
+import java.io.*;
 import java.nio.*;
 
 public final class MutableBytes extends Bytes {
@@ -54,6 +55,10 @@ public final class MutableBytes extends Bytes {
         Check.fromIndexSize(offset, Double.BYTES, size());
         Arrays.setDouble(array, fromIndex + offset, value, ByteOrder.LITTLE_ENDIAN);
         return this;
+    }
+
+    public OutputStream asOutputStream() {
+        return ArrayUtils.outputStream(array, fromIndex, size());
     }
 
     public ByteBuffer asMutableBuffer() {
