@@ -1,6 +1,7 @@
-package wtf.reversed.toolbox.util;
+package wtf.reversed.toolbox.collect;
 
-import com.squareup.javapoet.*;
+import com.palantir.javapoet.*;
+import wtf.reversed.toolbox.util.*;
 
 import javax.lang.model.element.*;
 import java.io.*;
