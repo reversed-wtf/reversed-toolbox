@@ -3,29 +3,35 @@ package wtf.reversed.toolbox.collect;
 import wtf.reversed.toolbox.util.*;
 
 import java.nio.*;
-import java.util.*;
 import java.util.Arrays;
+import java.util.stream.*;
 
-public class Ints extends AbstractList<Integer> implements Comparable<Ints>, RandomAccess {
+public class Ints implements Array, Comparable<Ints> {
+    private static final Ints EMPTY = wrap(new int[0]);
+
     final int[] array;
 
-    final int fromIndex;
+    final int offset;
 
-    final int toIndex;
+    final int length;
 
-    Ints(int[] array, int fromIndex, int toIndex) {
-        Check.fromToIndex(fromIndex, toIndex, array.length);
+    Ints(int[] array, int offset, int length) {
+        Check.fromIndexSize(offset, length, array.length);
         this.array = array;
-        this.fromIndex = fromIndex;
-        this.toIndex = toIndex;
+        this.offset = offset;
+        this.length = length;
+    }
+
+    public static Ints empty() {
+        return EMPTY;
     }
 
     public static Ints wrap(int[] array) {
         return new Ints(array, 0, array.length);
     }
 
-    public static Ints wrap(int[] array, int fromIndex, int toIndex) {
-        return new Ints(array, fromIndex, toIndex);
+    public static Ints wrap(int[] array, int offset, int length) {
+        return new Ints(array, offset, length);
     }
 
     public static Ints from(IntBuffer buffer) {
@@ -33,89 +39,89 @@ public class Ints extends AbstractList<Integer> implements Comparable<Ints>, Ran
         return new Ints(buffer.array(), buffer.position(), buffer.limit());
     }
 
-    public int getInt(int index) {
-        Check.index(index, size());
-        return array[fromIndex + index];
+    public int get(int index) {
+        Check.index(index, length);
+        return array[offset + index];
     }
 
-    public IntBuffer asBuffer() {
-        return IntBuffer.wrap(array, fromIndex, size()).asReadOnlyBuffer();
+    public long getUnsigned(int offset) {
+        return Integer.toUnsignedLong(get(offset));
+    }
+
+    @Override
+    public int length() {
+        return length;
+    }
+
+    public boolean contains(int value) {
+        return indexOf(value) >= 0;
+    }
+
+    public int indexOf(int value) {
+        for (int i = offset, limit = offset + length; i < limit; i++) {
+            if (array[i] == value) {
+                return i - offset;
+            }
+        }
+        return -1;
+    }
+
+    public int lastIndexOf(int value) {
+        for (int i = offset + length - 1; i >= offset; i--) {
+            if (array[i] == value) {
+                return i - offset;
+            }
+        }
+        return -1;
+    }
+
+    public Ints slice(int offset) {
+        return slice(offset, length - offset);
+    }
+
+    public Ints slice(int offset, int length) {
+        Check.fromIndexSize(offset, length, this.length);
+        return new Ints(array, this.offset + offset, length);
     }
 
     public void copyTo(MutableInts target, int offset) {
-        System.arraycopy(array, fromIndex, target.array, target.fromIndex + offset, size());
-    }
-
-    public Ints slice(int fromIndex) {
-        return slice(fromIndex, size());
-    }
-
-    public Ints slice(int fromIndex, int toIndex) {
-        Check.fromToIndex(fromIndex, toIndex, size());
-        return new Ints(array, this.fromIndex + fromIndex, this.fromIndex + toIndex);
+        System.arraycopy(array, this.offset, target.array, target.offset + offset, length);
     }
 
     @Override
-    public int size() {
-        return toIndex - fromIndex;
+    public IntBuffer asBuffer() {
+        return IntBuffer.wrap(array, offset, length).asReadOnlyBuffer();
     }
 
-    @Override
-    @Deprecated
-    public Integer get(int index) {
-        return getInt(index);
+    public int[] toArray() {
+        return Arrays.copyOfRange(array, offset, offset + length);
     }
 
-    @Override
-    public boolean contains(Object o) {
-        return o instanceof Integer value && ArrayUtils.contains(array, fromIndex, toIndex, value);
-    }
-
-    @Override
-    public int indexOf(Object o) {
-        if (o instanceof Integer value) {
-            int index = ArrayUtils.indexOf(array, fromIndex, toIndex, value);
-            if (index >= 0) {
-                return index - fromIndex;
-            }
-        }
-        return -1;
-    }
-
-    @Override
-    public int lastIndexOf(Object o) {
-        if (o instanceof Integer value) {
-            int index = ArrayUtils.lastIndexOf(array, fromIndex, toIndex, value);
-            if (index >= 0) {
-                return index - fromIndex;
-            }
-        }
-        return -1;
-    }
-
-    @Override
-    public Ints subList(int fromIndex, int toIndex) {
-        Check.fromToIndex(fromIndex, toIndex, size());
-        return new Ints(array, this.fromIndex + fromIndex, this.fromIndex + toIndex);
+    public IntStream stream() {
+        return Arrays.stream(array, offset, offset + length);
     }
 
     @Override
     public int compareTo(Ints o) {
-        return Arrays.compare(array, fromIndex, toIndex, o.array, o.fromIndex, o.toIndex);
+        return Arrays.compare(array, offset, offset + length, o.array, o.offset, o.offset + o.length);
     }
 
     @Override
     public boolean equals(Object obj) {
-        return obj instanceof Ints o && Arrays.equals(array, fromIndex, toIndex, o.array, o.fromIndex, o.toIndex);
+        return obj instanceof Ints o && Arrays.equals(array, offset, offset + length, o.array, o.offset, o.offset + o.length);
     }
 
     @Override
     public int hashCode() {
-        return ArrayUtils.hashCode(array, fromIndex, toIndex);
+        int result = 1;
+        for (int i = offset, limit = offset + length; i < limit; i++) {
+            result = 31 * result + Integer.hashCode(array[i]);
+        }
+        return result;
     }
 
     @Override
     public String toString() {
-        return ArrayUtils.toString(array, fromIndex, toIndex);
+        return "[" + length + " ints]";
     }
 }

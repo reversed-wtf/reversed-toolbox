@@ -14,7 +14,7 @@ class LZ4DecompressorTest {
     private static final int LENGTH = 138216;
 
     private final MessageDigest sha256 = MessageDigest.getInstance("SHA256");
-    private final Decompressor decompressor = Decompressor.lz4();
+    private final LZ4Decompressor decompressor = LZ4Decompressor.INSTANCE;
 
     LZ4DecompressorTest() throws NoSuchAlgorithmException {
     }
@@ -31,8 +31,8 @@ class LZ4DecompressorTest {
         System.arraycopy(temp, 0, source, offset, temp.length);
         var target = new byte[LENGTH + 2 * offset];
 
-        var src = Bytes.wrap(source, offset, source.length - offset);
-        var dst = MutableBytes.wrap(target, offset, target.length - offset);
+        var src = Bytes.wrap(source, offset, source.length - 2 * offset);
+        var dst = MutableBytes.wrap(target, offset, target.length - 2 * offset);
         decompressor.decompress(src, dst);
 
         sha256.update(target, offset, LENGTH);

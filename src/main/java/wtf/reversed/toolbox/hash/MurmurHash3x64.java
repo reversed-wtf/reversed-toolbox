@@ -12,7 +12,7 @@ record MurmurHash3x64(int seed) implements HashFunction {
         var h2 = Integer.toUnsignedLong(seed);
 
         int offset = 0;
-        int length = input.size();
+        int length = input.length();
 
         while (offset + 16 <= length) {
             h1 = (Long.rotateLeft(h1 ^ mixK1(input.getLong(offset)), 27) + h2) * 5 + 0x52dce729;
@@ -68,13 +68,13 @@ record MurmurHash3x64(int seed) implements HashFunction {
     }
 
     private long readRemainingLong(Bytes input, int offset) {
-        if (offset + 8 <= input.size()) {
+        if (offset + 8 <= input.length()) {
             return input.getLong(offset);
         }
 
         long result = 0;
-        for (int i = offset; i < input.size(); i++) {
-            result |= (long) input.getUnsignedByte(i) << (i * 8);
+        for (int i = offset; i < input.length(); i++) {
+            result |= (long) input.getUnsigned(i) << (i * 8);
         }
         return result;
     }

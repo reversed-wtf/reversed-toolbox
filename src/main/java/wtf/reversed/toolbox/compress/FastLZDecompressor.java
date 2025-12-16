@@ -12,11 +12,11 @@ final class FastLZDecompressor extends LZDecompressor {
 
     @Override
     public void decompress(Bytes src, MutableBytes dst) throws IOException {
-        Level level = Level.from(src.getByte(0));
+        Level level = Level.from(src.get(0));
 
         int srcOff = 0;
         int dstOff = 0;
-        int opcode = src.getByte(srcOff++) & 0x1F; // Could have had a pretty loop, but no
+        int opcode = src.get(srcOff++) & 0x1F; // Could have had a pretty loop, but no
         while (true) {
             if ((opcode & 0xE0) == 0x00) {
                 // If the upper 3 bits are 0, we have a literal
@@ -30,11 +30,11 @@ final class FastLZDecompressor extends LZDecompressor {
                 if ((opcode & 0xE0) == 0xE0) {
                     // If all upper bits are set, we have a long match
                     switch (level) {
-                        case One -> matchLength += src.getUnsignedByte(srcOff++);
+                        case One -> matchLength += src.getUnsigned(srcOff++);
                         case Two -> {
                             int temp;
                             do {
-                                temp = src.getUnsignedByte(srcOff++);
+                                temp = src.getUnsigned(srcOff++);
                                 matchLength += temp;
                             } while (temp == 0xFF);
                         }
@@ -44,14 +44,14 @@ final class FastLZDecompressor extends LZDecompressor {
                 // Then we handle the offset
                 int offset = ((opcode & 0x1F) << 8) + 1;
                 switch (level) {
-                    case One -> offset += src.getUnsignedByte(srcOff++);
+                    case One -> offset += src.getUnsigned(srcOff++);
                     case Two -> {
-                        int temp = src.getUnsignedByte(srcOff++);
+                        int temp = src.getUnsigned(srcOff++);
                         offset += temp;
 
                         if (temp == 0xFF && (opcode & 0x1F) == 0x1F) {
-                            offset += src.getUnsignedByte(srcOff++) << 8;
-                            offset += src.getUnsignedByte(srcOff++);
+                            offset += src.getUnsigned(srcOff++) << 8;
+                            offset += src.getUnsigned(srcOff++);
                         }
                     }
                 }
@@ -60,10 +60,10 @@ final class FastLZDecompressor extends LZDecompressor {
                 dstOff += matchLength;
             }
 
-            if (srcOff >= src.size()) {
+            if (srcOff >= src.length()) {
                 break;
             }
-            opcode = src.getUnsignedByte(srcOff++);
+            opcode = src.getUnsigned(srcOff++);
         }
 
         // return dstPos - targetOffset;

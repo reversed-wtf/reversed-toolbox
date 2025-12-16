@@ -18,9 +18,9 @@ final class OodleDecompressor implements Decompressor {
     @Override
     public void decompress(Bytes src, MutableBytes dst) throws IOException {
         try (var arena = Arena.ofConfined()) {
-            var srcSegment = arena.allocate(src.size())
+            var srcSegment = arena.allocate(src.length())
                 .copyFrom(MemorySegment.ofBuffer(src.asBuffer()));
-            var dstSegment = arena.allocate(dst.size());
+            var dstSegment = arena.allocate(dst.length());
 
             var result = library.OodleLZ_Decompress(
                 srcSegment, srcSegment.byteSize(),
@@ -34,7 +34,7 @@ final class OodleDecompressor implements Decompressor {
                 3 /* OodleLZ_Decode_ThreadPhaseAll */
             );
 
-            if (result != dst.size()) {
+            if (result != dst.length()) {
                 throw new IOException("Error decompressing data");
             }
 

@@ -6,48 +6,43 @@ import java.nio.*;
 import java.util.Arrays;
 
 public final class MutableLongs extends Longs {
-    private MutableLongs(long[] array, int fromIndex, int toIndex) {
-        super(array, fromIndex, toIndex);
+    private MutableLongs(long[] array, int offset, int length) {
+        super(array, offset, length);
     }
 
     public static MutableLongs wrap(long[] array) {
         return new MutableLongs(array, 0, array.length);
     }
 
-    public static MutableLongs wrap(long[] array, int fromIndex, int toIndex) {
-        return new MutableLongs(array, fromIndex, toIndex);
+    public static MutableLongs wrap(long[] array, int offset, int length) {
+        return new MutableLongs(array, offset, length);
     }
 
-    public static MutableLongs allocate(int size) {
-        return new MutableLongs(new long[size], 0, size);
+    public static MutableLongs allocate(int length) {
+        return new MutableLongs(new long[length], 0, length);
     }
 
-    public void setLong(int index, long value) {
-        Check.index(index, size());
-        array[fromIndex + index] = value;
+    public MutableLongs set(int index, long value) {
+        Check.index(index, length);
+        array[offset + index] = value;
+        return this;
+    }
+
+    public MutableLongs slice(int offset) {
+        return slice(offset, length - offset);
+    }
+
+    public MutableLongs slice(int offset, int length) {
+        Check.fromIndexSize(offset, length, this.length);
+        return new MutableLongs(array, this.offset + offset, length);
+    }
+
+    public MutableLongs fill(long value) {
+        Arrays.fill(array, offset, offset + length, value);
+        return this;
     }
 
     public LongBuffer asMutableBuffer() {
-        return LongBuffer.wrap(array, fromIndex, size());
-    }
-
-    public void fill(long value) {
-        Arrays.fill(array, fromIndex, toIndex, value);
-    }
-
-    public MutableLongs slice(int fromIndex) {
-        return slice(fromIndex, size());
-    }
-
-    public MutableLongs slice(int fromIndex, int toIndex) {
-        Check.fromToIndex(fromIndex, toIndex, size());
-        return new MutableLongs(array, this.fromIndex + fromIndex, this.fromIndex + toIndex);
-    }
-
-    @Override
-    public Long set(int index, Long element) {
-        long oldValue = getLong(index);
-        setLong(index, element);
-        return oldValue;
+        return LongBuffer.wrap(array, offset, length);
     }
 }

@@ -6,48 +6,43 @@ import java.nio.*;
 import java.util.Arrays;
 
 public final class MutableInts extends Ints {
-    private MutableInts(int[] array, int fromIndex, int toIndex) {
-        super(array, fromIndex, toIndex);
+    private MutableInts(int[] array, int offset, int length) {
+        super(array, offset, length);
     }
 
     public static MutableInts wrap(int[] array) {
         return new MutableInts(array, 0, array.length);
     }
 
-    public static MutableInts wrap(int[] array, int fromIndex, int toIndex) {
-        return new MutableInts(array, fromIndex, toIndex);
+    public static MutableInts wrap(int[] array, int offset, int length) {
+        return new MutableInts(array, offset, length);
     }
 
-    public static MutableInts allocate(int size) {
-        return new MutableInts(new int[size], 0, size);
+    public static MutableInts allocate(int length) {
+        return new MutableInts(new int[length], 0, length);
     }
 
-    public void setInt(int index, int value) {
-        Check.index(index, size());
-        array[fromIndex + index] = value;
+    public MutableInts set(int index, int value) {
+        Check.index(index, length);
+        array[offset + index] = value;
+        return this;
+    }
+
+    public MutableInts slice(int offset) {
+        return slice(offset, length - offset);
+    }
+
+    public MutableInts slice(int offset, int length) {
+        Check.fromIndexSize(offset, length, this.length);
+        return new MutableInts(array, this.offset + offset, length);
+    }
+
+    public MutableInts fill(int value) {
+        Arrays.fill(array, offset, offset + length, value);
+        return this;
     }
 
     public IntBuffer asMutableBuffer() {
-        return IntBuffer.wrap(array, fromIndex, size());
-    }
-
-    public void fill(int value) {
-        Arrays.fill(array, fromIndex, toIndex, value);
-    }
-
-    public MutableInts slice(int fromIndex) {
-        return slice(fromIndex, size());
-    }
-
-    public MutableInts slice(int fromIndex, int toIndex) {
-        Check.fromToIndex(fromIndex, toIndex, size());
-        return new MutableInts(array, this.fromIndex + fromIndex, this.fromIndex + toIndex);
-    }
-
-    @Override
-    public Integer set(int index, Integer element) {
-        int oldValue = getInt(index);
-        setInt(index, element);
-        return oldValue;
+        return IntBuffer.wrap(array, offset, length);
     }
 }

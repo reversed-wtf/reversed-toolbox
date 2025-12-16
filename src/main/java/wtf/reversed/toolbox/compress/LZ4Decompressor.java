@@ -13,8 +13,8 @@ final class LZ4Decompressor extends LZDecompressor {
     @Override
     public void decompress(Bytes src, MutableBytes dst) throws IOException {
         // Special case
-        if (dst.isEmpty()) {
-            if (src.size() != 1 || src.getByte(0) != 0) {
+        if (dst.length() == 0) {
+            if (src.length() != 1 || src.get(0) != 0) {
                 throw new IOException("Invalid empty block");
             }
             return /*0*/;
@@ -23,7 +23,7 @@ final class LZ4Decompressor extends LZDecompressor {
         int srcOff = 0;
         int dstOff = 0;
         while (true) {
-            int token = src.getByte(srcOff++);
+            int token = src.get(srcOff++);
 
             // Get the literal len
             int literalLength = (token >>> 4) & 0x0F;
@@ -31,7 +31,7 @@ final class LZ4Decompressor extends LZDecompressor {
                 if (literalLength == 15) {
                     int temp;
                     do {
-                        temp = src.getUnsignedByte(srcOff++);
+                        temp = src.getUnsigned(srcOff++);
                         literalLength += temp;
                     } while (temp == 255);
                 }
@@ -43,7 +43,7 @@ final class LZ4Decompressor extends LZDecompressor {
             }
 
             // End of input check
-            if (srcOff >= src.size()) {
+            if (srcOff >= src.length()) {
                 return /*dstPos - targetOffset*/;
             }
 
@@ -56,7 +56,7 @@ final class LZ4Decompressor extends LZDecompressor {
             if (matchLength == 15) {
                 int temp;
                 do {
-                    temp = src.getUnsignedByte(srcOff++);
+                    temp = src.getUnsigned(srcOff++);
                     matchLength += temp;
                 } while (temp == 255);
             }

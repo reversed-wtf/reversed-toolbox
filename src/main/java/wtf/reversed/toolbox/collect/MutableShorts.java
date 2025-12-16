@@ -6,48 +6,43 @@ import java.nio.*;
 import java.util.Arrays;
 
 public final class MutableShorts extends Shorts {
-    private MutableShorts(short[] array, int fromIndex, int toIndex) {
-        super(array, fromIndex, toIndex);
+    private MutableShorts(short[] array, int offset, int length) {
+        super(array, offset, length);
     }
 
     public static MutableShorts wrap(short[] array) {
         return new MutableShorts(array, 0, array.length);
     }
 
-    public static MutableShorts wrap(short[] array, int fromIndex, int toIndex) {
-        return new MutableShorts(array, fromIndex, toIndex);
+    public static MutableShorts wrap(short[] array, int offset, int length) {
+        return new MutableShorts(array, offset, length);
     }
 
-    public static MutableShorts allocate(int size) {
-        return new MutableShorts(new short[size], 0, size);
+    public static MutableShorts allocate(int length) {
+        return new MutableShorts(new short[length], 0, length);
     }
 
-    public void setShort(int index, short value) {
-        Check.index(index, size());
-        array[fromIndex + index] = value;
+    public MutableShorts set(int index, short value) {
+        Check.index(index, length);
+        array[offset + index] = value;
+        return this;
+    }
+
+    public MutableShorts slice(int offset) {
+        return slice(offset, length - offset);
+    }
+
+    public MutableShorts slice(int offset, int length) {
+        Check.fromIndexSize(offset, length, this.length);
+        return new MutableShorts(array, this.offset + offset, length);
+    }
+
+    public MutableShorts fill(short value) {
+        Arrays.fill(array, offset, offset + length, value);
+        return this;
     }
 
     public ShortBuffer asMutableBuffer() {
-        return ShortBuffer.wrap(array, fromIndex, size());
-    }
-
-    public void fill(short value) {
-        Arrays.fill(array, fromIndex, toIndex, value);
-    }
-
-    public MutableShorts slice(int fromIndex) {
-        return slice(fromIndex, size());
-    }
-
-    public MutableShorts slice(int fromIndex, int toIndex) {
-        Check.fromToIndex(fromIndex, toIndex, size());
-        return new MutableShorts(array, this.fromIndex + fromIndex, this.fromIndex + toIndex);
-    }
-
-    @Override
-    public Short set(int index, Short element) {
-        short oldValue = getShort(index);
-        setShort(index, element);
-        return oldValue;
+        return ShortBuffer.wrap(array, offset, length);
     }
 }

@@ -8,7 +8,7 @@ record MurmurHash64B(long seed) implements HashFunction {
 
     @Override
     public HashCode hash(Bytes input) {
-        var length = input.size();
+        var length = input.length();
         var offset = 0;
 
         int h1 = (int) (seed) ^ length;
@@ -50,13 +50,13 @@ record MurmurHash64B(long seed) implements HashFunction {
     }
 
     private int readRemainingInt(Bytes input, int offset) {
-        if (offset + 4 <= input.size()) {
+        if (offset + 4 <= input.length()) {
             return input.getInt(offset);
         }
 
         int result = 0;
-        for (int i = offset; i < input.size(); i++) {
-            result |= input.getUnsignedByte(i) << (i * 8);
+        for (int i = offset; i < input.length(); i++) {
+            result |= input.getUnsigned(i) << (i * 8);
         }
         return result;
     }

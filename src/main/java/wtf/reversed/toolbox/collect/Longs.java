@@ -3,29 +3,35 @@ package wtf.reversed.toolbox.collect;
 import wtf.reversed.toolbox.util.*;
 
 import java.nio.*;
-import java.util.*;
 import java.util.Arrays;
+import java.util.stream.*;
 
-public class Longs extends AbstractList<Long> implements Comparable<Longs>, RandomAccess {
+public class Longs implements Array, Comparable<Longs> {
+    private static final Longs EMPTY = wrap(new long[0]);
+
     final long[] array;
 
-    final int fromIndex;
+    final int offset;
 
-    final int toIndex;
+    final int length;
 
-    Longs(long[] array, int fromIndex, int toIndex) {
-        Check.fromToIndex(fromIndex, toIndex, array.length);
+    Longs(long[] array, int offset, int length) {
+        Check.fromIndexSize(offset, length, array.length);
         this.array = array;
-        this.fromIndex = fromIndex;
-        this.toIndex = toIndex;
+        this.offset = offset;
+        this.length = length;
+    }
+
+    public static Longs empty() {
+        return EMPTY;
     }
 
     public static Longs wrap(long[] array) {
         return new Longs(array, 0, array.length);
     }
 
-    public static Longs wrap(long[] array, int fromIndex, int toIndex) {
-        return new Longs(array, fromIndex, toIndex);
+    public static Longs wrap(long[] array, int offset, int length) {
+        return new Longs(array, offset, length);
     }
 
     public static Longs from(LongBuffer buffer) {
@@ -33,89 +39,85 @@ public class Longs extends AbstractList<Long> implements Comparable<Longs>, Rand
         return new Longs(buffer.array(), buffer.position(), buffer.limit());
     }
 
-    public long getLong(int index) {
-        Check.index(index, size());
-        return array[fromIndex + index];
+    public long get(int index) {
+        Check.index(index, length);
+        return array[offset + index];
     }
 
-    public LongBuffer asBuffer() {
-        return LongBuffer.wrap(array, fromIndex, size()).asReadOnlyBuffer();
+    @Override
+    public int length() {
+        return length;
+    }
+
+    public boolean contains(long value) {
+        return indexOf(value) >= 0;
+    }
+
+    public int indexOf(long value) {
+        for (int i = offset, limit = offset + length; i < limit; i++) {
+            if (array[i] == value) {
+                return i - offset;
+            }
+        }
+        return -1;
+    }
+
+    public int lastIndexOf(long value) {
+        for (int i = offset + length - 1; i >= offset; i--) {
+            if (array[i] == value) {
+                return i - offset;
+            }
+        }
+        return -1;
+    }
+
+    public Longs slice(int offset) {
+        return slice(offset, length - offset);
+    }
+
+    public Longs slice(int offset, int length) {
+        Check.fromIndexSize(offset, length, this.length);
+        return new Longs(array, this.offset + offset, length);
     }
 
     public void copyTo(MutableLongs target, int offset) {
-        System.arraycopy(array, fromIndex, target.array, target.fromIndex + offset, size());
-    }
-
-    public Longs slice(int fromIndex) {
-        return slice(fromIndex, size());
-    }
-
-    public Longs slice(int fromIndex, int toIndex) {
-        Check.fromToIndex(fromIndex, toIndex, size());
-        return new Longs(array, this.fromIndex + fromIndex, this.fromIndex + toIndex);
+        System.arraycopy(array, this.offset, target.array, target.offset + offset, length);
     }
 
     @Override
-    public int size() {
-        return toIndex - fromIndex;
+    public LongBuffer asBuffer() {
+        return LongBuffer.wrap(array, offset, length).asReadOnlyBuffer();
     }
 
-    @Override
-    @Deprecated
-    public Long get(int index) {
-        return getLong(index);
+    public long[] toArray() {
+        return Arrays.copyOfRange(array, offset, offset + length);
     }
 
-    @Override
-    public boolean contains(Object o) {
-        return o instanceof Long value && ArrayUtils.contains(array, fromIndex, toIndex, value);
-    }
-
-    @Override
-    public int indexOf(Object o) {
-        if (o instanceof Long value) {
-            int index = ArrayUtils.indexOf(array, fromIndex, toIndex, value);
-            if (index >= 0) {
-                return index - fromIndex;
-            }
-        }
-        return -1;
-    }
-
-    @Override
-    public int lastIndexOf(Object o) {
-        if (o instanceof Long value) {
-            int index = ArrayUtils.lastIndexOf(array, fromIndex, toIndex, value);
-            if (index >= 0) {
-                return index - fromIndex;
-            }
-        }
-        return -1;
-    }
-
-    @Override
-    public Longs subList(int fromIndex, int toIndex) {
-        Check.fromToIndex(fromIndex, toIndex, size());
-        return new Longs(array, this.fromIndex + fromIndex, this.fromIndex + toIndex);
+    public LongStream stream() {
+        return Arrays.stream(array, offset, offset + length);
     }
 
     @Override
     public int compareTo(Longs o) {
-        return Arrays.compare(array, fromIndex, toIndex, o.array, o.fromIndex, o.toIndex);
+        return Arrays.compare(array, offset, offset + length, o.array, o.offset, o.offset + o.length);
     }
 
     @Override
     public boolean equals(Object obj) {
-        return obj instanceof Longs o && Arrays.equals(array, fromIndex, toIndex, o.array, o.fromIndex, o.toIndex);
+        return obj instanceof Longs o && Arrays.equals(array, offset, offset + length, o.array, o.offset, o.offset + o.length);
     }
 
     @Override
     public int hashCode() {
-        return ArrayUtils.hashCode(array, fromIndex, toIndex);
+        int result = 1;
+        for (int i = offset, limit = offset + length; i < limit; i++) {
+            result = 31 * result + Long.hashCode(array[i]);
+        }
+        return result;
     }
 
     @Override
     public String toString() {
-        return ArrayUtils.toString(array, fromIndex, toIndex);
+        return "[" + length + " longs]";
     }
 }

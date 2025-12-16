@@ -9,8 +9,8 @@ final class FNV1a64 implements HashFunction {
     @Override
     public HashCode hash(Bytes input) {
         long hash = FNV_OFFSET_BASIS;
-        for (int i = 0, len = input.size(); i < len; i++) {
-            hash ^= input.getUnsignedByte(i);
+        for (int i = 0, len = input.length(); i < len; i++) {
+            hash ^= input.getUnsigned(i);
             hash *= FNV_PRIME;
         }
         return HashCode.ofLong(hash);

@@ -1,33 +1,51 @@
 package wtf.reversed.toolbox.collect;
 
 import wtf.reversed.toolbox.util.*;
-import wtf.reversed.toolbox.util.Arrays;
 
 import java.io.*;
+import java.lang.invoke.*;
 import java.nio.*;
 import java.nio.charset.*;
 import java.util.*;
+import java.util.Arrays;
+import java.util.stream.*;
 
-public class Bytes extends AbstractList<Byte> implements Comparable<Bytes>, RandomAccess {
+public class Bytes implements Array, Comparable<Bytes> {
+    private static final Bytes EMPTY = wrap(new byte[0]);
+
+    static final VarHandle VH_SHORT_LE = MethodHandles.byteArrayViewVarHandle(short[].class, ByteOrder.LITTLE_ENDIAN).withInvokeExactBehavior();
+
+    static final VarHandle VH_INT_LE = MethodHandles.byteArrayViewVarHandle(int[].class, ByteOrder.LITTLE_ENDIAN).withInvokeExactBehavior();
+
+    static final VarHandle VH_LONG_LE = MethodHandles.byteArrayViewVarHandle(long[].class, ByteOrder.LITTLE_ENDIAN).withInvokeExactBehavior();
+
+    static final VarHandle VH_FLOAT_LE = MethodHandles.byteArrayViewVarHandle(float[].class, ByteOrder.LITTLE_ENDIAN).withInvokeExactBehavior();
+
+    static final VarHandle VH_DOUBLE_LE = MethodHandles.byteArrayViewVarHandle(double[].class, ByteOrder.LITTLE_ENDIAN).withInvokeExactBehavior();
+
     final byte[] array;
 
-    final int fromIndex;
+    final int offset;
 
-    final int toIndex;
+    final int length;
 
-    Bytes(byte[] array, int fromIndex, int toIndex) {
-        Check.fromToIndex(fromIndex, toIndex, array.length);
+    Bytes(byte[] array, int offset, int length) {
+        Check.fromIndexSize(offset, length, array.length);
         this.array = array;
-        this.fromIndex = fromIndex;
-        this.toIndex = toIndex;
+        this.offset = offset;
+        this.length = length;
+    }
+
+    public static Bytes empty() {
+        return EMPTY;
     }
 
     public static Bytes wrap(byte[] array) {
         return new Bytes(array, 0, array.length);
     }
 
-    public static Bytes wrap(byte[] array, int fromIndex, int toIndex) {
-        return new Bytes(array, fromIndex, toIndex);
+    public static Bytes wrap(byte[] array, int offset, int length) {
+        return new Bytes(array, offset, length);
     }
 
     public static Bytes from(ByteBuffer buffer) {
@@ -35,38 +53,38 @@ public class Bytes extends AbstractList<Byte> implements Comparable<Bytes>, Rand
         return new Bytes(buffer.array(), buffer.position(), buffer.limit());
     }
 
-    public byte getByte(int index) {
-        Check.index(index, size());
-        return array[fromIndex + index];
+    public byte get(int index) {
+        Check.index(index, length);
+        return array[offset + index];
     }
 
     public short getShort(int offset) {
-        Check.fromIndexSize(offset, Short.BYTES, size());
-        return Arrays.getShort(array, fromIndex + offset, ByteOrder.LITTLE_ENDIAN);
+        Check.fromIndexSize(offset, Short.BYTES, length);
+        return (short) VH_SHORT_LE.get(array, this.offset + offset);
     }
 
     public int getInt(int offset) {
-        Check.fromIndexSize(offset, Integer.BYTES, size());
-        return Arrays.getInt(array, fromIndex + offset, ByteOrder.LITTLE_ENDIAN);
+        Check.fromIndexSize(offset, Integer.BYTES, length);
+        return (int) VH_INT_LE.get(array, this.offset + offset);
     }
 
     public long getLong(int offset) {
-        Check.fromIndexSize(offset, Long.BYTES, size());
-        return Arrays.getLong(array, fromIndex + offset, ByteOrder.LITTLE_ENDIAN);
+        Check.fromIndexSize(offset, Long.BYTES, length);
+        return (long) VH_LONG_LE.get(array, this.offset + offset);
     }
 
     public float getFloat(int offset) {
-        Check.fromIndexSize(offset, Float.BYTES, size());
-        return Arrays.getFloat(array, fromIndex + offset, ByteOrder.LITTLE_ENDIAN);
+        Check.fromIndexSize(offset, Float.BYTES, length);
+        return (float) VH_FLOAT_LE.get(array, this.offset + offset);
     }
 
     public double getDouble(int offset) {
-        Check.fromIndexSize(offset, Double.BYTES, size());
-        return Arrays.getDouble(array, fromIndex + offset, ByteOrder.LITTLE_ENDIAN);
+        Check.fromIndexSize(offset, Double.BYTES, length);
+        return (double) VH_DOUBLE_LE.get(array, this.offset + offset);
     }
 
-    public int getUnsignedByte(int offset) {
-        return Byte.toUnsignedInt(getByte(offset));
+    public int getUnsigned(int offset) {
+        return Byte.toUnsignedInt(get(offset));
     }
 
     public int getUnsignedShort(int offset) {
@@ -77,96 +95,92 @@ public class Bytes extends AbstractList<Byte> implements Comparable<Bytes>, Rand
         return Integer.toUnsignedLong(getInt(offset));
     }
 
-    public InputStream asInputStream() {
-        return new ByteArrayInputStream(array, fromIndex, size());
+    @Override
+    public int length() {
+        return length;
     }
 
-    public String toString(Charset charset) {
-        return new String(array, fromIndex, size(), charset);
+    public boolean contains(byte value) {
+        return indexOf(value) >= 0;
     }
 
-    public String toString(HexFormat format) {
-        return format.formatHex(array, fromIndex, toIndex);
+    public int indexOf(byte value) {
+        for (int i = offset, limit = offset + length; i < limit; i++) {
+            if (array[i] == value) {
+                return i - offset;
+            }
+        }
+        return -1;
     }
 
-    public ByteBuffer asBuffer() {
-        return ByteBuffer.wrap(array, fromIndex, size()).asReadOnlyBuffer();
+    public int lastIndexOf(byte value) {
+        for (int i = offset + length - 1; i >= offset; i--) {
+            if (array[i] == value) {
+                return i - offset;
+            }
+        }
+        return -1;
+    }
+
+    public Bytes slice(int offset) {
+        return slice(offset, length - offset);
+    }
+
+    public Bytes slice(int offset, int length) {
+        Check.fromIndexSize(offset, length, this.length);
+        return new Bytes(array, this.offset + offset, length);
     }
 
     public void copyTo(MutableBytes target, int offset) {
-        System.arraycopy(array, fromIndex, target.array, target.fromIndex + offset, size());
-    }
-
-    public Bytes slice(int fromIndex) {
-        return slice(fromIndex, size());
-    }
-
-    public Bytes slice(int fromIndex, int toIndex) {
-        Check.fromToIndex(fromIndex, toIndex, size());
-        return new Bytes(array, this.fromIndex + fromIndex, this.fromIndex + toIndex);
+        System.arraycopy(array, this.offset, target.array, target.offset + offset, length);
     }
 
     @Override
-    public int size() {
-        return toIndex - fromIndex;
+    public ByteBuffer asBuffer() {
+        return ByteBuffer.wrap(array, offset, length).asReadOnlyBuffer();
     }
 
-    @Override
-    @Deprecated
-    public Byte get(int index) {
-        return getByte(index);
+    public InputStream asInputStream() {
+        return new ByteArrayInputStream(array, offset, length);
     }
 
-    @Override
-    public boolean contains(Object o) {
-        return o instanceof Byte value && ArrayUtils.contains(array, fromIndex, toIndex, value);
+    public byte[] toArray() {
+        return Arrays.copyOfRange(array, offset, offset + length);
     }
 
-    @Override
-    public int indexOf(Object o) {
-        if (o instanceof Byte value) {
-            int index = ArrayUtils.indexOf(array, fromIndex, toIndex, value);
-            if (index >= 0) {
-                return index - fromIndex;
-            }
-        }
-        return -1;
+    public String toHexString(HexFormat format) {
+        return format.formatHex(array, offset, offset + length);
     }
 
-    @Override
-    public int lastIndexOf(Object o) {
-        if (o instanceof Byte value) {
-            int index = ArrayUtils.lastIndexOf(array, fromIndex, toIndex, value);
-            if (index >= 0) {
-                return index - fromIndex;
-            }
-        }
-        return -1;
+    public String toString(Charset charset) {
+        return new String(array, offset, length, charset);
     }
 
-    @Override
-    public Bytes subList(int fromIndex, int toIndex) {
-        Check.fromToIndex(fromIndex, toIndex, size());
-        return new Bytes(array, this.fromIndex + fromIndex, this.fromIndex + toIndex);
+    public IntStream stream() {
+        return IntStream.range(offset, offset + length).map(i -> array[i]);
     }
 
     @Override
     public int compareTo(Bytes o) {
-        return java.util.Arrays.compare(array, fromIndex, toIndex, o.array, o.fromIndex, o.toIndex);
+        return Arrays.compare(array, offset, offset + length, o.array, o.offset, o.offset + o.length);
     }
 
     @Override
     public boolean equals(Object obj) {
-        return obj instanceof Bytes o && java.util.Arrays.equals(array, fromIndex, toIndex, o.array, o.fromIndex, o.toIndex);
+        return obj instanceof Bytes o && Arrays.equals(array, offset, offset + length, o.array, o.offset, o.offset + o.length);
     }
 
     @Override
     public int hashCode() {
-        return ArrayUtils.hashCode(array, fromIndex, toIndex);
+        int result = 1;
+        for (int i = offset, limit = offset + length; i < limit; i++) {
+            result = 31 * result + Byte.hashCode(array[i]);
+        }
+        return result;
     }
 
     @Override
     public String toString() {
-        return ArrayUtils.toString(array, fromIndex, toIndex);
+        return "[" + length + " bytes]";
     }
 }

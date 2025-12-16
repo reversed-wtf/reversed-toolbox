@@ -11,7 +11,7 @@ record XXHash32(int seed) implements HashFunction {
 
     @Override
     public HashCode hash(Bytes input) {
-        var length = input.size();
+        var length = input.length();
         var offset = 0;
 
         int acc;
@@ -53,7 +53,7 @@ record XXHash32(int seed) implements HashFunction {
         }
 
         while (offset + 1 <= length) {
-            int lane = input.getUnsignedByte(offset);
+            int lane = input.getUnsigned(offset);
             acc = acc + (lane * PRIME32_5);
             acc = Integer.rotateLeft(acc, 11) * PRIME32_1;
             offset++;

@@ -3,29 +3,35 @@ package wtf.reversed.toolbox.collect;
 import wtf.reversed.toolbox.util.*;
 
 import java.nio.*;
-import java.util.*;
 import java.util.Arrays;
+import java.util.stream.*;
 
-public class Doubles extends AbstractList<Double> implements Comparable<Doubles>, RandomAccess {
+public class Doubles implements Array, Comparable<Doubles> {
+    private static final Doubles EMPTY = wrap(new double[0]);
+
     final double[] array;
 
-    final int fromIndex;
+    final int offset;
 
-    final int toIndex;
+    final int length;
 
-    Doubles(double[] array, int fromIndex, int toIndex) {
-        Check.fromToIndex(fromIndex, toIndex, array.length);
+    Doubles(double[] array, int offset, int length) {
+        Check.fromIndexSize(offset, length, array.length);
         this.array = array;
-        this.fromIndex = fromIndex;
-        this.toIndex = toIndex;
+        this.offset = offset;
+        this.length = length;
+    }
+
+    public static Doubles empty() {
+        return EMPTY;
     }
 
     public static Doubles wrap(double[] array) {
         return new Doubles(array, 0, array.length);
     }
 
-    public static Doubles wrap(double[] array, int fromIndex, int toIndex) {
-        return new Doubles(array, fromIndex, toIndex);
+    public static Doubles wrap(double[] array, int offset, int length) {
+        return new Doubles(array, offset, length);
     }
 
     public static Doubles from(DoubleBuffer buffer) {
@@ -33,89 +39,85 @@ public class Doubles extends AbstractList<Double> implements Comparable<Doubles>
         return new Doubles(buffer.array(), buffer.position(), buffer.limit());
     }
 
-    public double getDouble(int index) {
-        Check.index(index, size());
-        return array[fromIndex + index];
+    public double get(int index) {
+        Check.index(index, length);
+        return array[offset + index];
     }
 
-    public DoubleBuffer asBuffer() {
-        return DoubleBuffer.wrap(array, fromIndex, size()).asReadOnlyBuffer();
+    @Override
+    public int length() {
+        return length;
+    }
+
+    public boolean contains(double value) {
+        return indexOf(value) >= 0;
+    }
+
+    public int indexOf(double value) {
+        for (int i = offset, limit = offset + length; i < limit; i++) {
+            if (java.lang.Double.compare(array[i], value) == 0) {
+                return i - offset;
+            }
+        }
+        return -1;
+    }
+
+    public int lastIndexOf(double value) {
+        for (int i = offset + length - 1; i >= offset; i--) {
+            if (java.lang.Double.compare(array[i], value) == 0) {
+                return i - offset;
+            }
+        }
+        return -1;
+    }
+
+    public Doubles slice(int offset) {
+        return slice(offset, length - offset);
+    }
+
+    public Doubles slice(int offset, int length) {
+        Check.fromIndexSize(offset, length, this.length);
+        return new Doubles(array, this.offset + offset, length);
     }
 
     public void copyTo(MutableDoubles target, int offset) {
-        System.arraycopy(array, fromIndex, target.array, target.fromIndex + offset, size());
-    }
-
-    public Doubles slice(int fromIndex) {
-        return slice(fromIndex, size());
-    }
-
-    public Doubles slice(int fromIndex, int toIndex) {
-        Check.fromToIndex(fromIndex, toIndex, size());
-        return new Doubles(array, this.fromIndex + fromIndex, this.fromIndex + toIndex);
+        System.arraycopy(array, this.offset, target.array, target.offset + offset, length);
     }
 
     @Override
-    public int size() {
-        return toIndex - fromIndex;
+    public DoubleBuffer asBuffer() {
+        return DoubleBuffer.wrap(array, offset, length).asReadOnlyBuffer();
     }
 
-    @Override
-    @Deprecated
-    public Double get(int index) {
-        return getDouble(index);
+    public double[] toArray() {
+        return Arrays.copyOfRange(array, offset, offset + length);
     }
 
-    @Override
-    public boolean contains(Object o) {
-        return o instanceof Double value && ArrayUtils.contains(array, fromIndex, toIndex, value);
-    }
-
-    @Override
-    public int indexOf(Object o) {
-        if (o instanceof Double value) {
-            int index = ArrayUtils.indexOf(array, fromIndex, toIndex, value);
-            if (index >= 0) {
-                return index - fromIndex;
-            }
-        }
-        return -1;
-    }
-
-    @Override
-    public int lastIndexOf(Object o) {
-        if (o instanceof Double value) {
-            int index = ArrayUtils.lastIndexOf(array, fromIndex, toIndex, value);
-            if (index >= 0) {
-                return index - fromIndex;
-            }
-        }
-        return -1;
-    }
-
-    @Override
-    public Doubles subList(int fromIndex, int toIndex) {
-        Check.fromToIndex(fromIndex, toIndex, size());
-        return new Doubles(array, this.fromIndex + fromIndex, this.fromIndex + toIndex);
+    public DoubleStream stream() {
+        return Arrays.stream(array, offset, offset + length);
     }
 
     @Override
     public int compareTo(Doubles o) {
-        return Arrays.compare(array, fromIndex, toIndex, o.array, o.fromIndex, o.toIndex);
+        return Arrays.compare(array, offset, offset + length, o.array, o.offset, o.offset + o.length);
     }
 
     @Override
     public boolean equals(Object obj) {
-        return obj instanceof Doubles o && Arrays.equals(array, fromIndex, toIndex, o.array, o.fromIndex, o.toIndex);
+        return obj instanceof Doubles o && Arrays.equals(array, offset, offset + length, o.array, o.offset, o.offset + o.length);
     }
 
     @Override
     public int hashCode() {
-        return ArrayUtils.hashCode(array, fromIndex, toIndex);
+        int result = 1;
+        for (int i = offset, limit = offset + length; i < limit; i++) {
+            result = 31 * result + Double.hashCode(array[i]);
+        }
+        return result;
     }
 
     @Override
     public String toString() {
-        return ArrayUtils.toString(array, fromIndex, toIndex);
+        return "[" + length + " doubles]";
     }
 }

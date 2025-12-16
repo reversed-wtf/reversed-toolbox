@@ -3,29 +3,35 @@ package wtf.reversed.toolbox.collect;
 import wtf.reversed.toolbox.util.*;
 
 import java.nio.*;
-import java.util.*;
 import java.util.Arrays;
+import java.util.stream.*;
 
-public class Floats extends AbstractList<Float> implements Comparable<Floats>, RandomAccess {
+public class Floats implements Array, Comparable<Floats> {
+    private static final Floats EMPTY = wrap(new float[0]);
+
     final float[] array;
 
-    final int fromIndex;
+    final int offset;
 
-    final int toIndex;
+    final int length;
 
-    Floats(float[] array, int fromIndex, int toIndex) {
-        Check.fromToIndex(fromIndex, toIndex, array.length);
+    Floats(float[] array, int offset, int length) {
+        Check.fromIndexSize(offset, length, array.length);
         this.array = array;
-        this.fromIndex = fromIndex;
-        this.toIndex = toIndex;
+        this.offset = offset;
+        this.length = length;
+    }
+
+    public static Floats empty() {
+        return EMPTY;
     }
 
     public static Floats wrap(float[] array) {
         return new Floats(array, 0, array.length);
     }
 
-    public static Floats wrap(float[] array, int fromIndex, int toIndex) {
-        return new Floats(array, fromIndex, toIndex);
+    public static Floats wrap(float[] array, int offset, int length) {
+        return new Floats(array, offset, length);
     }
 
     public static Floats from(FloatBuffer buffer) {
@@ -33,89 +39,85 @@ public class Floats extends AbstractList<Float> implements Comparable<Floats>, R
         return new Floats(buffer.array(), buffer.position(), buffer.limit());
     }
 
-    public float getFloat(int index) {
-        Check.index(index, size());
-        return array[fromIndex + index];
+    public float get(int index) {
+        Check.index(index, length);
+        return array[offset + index];
     }
 
-    public FloatBuffer asBuffer() {
-        return FloatBuffer.wrap(array, fromIndex, size()).asReadOnlyBuffer();
+    @Override
+    public int length() {
+        return length;
+    }
+
+    public boolean contains(float value) {
+        return indexOf(value) >= 0;
+    }
+
+    public int indexOf(float value) {
+        for (int i = offset, limit = offset + length; i < limit; i++) {
+            if (java.lang.Float.compare(array[i], value) == 0) {
+                return i - offset;
+            }
+        }
+        return -1;
+    }
+
+    public int lastIndexOf(float value) {
+        for (int i = offset + length - 1; i >= offset; i--) {
+            if (java.lang.Float.compare(array[i], value) == 0) {
+                return i - offset;
+            }
+        }
+        return -1;
+    }
+
+    public Floats slice(int offset) {
+        return slice(offset, length - offset);
+    }
+
+    public Floats slice(int offset, int length) {
+        Check.fromIndexSize(offset, length, this.length);
+        return new Floats(array, this.offset + offset, length);
     }
 
     public void copyTo(MutableFloats target, int offset) {
-        System.arraycopy(array, fromIndex, target.array, target.fromIndex + offset, size());
-    }
-
-    public Floats slice(int fromIndex) {
-        return slice(fromIndex, size());
-    }
-
-    public Floats slice(int fromIndex, int toIndex) {
-        Check.fromToIndex(fromIndex, toIndex, size());
-        return new Floats(array, this.fromIndex + fromIndex, this.fromIndex + toIndex);
+        System.arraycopy(array, this.offset, target.array, target.offset + offset, length);
     }
 
     @Override
-    public int size() {
-        return toIndex - fromIndex;
+    public FloatBuffer asBuffer() {
+        return FloatBuffer.wrap(array, offset, length).asReadOnlyBuffer();
     }
 
-    @Override
-    @Deprecated
-    public Float get(int index) {
-        return getFloat(index);
+    public float[] toArray() {
+        return Arrays.copyOfRange(array, offset, offset + length);
     }
 
-    @Override
-    public boolean contains(Object o) {
-        return o instanceof Float value && ArrayUtils.contains(array, fromIndex, toIndex, value);
-    }
-
-    @Override
-    public int indexOf(Object o) {
-        if (o instanceof Float value) {
-            int index = ArrayUtils.indexOf(array, fromIndex, toIndex, value);
-            if (index >= 0) {
-                return index - fromIndex;
-            }
-        }
-        return -1;
-    }
-
-    @Override
-    public int lastIndexOf(Object o) {
-        if (o instanceof Float value) {
-            int index = ArrayUtils.lastIndexOf(array, fromIndex, toIndex, value);
-            if (index >= 0) {
-                return index - fromIndex;
-            }
-        }
-        return -1;
-    }
-
-    @Override
-    public Floats subList(int fromIndex, int toIndex) {
-        Check.fromToIndex(fromIndex, toIndex, size());
-        return new Floats(array, this.fromIndex + fromIndex, this.fromIndex + toIndex);
+    public DoubleStream stream() {
+        return IntStream.range(offset, offset + length).mapToDouble(i -> array[i]);
     }
 
     @Override
     public int compareTo(Floats o) {
-        return Arrays.compare(array, fromIndex, toIndex, o.array, o.fromIndex, o.toIndex);
+        return Arrays.compare(array, offset, offset + length, o.array, o.offset, o.offset + o.length);
     }
 
     @Override
     public boolean equals(Object obj) {
-        return obj instanceof Floats o && Arrays.equals(array, fromIndex, toIndex, o.array, o.fromIndex, o.toIndex);
+        return obj instanceof Floats o && Arrays.equals(array, offset, offset + length, o.array, o.offset, o.offset + o.length);
     }
 
     @Override
     public int hashCode() {
-        return ArrayUtils.hashCode(array, fromIndex, toIndex);
+        int result = 1;
+        for (int i = offset, limit = offset + length; i < limit; i++) {
+            result = 31 * result + Float.hashCode(array[i]);
+        }
+        return result;
     }
 
     @Override
     public String toString() {
-        return ArrayUtils.toString(array, fromIndex, toIndex);
+        return "[" + length + " floats]";
     }
 }

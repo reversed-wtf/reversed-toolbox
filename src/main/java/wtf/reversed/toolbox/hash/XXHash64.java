@@ -11,7 +11,7 @@ record XXHash64(long seed) implements HashFunction {
 
     @Override
     public HashCode hash(Bytes input) {
-        var length = input.size();
+        var length = input.length();
         var offset = 0;
 
         long acc;
@@ -67,7 +67,7 @@ record XXHash64(long seed) implements HashFunction {
         }
 
         while (offset + 1 <= length) {
-            long lane = input.getUnsignedByte(offset);
+            long lane = input.getUnsigned(offset);
             acc = acc ^ (lane * PRIME64_5);
             acc = Long.rotateLeft(acc, 11) * PRIME64_1;
             offset++;

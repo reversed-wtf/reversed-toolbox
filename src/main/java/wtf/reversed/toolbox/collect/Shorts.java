@@ -3,29 +3,35 @@ package wtf.reversed.toolbox.collect;
 import wtf.reversed.toolbox.util.*;
 
 import java.nio.*;
-import java.util.*;
 import java.util.Arrays;
+import java.util.stream.*;
 
-public class Shorts extends AbstractList<Short> implements Comparable<Shorts>, RandomAccess {
+public class Shorts implements Array, Comparable<Shorts> {
+    private static final Shorts EMPTY = wrap(new short[0]);
+
     final short[] array;
 
-    final int fromIndex;
+    final int offset;
 
-    final int toIndex;
+    final int length;
 
-    Shorts(short[] array, int fromIndex, int toIndex) {
-        Check.fromToIndex(fromIndex, toIndex, array.length);
+    Shorts(short[] array, int offset, int length) {
+        Check.fromIndexSize(offset, length, array.length);
         this.array = array;
-        this.fromIndex = fromIndex;
-        this.toIndex = toIndex;
+        this.offset = offset;
+        this.length = length;
+    }
+
+    public static Shorts empty() {
+        return EMPTY;
     }
 
     public static Shorts wrap(short[] array) {
         return new Shorts(array, 0, array.length);
     }
 
-    public static Shorts wrap(short[] array, int fromIndex, int toIndex) {
-        return new Shorts(array, fromIndex, toIndex);
+    public static Shorts wrap(short[] array, int offset, int length) {
+        return new Shorts(array, offset, length);
     }
 
     public static Shorts from(ShortBuffer buffer) {
@@ -33,89 +39,89 @@ public class Shorts extends AbstractList<Short> implements Comparable<Shorts>, R
         return new Shorts(buffer.array(), buffer.position(), buffer.limit());
     }
 
-    public short getShort(int index) {
-        Check.index(index, size());
-        return array[fromIndex + index];
+    public short get(int index) {
+        Check.index(index, length);
+        return array[offset + index];
     }
 
-    public ShortBuffer asBuffer() {
-        return ShortBuffer.wrap(array, fromIndex, size()).asReadOnlyBuffer();
+    public int getUnsigned(int offset) {
+        return Short.toUnsignedInt(get(offset));
+    }
+
+    @Override
+    public int length() {
+        return length;
+    }
+
+    public boolean contains(short value) {
+        return indexOf(value) >= 0;
+    }
+
+    public int indexOf(short value) {
+        for (int i = offset, limit = offset + length; i < limit; i++) {
+            if (array[i] == value) {
+                return i - offset;
+            }
+        }
+        return -1;
+    }
+
+    public int lastIndexOf(short value) {
+        for (int i = offset + length - 1; i >= offset; i--) {
+            if (array[i] == value) {
+                return i - offset;
+            }
+        }
+        return -1;
+    }
+
+    public Shorts slice(int offset) {
+        return slice(offset, length - offset);
+    }
+
+    public Shorts slice(int offset, int length) {
+        Check.fromIndexSize(offset, length, this.length);
+        return new Shorts(array, this.offset + offset, length);
     }
 
     public void copyTo(MutableShorts target, int offset) {
-        System.arraycopy(array, fromIndex, target.array, target.fromIndex + offset, size());
-    }
-
-    public Shorts slice(int fromIndex) {
-        return slice(fromIndex, size());
-    }
-
-    public Shorts slice(int fromIndex, int toIndex) {
-        Check.fromToIndex(fromIndex, toIndex, size());
-        return new Shorts(array, this.fromIndex + fromIndex, this.fromIndex + toIndex);
+        System.arraycopy(array, this.offset, target.array, target.offset + offset, length);
     }
 
     @Override
-    public int size() {
-        return toIndex - fromIndex;
+    public ShortBuffer asBuffer() {
+        return ShortBuffer.wrap(array, offset, length).asReadOnlyBuffer();
     }
 
-    @Override
-    @Deprecated
-    public Short get(int index) {
-        return getShort(index);
+    public short[] toArray() {
+        return Arrays.copyOfRange(array, offset, offset + length);
     }
 
-    @Override
-    public boolean contains(Object o) {
-        return o instanceof Short value && ArrayUtils.contains(array, fromIndex, toIndex, value);
-    }
-
-    @Override
-    public int indexOf(Object o) {
-        if (o instanceof Short value) {
-            int index = ArrayUtils.indexOf(array, fromIndex, toIndex, value);
-            if (index >= 0) {
-                return index - fromIndex;
-            }
-        }
-        return -1;
-    }
-
-    @Override
-    public int lastIndexOf(Object o) {
-        if (o instanceof Short value) {
-            int index = ArrayUtils.lastIndexOf(array, fromIndex, toIndex, value);
-            if (index >= 0) {
-                return index - fromIndex;
-            }
-        }
-        return -1;
-    }
-
-    @Override
-    public Shorts subList(int fromIndex, int toIndex) {
-        Check.fromToIndex(fromIndex, toIndex, size());
-        return new Shorts(array, this.fromIndex + fromIndex, this.fromIndex + toIndex);
+    public IntStream stream() {
+        return IntStream.range(offset, offset + length).map(i -> array[i]);
     }
 
     @Override
     public int compareTo(Shorts o) {
-        return Arrays.compare(array, fromIndex, toIndex, o.array, o.fromIndex, o.toIndex);
+        return Arrays.compare(array, offset, offset + length, o.array, o.offset, o.offset + o.length);
     }
 
     @Override
     public boolean equals(Object obj) {
-        return obj instanceof Shorts o && Arrays.equals(array, fromIndex, toIndex, o.array, o.fromIndex, o.toIndex);
+        return obj instanceof Shorts o && Arrays.equals(array, offset, offset + length, o.array, o.offset, o.offset + o.length);
     }
 
     @Override
     public int hashCode() {
-        return ArrayUtils.hashCode(array, fromIndex, toIndex);
+        int result = 1;
+        for (int i = offset, limit = offset + length; i < limit; i++) {
+            result = 31 * result + Short.hashCode(array[i]);
+        }
+        return result;
     }
 
     @Override
     public String toString() {
-        return ArrayUtils.toString(array, fromIndex, toIndex);
+        return "[" + length + " shorts]";
     }
 }
