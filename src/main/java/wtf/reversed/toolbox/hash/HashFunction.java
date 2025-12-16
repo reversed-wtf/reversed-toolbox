@@ -5,7 +5,7 @@ import wtf.reversed.toolbox.collect.*;
 import java.nio.charset.*;
 
 public sealed interface HashFunction
-    permits FNV1a64, FarmHashFingerprint64, MD5Function, MurmurHash3x64, MurmurHash64B, XXHash32, XXHash64 {
+    permits FNV1a64, FarmHashFingerprint64, MessageDigestHashFunction, MurmurHash3x64, MurmurHash64B, XXHash32, XXHash64 {
 
     static HashFunction farmHashFingerprint64() {
         return FarmHashFingerprint64.INSTANCE;
@@ -15,8 +15,8 @@ public sealed interface HashFunction
         return new FNV1a64();
     }
 
-    static HashFunction md5() {
-        return MD5Function.INSTANCE;
+    static HashFunction messageDigest(String algorithm) {
+        return new MessageDigestHashFunction(algorithm);
     }
 
     static HashFunction murmur64B(long seed) {
