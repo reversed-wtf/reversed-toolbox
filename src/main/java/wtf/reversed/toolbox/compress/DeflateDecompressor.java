@@ -5,25 +5,31 @@ import wtf.reversed.toolbox.collect.*;
 import java.io.*;
 import java.util.zip.*;
 
-record DeflateDecompressor(boolean nowrap) implements Decompressor {
+final class DeflateDecompressor implements Decompressor {
+    private final boolean nowrap;
+
+    DeflateDecompressor(boolean nowrap) {
+        this.nowrap = nowrap;
+    }
+
     @Override
     public void decompress(Bytes src, MutableBytes dst) throws IOException {
         var srcBuffer = src.asBuffer();
         var dstBuffer = dst.asMutableBuffer();
 
-        var inflater = new Inflater(nowrap);
-        inflater.setInput(srcBuffer);
+        try (var inflater = new Inflater(nowrap)) {
+            inflater.setInput(srcBuffer);
 
-        while (!inflater.finished()) {
-            try {
-                int count = inflater.inflate(dstBuffer);
-                if (count == 0) {
-                    break;
+            while (!inflater.finished()) {
+                try {
+                    var count = inflater.inflate(dstBuffer);
+                    if (count == 0) {
+                        break;
+                    }
+                } catch (DataFormatException e) {
+                    throw new IOException("Invalid compressed data", e);
                 }
-            } catch (DataFormatException e) {
-                throw new IOException("Invalid compressed data", e);
             }
         }
-        inflater.end();
     }
 }

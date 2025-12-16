@@ -5,7 +5,7 @@ import wtf.reversed.toolbox.collect.*;
 import java.io.*;
 import java.nio.file.*;
 
-public sealed interface Decompressor extends Closeable
+public sealed interface Decompressor
     permits DeflateDecompressor, LZDecompressor, LZMADecompressor, NoneDecompressor, OodleDecompressor {
 
     static Decompressor deflate(boolean nowrap) {
@@ -16,8 +16,8 @@ public sealed interface Decompressor extends Closeable
         return FastLZDecompressor.INSTANCE;
     }
 
-    static Decompressor lz4() {
-        return LZ4Decompressor.INSTANCE;
+    static Decompressor lz4Block() {
+        return LZ4BlockDecompressor.INSTANCE;
     }
 
     static Decompressor lzma() {
@@ -46,10 +46,5 @@ public sealed interface Decompressor extends Closeable
 
     default void decompress(byte[] src, int srcOff, int srcLen, byte[] dst, int dstOff, int dstLen) throws IOException {
         decompress(Bytes.wrap(src, srcOff, srcOff + srcLen), MutableBytes.wrap(dst, dstOff, dstOff + dstLen));
-    }
-
-    @Override
-    default void close() {
-        // does nothing by default
     }
 }

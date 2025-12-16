@@ -4,7 +4,7 @@ import wtf.reversed.toolbox.collect.*;
 import wtf.reversed.toolbox.util.*;
 
 abstract sealed class LZDecompressor implements Decompressor
-    permits FastLZDecompressor, LZ4Decompressor {
+    permits FastLZDecompressor, LZ4BlockDecompressor {
     LZDecompressor() {
     }
 
@@ -19,14 +19,19 @@ abstract sealed class LZDecompressor implements Decompressor
         Check.fromIndexSize(dstOff, length, dst.length());
         Check.argument(offset > 0 && dstOff - offset >= 0, "Invalid match");
 
-        int dstPos = dstOff - offset;
+        int srcPos = dstOff - offset;
         if (offset == 1) {
-            dst.slice(dstOff, length).fill(dst.get(dstOff - 1));
+            byte b = dst.get(dstOff - 1);
+            dst.slice(dstOff, length).fill(b);
         } else if (offset >= length) {
-            dst.slice(dstPos, length).copyTo(dst, dstOff);
+            dst.slice(srcPos, length).copyTo(dst, dstOff);
         } else {
-            for (int i = 0; i < length; i++) {
-                dst.set(dstOff + i, dst.get(dstPos + i));
+            dst.slice(srcPos, offset).copyTo(dst, dstOff);
+            int copied = offset;
+            while (copied < length) {
+                int chunk = Math.min(copied, length - copied);
+                dst.slice(dstOff, chunk).copyTo(dst, dstOff + copied);
+                copied += chunk;
             }
         }
     }

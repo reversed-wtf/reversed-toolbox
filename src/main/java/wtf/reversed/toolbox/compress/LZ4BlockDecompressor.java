@@ -4,10 +4,10 @@ import wtf.reversed.toolbox.collect.*;
 
 import java.io.*;
 
-final class LZ4Decompressor extends LZDecompressor {
-    static LZ4Decompressor INSTANCE = new LZ4Decompressor();
+final class LZ4BlockDecompressor extends LZDecompressor {
+    static LZ4BlockDecompressor INSTANCE = new LZ4BlockDecompressor();
 
-    private LZ4Decompressor() {
+    private LZ4BlockDecompressor() {
     }
 
     @Override

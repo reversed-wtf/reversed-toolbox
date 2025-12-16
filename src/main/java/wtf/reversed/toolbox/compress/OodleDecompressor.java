@@ -4,15 +4,19 @@ import wtf.reversed.toolbox.collect.*;
 
 import java.io.*;
 import java.lang.foreign.*;
+import java.lang.invoke.*;
 import java.nio.file.*;
 
 final class OodleDecompressor implements Decompressor {
-    private final Arena arena;
-    private final OodleFFM library;
+    private final FFM ffm;
+    private final MemorySegment decodeBuffer;
 
-    public OodleDecompressor(Path path) {
-        this.arena = Arena.ofConfined();
-        this.library = new OodleFFM(path, arena);
+    OodleDecompressor(Path path) {
+        this.ffm = new FFM(path, Arena.ofAuto());
+        // System.out.println("Loaded Oodle version: " + getVersion());
+
+        int memorySizeNeeded = ffm.OodleLZDecoder_MemorySizeNeeded(-1 /* OodleLZ_Compressor_Invalid */, -1);
+        this.decodeBuffer = Arena.ofAuto().allocate(memorySizeNeeded);
     }
 
     @Override
@@ -22,7 +26,7 @@ final class OodleDecompressor implements Decompressor {
                 .copyFrom(MemorySegment.ofBuffer(src.asBuffer()));
             var dstSegment = arena.allocate(dst.length());
 
-            var result = library.OodleLZ_Decompress(
+            var result = (int) ffm.OodleLZ_Decompress(
                 srcSegment, srcSegment.byteSize(),
                 dstSegment, dstSegment.byteSize(),
                 1 /* OodleLZ_FuzzSafe_Yes */,
@@ -30,12 +34,12 @@ final class OodleDecompressor implements Decompressor {
                 0 /* OodleLZ_Verbosity_None */,
                 MemorySegment.NULL, 0,
                 MemorySegment.NULL, MemorySegment.NULL,
-                MemorySegment.NULL, 0,
+                decodeBuffer, decodeBuffer.byteSize(),
                 3 /* OodleLZ_Decode_ThreadPhaseAll */
             );
 
             if (result != dst.length()) {
-                throw new IOException("Error decompressing data");
+                throw new IOException("Decompression failed, expected " + dst.length() + ", got " + result);
             }
 
             MemorySegment.ofBuffer(dst.asMutableBuffer())
@@ -43,8 +47,106 @@ final class OodleDecompressor implements Decompressor {
         }
     }
 
-    @Override
-    public void close() {
-        arena.close();
+    private String getVersion() {
+        int version;
+        try (var arena = Arena.ofConfined()) {
+            var segment = arena.allocate(28);
+            ffm.Oodle_GetConfigValues(segment);
+            version = segment.get(ValueLayout.JAVA_INT, 24);
+        }
+
+        var major = (version >>> 16) & 0xFF;
+        var minor = (version >>> +8) & 0xFF;
+        return "2." + major + "." + minor;
+    }
+
+    private static final class FFM {
+        private final SymbolLookup lookup;
+
+        private final MethodHandle OodleLZDecoder_MemorySizeNeeded;
+        private final MethodHandle OodleLZ_Compress;
+        private final MethodHandle OodleLZ_Decompress;
+        private final MethodHandle Oodle_GetConfigValues;
+
+        private FFM(Path path, Arena arena) {
+            lookup = SymbolLookup.libraryLookup(path, arena);
+
+            this.OodleLZDecoder_MemorySizeNeeded = lookup("OodleLZDecoder_MemorySizeNeeded", FunctionDescriptor.of(
+                ValueLayout.JAVA_INT,
+                ValueLayout.JAVA_INT, // compressor
+                ValueLayout.JAVA_LONG // rawLen
+            ));
+            this.OodleLZ_Compress = lookup("OodleLZ_Compress", FunctionDescriptor.of(
+                ValueLayout.JAVA_LONG,
+                ValueLayout.JAVA_INT,  // compressor
+                ValueLayout.ADDRESS,   // rawBuf
+                ValueLayout.JAVA_LONG, // rawLen
+                ValueLayout.ADDRESS,   // compBuf
+                ValueLayout.JAVA_INT,  // level
+                ValueLayout.ADDRESS,   // pOptions
+                ValueLayout.ADDRESS,   // dictionaryBase
+                ValueLayout.ADDRESS,   // lrm
+                ValueLayout.ADDRESS,   // scratchMem
+                ValueLayout.JAVA_LONG  // scratchSize
+            ));
+            this.OodleLZ_Decompress = lookup("OodleLZ_Decompress", FunctionDescriptor.of(
+                ValueLayout.JAVA_LONG,
+                ValueLayout.ADDRESS,   // compBuf
+                ValueLayout.JAVA_LONG, // compBufSize
+                ValueLayout.ADDRESS,   // rawBuf
+                ValueLayout.JAVA_LONG, // rawLen
+                ValueLayout.JAVA_INT,  // fuzzSafe
+                ValueLayout.JAVA_INT,  // checkCRC
+                ValueLayout.JAVA_INT,  // verbosity
+                ValueLayout.ADDRESS,   // decBufBase
+                ValueLayout.JAVA_LONG, // decBufSize
+                ValueLayout.ADDRESS,   // fpCallback
+                ValueLayout.ADDRESS,   // callbackUserData
+                ValueLayout.ADDRESS,   // decoderMemory
+                ValueLayout.JAVA_LONG, // decoderMemorySize
+                ValueLayout.JAVA_INT   // threadPhase
+            ));
+            this.Oodle_GetConfigValues = lookup("Oodle_GetConfigValues", FunctionDescriptor.ofVoid(
+                ValueLayout.ADDRESS // ptr
+            ));
+        }
+
+        private MethodHandle lookup(String methodName, FunctionDescriptor methodDescriptor) {
+            var address = lookup.find(methodName)
+                .orElseThrow(() -> new UnsatisfiedLinkError("Unresolved symbol: " + methodName));
+            return Linker.nativeLinker().downcallHandle(address, methodDescriptor);
+        }
+
+        private int OodleLZDecoder_MemorySizeNeeded(int compressor, long rawLen) {
+            try {
+                return (int) OodleLZDecoder_MemorySizeNeeded.invokeExact(compressor, rawLen);
+            } catch (Throwable e) {
+                throw new AssertionError("should not reach here", e);
+            }
+        }
+
+        private long OodleLZ_Compress(int compressor, MemorySegment rawBuf, long rawLen, MemorySegment compBuf, int level, MemorySegment pOptions, MemorySegment dictionaryBase, MemorySegment lrm, MemorySegment scratchMem, long scratchSize) {
+            try {
+                return (long) OodleLZ_Compress.invokeExact(compressor, rawBuf, rawLen, compBuf, level, pOptions, dictionaryBase, lrm, scratchMem, scratchSize);
+            } catch (Throwable e) {
+                throw new AssertionError("should not reach here", e);
+            }
+        }
+
+        private long OodleLZ_Decompress(MemorySegment compBuf, long compBufSize, MemorySegment rawBuf, long rawLen, int fuzzSafe, int checkCRC, int verbosity, MemorySegment decBufBase, long decBufSize, MemorySegment fpCallback, MemorySegment callbackUserData, MemorySegment decoderMemory, long decoderMemorySize, int threadPhase) {
+            try {
+                return (long) OodleLZ_Decompress.invokeExact(compBuf, compBufSize, rawBuf, rawLen, fuzzSafe, checkCRC, verbosity, decBufBase, decBufSize, fpCallback, callbackUserData, decoderMemory, decoderMemorySize, threadPhase);
+            } catch (Throwable e) {
+                throw new AssertionError("should not reach here", e);
+            }
+        }
+
+        private void Oodle_GetConfigValues(MemorySegment segment) {
+            try {
+                Oodle_GetConfigValues.invokeExact(segment);
+            } catch (Throwable e) {
+                throw new AssertionError("should not reach here", e);
+            }
+        }
     }
 }
