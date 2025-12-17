@@ -131,7 +131,7 @@ public class Bytes implements Array, Comparable<Bytes> {
         return new Bytes(array, this.offset + offset, length);
     }
 
-    public void copyTo(MutableBytes target, int offset) {
+    public void copyTo(Mutable target, int offset) {
         System.arraycopy(array, this.offset, target.array, target.offset + offset, length);
     }
 
@@ -182,5 +182,77 @@ public class Bytes implements Array, Comparable<Bytes> {
     @Override
     public String toString() {
         return "[" + length + " bytes]";
+    }
+
+    public static final class Mutable extends Bytes {
+        private Mutable(byte[] array, int offset, int length) {
+            super(array, offset, length);
+        }
+
+        public static Mutable wrap(byte[] array) {
+            return new Mutable(array, 0, array.length);
+        }
+
+        public static Mutable wrap(byte[] array, int offset, int length) {
+            return new Mutable(array, offset, length);
+        }
+
+        public static Mutable allocate(int length) {
+            return new Mutable(new byte[length], 0, length);
+        }
+
+        public Mutable set(int index, byte value) {
+            Check.index(index, length);
+            array[offset + index] = value;
+            return this;
+        }
+
+        public Mutable setShort(int offset, short value) {
+            Check.fromIndexSize(offset, Short.BYTES, length);
+            VH_SHORT_LE.set(array, this.offset + offset, value);
+            return this;
+        }
+
+        public Mutable setInt(int offset, int value) {
+            Check.fromIndexSize(offset, Integer.BYTES, length);
+            VH_INT_LE.set(array, this.offset + offset, value);
+            return this;
+        }
+
+        public Mutable setLong(int offset, long value) {
+            Check.fromIndexSize(offset, Long.BYTES, length);
+            VH_LONG_LE.set(array, this.offset + offset, value);
+            return this;
+        }
+
+        public Mutable setFloat(int offset, float value) {
+            Check.fromIndexSize(offset, Float.BYTES, length);
+            VH_FLOAT_LE.set(array, this.offset + offset, value);
+            return this;
+        }
+
+        public Mutable setDouble(int offset, double value) {
+            Check.fromIndexSize(offset, Double.BYTES, length);
+            VH_DOUBLE_LE.set(array, this.offset + offset, value);
+            return this;
+        }
+
+        public Mutable slice(int offset) {
+            return slice(offset, length - offset);
+        }
+
+        public Mutable slice(int offset, int length) {
+            Check.fromIndexSize(offset, length, this.length);
+            return new Mutable(array, this.offset + offset, length);
+        }
+
+        public Mutable fill(byte value) {
+            Arrays.fill(array, offset, offset + length, value);
+            return this;
+        }
+
+        public ByteBuffer asMutableBuffer() {
+            return ByteBuffer.wrap(array, offset, length);
+        }
     }
 }

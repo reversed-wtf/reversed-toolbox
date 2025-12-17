@@ -20,7 +20,7 @@ final class OodleDecompressor implements Decompressor {
     }
 
     @Override
-    public void decompress(Bytes src, MutableBytes dst) throws IOException {
+    public void decompress(Bytes src, Bytes.Mutable dst) throws IOException {
         try (var arena = Arena.ofConfined()) {
             var srcSegment = arena.allocate(src.length())
                 .copyFrom(MemorySegment.ofBuffer(src.asBuffer()));

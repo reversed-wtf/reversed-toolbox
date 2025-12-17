@@ -12,7 +12,7 @@ final class LZMADecompressor implements Decompressor {
     }
 
     @Override
-    public void decompress(Bytes src, MutableBytes dst) throws IOException {
+    public void decompress(Bytes src, Bytes.Mutable dst) throws IOException {
         var baos = new ByteArrayOutputStream(dst.length());
         try (var is = new LZMAInputStream(src.asInputStream())) {
             is.transferTo(baos);

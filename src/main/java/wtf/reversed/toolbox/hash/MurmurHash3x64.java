@@ -37,7 +37,7 @@ record MurmurHash3x64(int seed) implements HashFunction {
         h1 += h2;
         h2 += h1;
 
-        MutableBytes bytes = MutableBytes.allocate(16)
+        Bytes.Mutable bytes = Bytes.Mutable.allocate(16)
             .setLong(0, h1)
             .setLong(8, h2);
 

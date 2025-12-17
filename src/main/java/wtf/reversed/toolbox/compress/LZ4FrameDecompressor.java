@@ -15,7 +15,7 @@ final class LZ4FrameDecompressor implements Decompressor {
     }
 
     @Override
-    public void decompress(Bytes src, MutableBytes dst) throws IOException {
+    public void decompress(Bytes src, Bytes.Mutable dst) throws IOException {
         int srcOffset = 0;
 
         var frameHeader = Lz4FrameHeader.read(src);
@@ -104,7 +104,7 @@ final class LZ4FrameDecompressor implements Decompressor {
                 dictionaryId = OptionalInt.empty();
             }
 
-            var header = MutableBytes
+            var header = Bytes.Mutable
                 .allocate(offset - 4)
                 .set(0, flg)
                 .set(1, bd);

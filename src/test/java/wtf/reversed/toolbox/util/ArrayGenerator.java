@@ -14,7 +14,7 @@ import java.util.stream.*;
 
 final class ArrayGenerator {
     private static final String PACKAGE_NAME = "wtf.reversed.toolbox.collect";
-    private static final ClassName PARENT_CLASS = ClassName.get(PACKAGE_NAME, "Array");
+    private static final ClassName PARENT_CLASS = ClassName.get(PACKAGE_NAME, "Slice");
     private static final ClassName CHECK_CLASS = ClassName.get("wtf.reversed.toolbox.util", "Check");
 
     private final ClassName thisType;
@@ -23,11 +23,10 @@ final class ArrayGenerator {
     private final TypeName arrayType;
     private final ClassName boxedType;
     private final ClassName bufferType;
-    private TypeSpec.Builder builder;
 
     ArrayGenerator(String className, Class<?> primitiveType, Class<?> boxedType, Class<?> bufferType) {
         this.thisType = ClassName.get("", className);
-        this.mutableType = ClassName.get("", "Mutable" + className);
+        this.mutableType = ClassName.get("", "Mutable");
         this.primitiveType = primitiveType;
         this.arrayType = ArrayTypeName.of(TypeName.get(primitiveType));
         this.boxedType = ClassName.get(boxedType);
@@ -50,7 +49,6 @@ final class ArrayGenerator {
 
     private void generate() throws IOException {
         writeClass(createWrapperClass());
-        writeClass(createMutableWrapperClass());
     }
 
     private static TypeSpec createInterface() {
@@ -68,7 +66,7 @@ final class ArrayGenerator {
     }
 
     private TypeSpec createWrapperClass() {
-        this.builder = TypeSpec.classBuilder(thisType)
+        var builder = TypeSpec.classBuilder(thisType)
             .addModifiers(Modifier.PUBLIC)
             .addSuperinterface(PARENT_CLASS)
             /*.addAnnotation(AnnotationSpec.builder(Debug.Renderer.class)
@@ -91,20 +89,21 @@ final class ArrayGenerator {
         builder.addField(FieldSpec.builder(int.class, "offset", Modifier.FINAL).build());
         builder.addField(FieldSpec.builder(int.class, "length", Modifier.FINAL).build());
 
-        addConstructors();
-        addFactories();
-        addGetters();
-        addListMethods();
-        addSliceMethods(thisType);
-        addBulkMethods();
-        addConversions();
-        addComparableMethods();
-        addObjectMethods();
+        addConstructors(builder);
+        addFactories(builder);
+        addGetters(builder);
+        addListMethods(builder);
+        addSliceMethods(builder, thisType);
+        addBulkMethods(builder);
+        addConversions(builder);
+        addComparableMethods(builder);
+        addObjectMethods(builder);
+        addMutableWrapperClass(builder);
 
         return builder.build();
     }
 
-    private void addConstructors() {
+    private void addConstructors(TypeSpec.Builder builder) {
         builder.addMethod(MethodSpec.constructorBuilder()
             .addParameter(arrayType, "array")
             .addParameter(int.class, "offset")
@@ -116,14 +115,14 @@ final class ArrayGenerator {
             .build());
     }
 
-    private void addFactories() {
+    private void addFactories(TypeSpec.Builder builder) {
         builder.addMethod(MethodSpec.methodBuilder("empty")
             .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
             .returns(thisType)
             .addStatement("return EMPTY")
             .build());
 
-        addWrapMethods(thisType);
+        addWrapMethods(builder, thisType);
 
         builder.addMethod(MethodSpec.methodBuilder("from")
             .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
@@ -134,7 +133,7 @@ final class ArrayGenerator {
             .build());
     }
 
-    private void addGetters() {
+    private void addGetters(TypeSpec.Builder builder) {
         builder.addMethod(MethodSpec.methodBuilder("get")
             .addModifiers(Modifier.PUBLIC)
             .addParameter(int.class, "index")
@@ -145,22 +144,22 @@ final class ArrayGenerator {
 
         // Add extra methods for Primitives
         if (primitiveType == byte.class) {
-            generateGet(short.class, "getShort", "Short.BYTES");
-            generateGet(int.class, "getInt", "Integer.BYTES");
-            generateGet(long.class, "getLong", "Long.BYTES");
-            generateGet(float.class, "getFloat", "Float.BYTES");
-            generateGet(double.class, "getDouble", "Double.BYTES");
-            generateGetUnsigned(int.class, "getUnsigned", "get", "Byte.toUnsignedInt");
-            generateGetUnsigned(int.class, "getUnsignedShort", "getShort", "Short.toUnsignedInt");
-            generateGetUnsigned(long.class, "getUnsignedInt", "getInt", "Integer.toUnsignedLong");
+            generateGet(builder, short.class, "getShort", "Short.BYTES");
+            generateGet(builder, int.class, "getInt", "Integer.BYTES");
+            generateGet(builder, long.class, "getLong", "Long.BYTES");
+            generateGet(builder, float.class, "getFloat", "Float.BYTES");
+            generateGet(builder, double.class, "getDouble", "Double.BYTES");
+            generateGetUnsigned(builder, int.class, "getUnsigned", "get", "Byte.toUnsignedInt");
+            generateGetUnsigned(builder, int.class, "getUnsignedShort", "getShort", "Short.toUnsignedInt");
+            generateGetUnsigned(builder, long.class, "getUnsignedInt", "getInt", "Integer.toUnsignedLong");
         } else if (primitiveType == short.class) {
-            generateGetUnsigned(int.class, "getUnsigned", "get", "Short.toUnsignedInt");
+            generateGetUnsigned(builder, int.class, "getUnsigned", "get", "Short.toUnsignedInt");
         } else if (primitiveType == int.class) {
-            generateGetUnsigned(long.class, "getUnsigned", "get", "Integer.toUnsignedLong");
+            generateGetUnsigned(builder, long.class, "getUnsigned", "get", "Integer.toUnsignedLong");
         }
     }
 
-    private void addListMethods() {
+    private void addListMethods(TypeSpec.Builder builder) {
         // length method
         builder.addMethod(JavaPoetUtils.override("length")
             .returns(int.class)
@@ -202,7 +201,7 @@ final class ArrayGenerator {
             .build());
     }
 
-    private void addBulkMethods() {
+    private void addBulkMethods(TypeSpec.Builder builder) {
         builder.addMethod(MethodSpec.methodBuilder("copyTo")
             .addModifiers(Modifier.PUBLIC)
             .addParameter(mutableType, "target")
@@ -212,7 +211,7 @@ final class ArrayGenerator {
             .build());
     }
 
-    private void addConversions() {
+    private void addConversions(TypeSpec.Builder builder) {
         builder.addMethod(JavaPoetUtils.override("asBuffer")
             .returns(bufferType)
             .addStatement("return $T.wrap(array, offset, length).asReadOnlyBuffer()", bufferType)
@@ -264,13 +263,13 @@ final class ArrayGenerator {
             .build());
     }
 
-    private void addComparableMethods() {
+    private void addComparableMethods(TypeSpec.Builder builder) {
         JavaPoetUtils.implementComparable(builder, thisType, methodBuilder -> {
             methodBuilder.addStatement("return $T.compare(array, offset, offset + length, o.array, o.offset, o.offset + o.length)", java.util.Arrays.class);
         });
     }
 
-    private void addObjectMethods() {
+    private void addObjectMethods(TypeSpec.Builder builder) {
         builder.addMethod(JavaPoetUtils.equalsBuilder("obj")
             .addStatement("return obj instanceof $L o && $T.equals(array, offset, offset + length, o.array, o.offset, o.offset + o.length)", thisType, java.util.Arrays.class)
             .build());
@@ -300,7 +299,11 @@ final class ArrayGenerator {
             .build());
     }
 
-    private void generateGet(Class<?> returnType, String name, String length) {
+    private void addMutableWrapperClass(TypeSpec.Builder builder) {
+        builder.addType(createMutableWrapperClass());
+    }
+
+    private void generateGet(TypeSpec.Builder builder, Class<?> returnType, String name, String length) {
         builder.addMethod(MethodSpec.methodBuilder(name)
             .addModifiers(Modifier.PUBLIC)
             .addParameter(int.class, "offset")
@@ -310,7 +313,7 @@ final class ArrayGenerator {
             .build());
     }
 
-    private void generateGetUnsigned(Class<?> returnType, String name, String accessor, String converter) {
+    private void generateGetUnsigned(TypeSpec.Builder builder, Class<?> returnType, String name, String accessor, String converter) {
         builder.addMethod(MethodSpec.methodBuilder(name)
             .addModifiers(Modifier.PUBLIC)
             .addParameter(int.class, "offset")
@@ -321,21 +324,21 @@ final class ArrayGenerator {
 
 
     private TypeSpec createMutableWrapperClass() {
-        builder = TypeSpec.classBuilder(mutableType)
-            .addModifiers(Modifier.PUBLIC, Modifier.FINAL)
+        var builder = TypeSpec.classBuilder(mutableType)
+            .addModifiers(Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
             .superclass(thisType);
 
-        addMutableConstructors();
-        addMutableFactories();
-        addMutableSetters();
-        addSliceMethods(mutableType);
-        addMutableBulkMethods();
-        addMutableConversions();
+        addMutableConstructors(builder);
+        addMutableFactories(builder);
+        addMutableSetters(builder);
+        addSliceMethods(builder, mutableType);
+        addMutableBulkMethods(builder);
+        addMutableConversions(builder);
 
         return builder.build();
     }
 
-    private void addMutableConstructors() {
+    private void addMutableConstructors(TypeSpec.Builder builder) {
         builder.addMethod(MethodSpec.constructorBuilder()
             .addModifiers(Modifier.PRIVATE)
             .addParameter(arrayType, "array")
@@ -345,8 +348,8 @@ final class ArrayGenerator {
             .build());
     }
 
-    private void addMutableFactories() {
-        addWrapMethods(mutableType);
+    private void addMutableFactories(TypeSpec.Builder builder) {
+        addWrapMethods(builder, mutableType);
 
         builder.addMethod(MethodSpec.methodBuilder("allocate")
             .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
@@ -356,7 +359,7 @@ final class ArrayGenerator {
             .build());
     }
 
-    private void addMutableSetters() {
+    private void addMutableSetters(TypeSpec.Builder builder) {
         builder.addMethod(MethodSpec.methodBuilder("set")
             .addModifiers(Modifier.PUBLIC)
             .addParameter(int.class, "index")
@@ -368,15 +371,15 @@ final class ArrayGenerator {
             .build());
 
         if (primitiveType == byte.class) {
-            generateSet(short.class, "setShort", "Short.BYTES");
-            generateSet(int.class, "setInt", "Integer.BYTES");
-            generateSet(long.class, "setLong", "Long.BYTES");
-            generateSet(float.class, "setFloat", "Float.BYTES");
-            generateSet(double.class, "setDouble", "Double.BYTES");
+            generateSet(builder, short.class, "setShort", "Short.BYTES");
+            generateSet(builder, int.class, "setInt", "Integer.BYTES");
+            generateSet(builder, long.class, "setLong", "Long.BYTES");
+            generateSet(builder, float.class, "setFloat", "Float.BYTES");
+            generateSet(builder, double.class, "setDouble", "Double.BYTES");
         }
     }
 
-    private void addMutableBulkMethods() {
+    private void addMutableBulkMethods(TypeSpec.Builder builder) {
         builder.addMethod(MethodSpec.methodBuilder("fill")
             .addModifiers(Modifier.PUBLIC)
             .addParameter(primitiveType, "value")
@@ -386,7 +389,7 @@ final class ArrayGenerator {
             .build());
     }
 
-    private void addMutableConversions() {
+    private void addMutableConversions(TypeSpec.Builder builder) {
         builder.addMethod(MethodSpec.methodBuilder("asMutableBuffer")
             .addModifiers(Modifier.PUBLIC)
             .returns(bufferType)
@@ -394,7 +397,7 @@ final class ArrayGenerator {
             .build());
     }
 
-    private void generateSet(Class<?> valueType, String name, String length) {
+    private void generateSet(TypeSpec.Builder builder, Class<?> valueType, String name, String length) {
         builder.addMethod(MethodSpec.methodBuilder(name)
             .addModifiers(Modifier.PUBLIC)
             .addParameter(int.class, "offset")
@@ -406,8 +409,7 @@ final class ArrayGenerator {
             .build());
     }
 
-
-    private void addSliceMethods(ClassName className) {
+    private void addSliceMethods(TypeSpec.Builder builder, ClassName className) {
         builder.addMethod(MethodSpec.methodBuilder("slice")
             .addModifiers(Modifier.PUBLIC)
             .addParameter(int.class, "offset")
@@ -425,7 +427,7 @@ final class ArrayGenerator {
             .build());
     }
 
-    private void addWrapMethods(ClassName className) {
+    private void addWrapMethods(TypeSpec.Builder builder, ClassName className) {
         builder.addMethod(MethodSpec.methodBuilder("wrap")
             .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
             .addParameter(arrayType, "array")

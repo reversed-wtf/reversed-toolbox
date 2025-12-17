@@ -36,10 +36,10 @@ public sealed interface Decompressor
         return new OodleDecompressor(path);
     }
 
-    void decompress(Bytes src, MutableBytes dst) throws IOException;
+    void decompress(Bytes src, Bytes.Mutable dst) throws IOException;
 
     default Bytes decompress(Bytes src, int size) throws IOException {
-        var dst = MutableBytes.allocate(size);
+        var dst = Bytes.Mutable.allocate(size);
         decompress(src, dst);
         return dst;
     }
@@ -49,6 +49,6 @@ public sealed interface Decompressor
     }
 
     default void decompress(byte[] src, int srcOff, int srcLen, byte[] dst, int dstOff, int dstLen) throws IOException {
-        decompress(Bytes.wrap(src, srcOff, srcOff + srcLen), MutableBytes.wrap(dst, dstOff, dstOff + dstLen));
+        decompress(Bytes.wrap(src, srcOff, srcOff + srcLen), Bytes.Mutable.wrap(dst, dstOff, dstOff + dstLen));
     }
 }

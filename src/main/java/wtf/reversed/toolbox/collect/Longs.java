@@ -80,7 +80,7 @@ public class Longs implements Array, Comparable<Longs> {
         return new Longs(array, this.offset + offset, length);
     }
 
-    public void copyTo(MutableLongs target, int offset) {
+    public void copyTo(Mutable target, int offset) {
         System.arraycopy(array, this.offset, target.array, target.offset + offset, length);
     }
 
@@ -119,5 +119,47 @@ public class Longs implements Array, Comparable<Longs> {
     @Override
     public String toString() {
         return "[" + length + " longs]";
+    }
+
+    public static final class Mutable extends Longs {
+        private Mutable(long[] array, int offset, int length) {
+            super(array, offset, length);
+        }
+
+        public static Mutable wrap(long[] array) {
+            return new Mutable(array, 0, array.length);
+        }
+
+        public static Mutable wrap(long[] array, int offset, int length) {
+            return new Mutable(array, offset, length);
+        }
+
+        public static Mutable allocate(int length) {
+            return new Mutable(new long[length], 0, length);
+        }
+
+        public Mutable set(int index, long value) {
+            Check.index(index, length);
+            array[offset + index] = value;
+            return this;
+        }
+
+        public Mutable slice(int offset) {
+            return slice(offset, length - offset);
+        }
+
+        public Mutable slice(int offset, int length) {
+            Check.fromIndexSize(offset, length, this.length);
+            return new Mutable(array, this.offset + offset, length);
+        }
+
+        public Mutable fill(long value) {
+            Arrays.fill(array, offset, offset + length, value);
+            return this;
+        }
+
+        public LongBuffer asMutableBuffer() {
+            return LongBuffer.wrap(array, offset, length);
+        }
     }
 }
