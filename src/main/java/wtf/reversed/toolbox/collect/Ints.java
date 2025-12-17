@@ -6,7 +6,7 @@ import java.nio.*;
 import java.util.Arrays;
 import java.util.stream.*;
 
-public class Ints implements Array, Comparable<Ints> {
+public class Ints implements Slice, Comparable<Ints> {
     private static final Ints EMPTY = wrap(new int[0]);
 
     final int[] array;

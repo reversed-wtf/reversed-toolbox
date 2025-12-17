@@ -6,7 +6,7 @@ import java.nio.*;
 import java.util.Arrays;
 import java.util.stream.*;
 
-public class Longs implements Array, Comparable<Longs> {
+public class Longs implements Slice, Comparable<Longs> {
     private static final Longs EMPTY = wrap(new long[0]);
 
     final long[] array;

@@ -6,7 +6,7 @@ import java.nio.*;
 import java.util.Arrays;
 import java.util.stream.*;
 
-public class Doubles implements Array, Comparable<Doubles> {
+public class Doubles implements Slice, Comparable<Doubles> {
     private static final Doubles EMPTY = wrap(new double[0]);
 
     final double[] array;

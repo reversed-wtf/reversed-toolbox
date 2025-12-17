@@ -10,7 +10,7 @@ import java.util.*;
 import java.util.Arrays;
 import java.util.stream.*;
 
-public class Bytes implements Array, Comparable<Bytes> {
+public class Bytes implements Slice, Comparable<Bytes> {
     private static final Bytes EMPTY = wrap(new byte[0]);
 
     static final VarHandle VH_SHORT_LE = MethodHandles.byteArrayViewVarHandle(short[].class, ByteOrder.LITTLE_ENDIAN).withInvokeExactBehavior();

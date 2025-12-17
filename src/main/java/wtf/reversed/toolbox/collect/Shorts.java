@@ -6,7 +6,7 @@ import java.nio.*;
 import java.util.Arrays;
 import java.util.stream.*;
 
-public class Shorts implements Array, Comparable<Shorts> {
+public class Shorts implements Slice, Comparable<Shorts> {
     private static final Shorts EMPTY = wrap(new short[0]);
 
     final short[] array;

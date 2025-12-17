@@ -6,7 +6,7 @@ import java.nio.*;
 import java.util.Arrays;
 import java.util.stream.*;
 
-public class Floats implements Array, Comparable<Floats> {
+public class Floats implements Slice, Comparable<Floats> {
     private static final Floats EMPTY = wrap(new float[0]);
 
     final float[] array;
