@@ -12,7 +12,7 @@ import java.util.*;
 import java.util.Arrays;
 import java.util.stream.*;
 
-final class ArrayGenerator {
+final class SliceGenerator {
     private static final String PACKAGE_NAME = "wtf.reversed.toolbox.collect";
     private static final ClassName PARENT_CLASS = ClassName.get(PACKAGE_NAME, "Slice");
     private static final ClassName CHECK_CLASS = ClassName.get("wtf.reversed.toolbox.util", "Check");
@@ -24,7 +24,7 @@ final class ArrayGenerator {
     private final ClassName boxedType;
     private final ClassName bufferType;
 
-    ArrayGenerator(String className, Class<?> primitiveType, Class<?> boxedType, Class<?> bufferType) {
+    SliceGenerator(String className, Class<?> primitiveType, Class<?> boxedType, Class<?> bufferType) {
         this.thisType = ClassName.get("", className);
         this.mutableType = ClassName.get("", "Mutable");
         this.primitiveType = primitiveType;
@@ -33,14 +33,14 @@ final class ArrayGenerator {
         this.bufferType = ClassName.get(bufferType);
     }
 
-    public static void main(String[] args) throws IOException {
+    static void main() throws IOException {
         generateParent();
-        new ArrayGenerator("Bytes", byte.class, Byte.class, ByteBuffer.class).generate();
-        new ArrayGenerator("Shorts", short.class, Short.class, ShortBuffer.class).generate();
-        new ArrayGenerator("Ints", int.class, Integer.class, IntBuffer.class).generate();
-        new ArrayGenerator("Longs", long.class, Long.class, LongBuffer.class).generate();
-        new ArrayGenerator("Floats", float.class, Float.class, FloatBuffer.class).generate();
-        new ArrayGenerator("Doubles", double.class, Double.class, DoubleBuffer.class).generate();
+        new SliceGenerator("Bytes", byte.class, Byte.class, ByteBuffer.class).generate();
+        new SliceGenerator("Shorts", short.class, Short.class, ShortBuffer.class).generate();
+        new SliceGenerator("Ints", int.class, Integer.class, IntBuffer.class).generate();
+        new SliceGenerator("Longs", long.class, Long.class, LongBuffer.class).generate();
+        new SliceGenerator("Floats", float.class, Float.class, FloatBuffer.class).generate();
+        new SliceGenerator("Doubles", double.class, Double.class, DoubleBuffer.class).generate();
     }
 
     private static void generateParent() throws IOException {
