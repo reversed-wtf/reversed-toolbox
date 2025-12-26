@@ -19,11 +19,11 @@ public abstract class BinarySource implements Closeable {
     }
 
     public static BinarySource open(Path path) throws IOException {
-        throw new UnsupportedOperationException();
+        return new ChannelBinarySource(Files.newByteChannel(path, StandardOpenOption.READ));
     }
 
     public static BinarySource wrap(Bytes bytes) throws IOException {
-        throw new UnsupportedOperationException();
+        return new BytesBinarySource(bytes);
     }
 
 
