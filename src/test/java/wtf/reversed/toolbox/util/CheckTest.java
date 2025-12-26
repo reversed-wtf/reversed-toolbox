@@ -6,17 +6,17 @@ import static org.assertj.core.api.Assertions.*;
 
 class CheckTest {
     @Nested
-    class NotNull {
+    class NonNull {
         @Test
-        void returnsObjectWhenNotNull() {
+        void returnsObjectWhenNonNull() {
             String obj = "test";
-            assertThat(Check.notNull(obj, "param")).isEqualTo(obj);
+            assertThat(Check.nonNull(obj, "param")).isSameAs(obj);
         }
 
         @Test
         void throwsNullPointerExceptionWhenNull() {
             assertThatNullPointerException()
-                .isThrownBy(() -> Check.notNull(null, "param"))
+                .isThrownBy(() -> Check.nonNull(null, "param"))
                 .withMessage("'param' must not be null");
         }
     }
@@ -91,6 +91,30 @@ class CheckTest {
         void throwsWhenIndexEqualsSize() {
             assertThatExceptionOfType(IndexOutOfBoundsException.class)
                 .isThrownBy(() -> Check.index(10, 10));
+        }
+    }
+
+    @Nested
+    class Position {
+        @Test
+        void returnsPositionWhenValid() {
+            assertThat(Check.position(0L, 100L, "pos")).isEqualTo(0L);
+            assertThat(Check.position(50L, 100L, "pos")).isEqualTo(50L);
+            assertThat(Check.position(100L, 100L, "pos")).isEqualTo(100L);
+        }
+
+        @Test
+        void throwsWhenNegative() {
+            assertThatIllegalArgumentException()
+                .isThrownBy(() -> Check.position(-1L, 100L, "pos"))
+                .withMessageContaining("must be a valid position");
+        }
+
+        @Test
+        void throwsWhenExceedsLimit() {
+            assertThatIllegalArgumentException()
+                .isThrownBy(() -> Check.position(101L, 100L, "pos"))
+                .withMessageContaining("must be a valid position");
         }
     }
 

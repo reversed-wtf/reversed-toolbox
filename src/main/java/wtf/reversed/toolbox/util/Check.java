@@ -20,7 +20,7 @@ public final class Check {
      * @return {@code obj} if not {@code null}
      * @throws NullPointerException if {@code obj} is {@code null}
      */
-    public static <T> T notNull(T obj, String param) {
+    public static <T> T nonNull(T obj, String param) {
         return Objects.requireNonNull(obj, () -> "'" + param + "' must not be null");
     }
 
@@ -98,6 +98,38 @@ public final class Check {
      */
     public static long index(long index, long size) {
         return Objects.checkIndex(index, size);
+    }
+
+    /**
+     * Checks that the given position is valid and within the specified limit.
+     *
+     * @param position the position to check
+     * @param limit    the upper bound (inclusive)
+     * @param param    the name of the parameter for the error message
+     * @return {@code position} if it is valid
+     * @throws IllegalArgumentException if {@code position} is negative or > limit
+     */
+    public static int position(int position, int limit, String param) {
+        if (position < 0 || position > limit) {
+            throw new IllegalArgumentException("'" + param + "' must be a valid position (0 <= position <= " + limit + ")");
+        }
+        return position;
+    }
+
+    /**
+     * Checks that the given position is valid and within the specified limit.
+     *
+     * @param position the position to check
+     * @param limit    the upper bound (inclusive)
+     * @param param    the name of the parameter for the error message
+     * @return {@code position} if it is valid
+     * @throws IllegalArgumentException if {@code position} is negative or > limit
+     */
+    public static long position(long position, long limit, String param) {
+        if (position < 0 || position > limit) {
+            throw new IllegalArgumentException("'" + param + "' must be a valid position (0 <= position <= " + limit + ")");
+        }
+        return position;
     }
 
     /**
