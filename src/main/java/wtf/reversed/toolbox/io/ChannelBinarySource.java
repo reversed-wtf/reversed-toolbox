@@ -4,131 +4,148 @@ import wtf.reversed.toolbox.collect.*;
 import wtf.reversed.toolbox.util.*;
 
 import java.io.*;
-import java.nio.*;
 import java.nio.channels.*;
 
 final class ChannelBinarySource extends BinarySource {
-    private static final int BUFFER_CAPACITY = 8192;
-    private final ByteBuffer buffer = ByteBuffer.allocate(BUFFER_CAPACITY).order(ByteOrder.LITTLE_ENDIAN).limit(0);
-    private final SeekableByteChannel channel;
-    private long bufferOffset = 0;
+    private static final int BUFFER_SIZE = 0x2000;
+    private final Bytes.Mutable buffer = Bytes.Mutable.allocate(BUFFER_SIZE);
+    private final FileChannel channel;
+    private long channelPosition = 0; // Always points to buffer[0]
+    private int bufferPosition = 0; // Points to the next byte to read
+    private int bufferLength = 0; // Number of bytes in the buffer
 
     ChannelBinarySource(SeekableByteChannel channel) throws IOException {
-        super(Check.nonNull(channel, "channel").size());
-        this.channel = channel;
+        super(channel.size());
+        if (!(channel instanceof FileChannel fileChannel)) {
+            throw new IllegalArgumentException("channel must be a FileChannel");
+        }
+        this.channel = fileChannel;
     }
 
     @Override
     public long position() {
-        return bufferOffset + buffer.position();
+        return channelPosition + bufferPosition;
     }
 
     @Override
     public BinarySource position(long position) {
-        Check.index(position, size + 1);
-        if (position >= bufferOffset && position <= bufferOffset + buffer.limit()) {
-            buffer.position((int) (position - bufferOffset));
+        Check.position(position, size, "position");
+
+        if (channelPosition <= position && position <= channelPosition + bufferLength) {
+            // If we fit in the current buffer, just adjust the position
+            bufferPosition = (int) (position - channelPosition);
         } else {
-            bufferOffset = position;
-            buffer.position(0).limit(0);
+            // If not, move the channel position and mark the buffer empty
+            channelPosition = position;
+            bufferPosition = 0;
+            bufferLength = 0;
         }
         return this;
     }
 
     @Override
     public void readBytes(Bytes.Mutable target) throws IOException {
-        int targetOffset = 0;
-        int targetRemaining = target.length();
-        while (targetRemaining > 0) {
-            int fromBuffer = Math.min(targetRemaining, buffer.remaining());
-            if (fromBuffer > 0) {
-                ByteBuffer sourceView = buffer.duplicate();
-                sourceView.limit(sourceView.position() + fromBuffer);
-                target.slice(targetOffset, fromBuffer).asMutableBuffer().put(sourceView);
-                buffer.position(buffer.position() + fromBuffer);
-                targetOffset += fromBuffer;
-                targetRemaining -= fromBuffer;
-            } else if (targetRemaining >= BUFFER_CAPACITY) {
-                long pos = position();
-                if (pos + targetRemaining > size) {
-                    throw new EOFException();
-                }
-                channel.position(pos);
-                ByteBuffer targetBuf = target.slice(targetOffset, targetRemaining).asMutableBuffer();
-                while (targetBuf.hasRemaining()) {
-                    if (channel.read(targetBuf) == -1) {
-                        throw new EOFException();
-                    }
-                }
-                bufferOffset = pos + targetRemaining;
-                buffer.position(0).limit(0);
-                return;
-            } else {
-                refill();
-                if (buffer.remaining() == 0) {
-                    throw new EOFException();
-                }
-            }
+        // If the buffer has enough data, just copy the data and return
+        if (bufferRemaining() >= target.length()) {
+            buffer.slice(bufferPosition, target.length()).copyTo(target, 0);
+            bufferPosition += target.length();
+            return;
         }
+
+        // If there's remaining data in the buffer, copy it first
+        int targetPosition = 0;
+        if (bufferPosition < bufferLength) {
+            int remaining = bufferRemaining();
+            buffer.slice(bufferPosition, remaining).copyTo(target, targetPosition);
+            targetPosition += remaining;
+
+            // We drained the buffer, so update our channelPosition, and mark it empty
+            channelPosition += bufferLength;
+            bufferPosition = 0;
+            bufferLength = 0;
+        }
+
+        // If the data we want to read fits in a single buffer, do a refill and copy
+        int targetRemaining = target.length() - targetPosition;
+        if (targetRemaining < BUFFER_SIZE) {
+            refill(targetRemaining); // Make sure we have enough data in the buffer
+            buffer.slice(bufferPosition, targetRemaining).copyTo(target, targetPosition);
+            bufferPosition += targetRemaining;
+            return;
+        }
+
+        // If not, do a straight read, buffer is emptied
+        int read = channel.read(target.slice(targetPosition, targetRemaining).asMutableBuffer(), channelPosition);
+        if (read != targetRemaining) {
+            throw new EOFException("Unexpected end of stream, expected " + targetRemaining + " bytes, got " + read);
+        }
+        channelPosition += read;
     }
 
     @Override
     public byte readByte() throws IOException {
-        ensureRefilled(Byte.BYTES);
-        return buffer.get();
+        refill(Byte.BYTES);
+        byte result = buffer.get(bufferPosition);
+        bufferPosition++;
+        return result;
     }
 
     @Override
     public short readShort() throws IOException {
-        ensureRefilled(Short.BYTES);
-        short result = buffer.getShort();
+        refill(Short.BYTES);
+        short result = buffer.getShort(bufferPosition);
+        bufferPosition += Short.BYTES;
         return bigEndian ? Short.reverseBytes(result) : result;
     }
 
     @Override
     public int readInt() throws IOException {
-        ensureRefilled(Integer.BYTES);
-        int result = buffer.getInt();
+        refill(Integer.BYTES);
+        int result = buffer.getInt(bufferPosition);
+        bufferPosition += Integer.BYTES;
         return bigEndian ? Integer.reverseBytes(result) : result;
     }
 
     @Override
     public long readLong() throws IOException {
-        ensureRefilled(Long.BYTES);
-        long result = buffer.getLong();
+        refill(Long.BYTES);
+        long result = buffer.getLong(bufferPosition);
+        bufferPosition += Long.BYTES;
         return bigEndian ? Long.reverseBytes(result) : result;
+    }
+
+    private void refill(int length) throws IOException {
+        int remaining = bufferRemaining();
+        if (remaining >= length) {
+            return;
+        }
+
+        // First we have to move the leftover data to the front
+        buffer.slice(bufferPosition, remaining).copyTo(buffer, 0);
+        channelPosition += bufferPosition;
+        bufferPosition = 0;
+        bufferLength = remaining;
+
+        // Then we can copy in new data from the channel
+        Bytes.Mutable target = buffer.slice(remaining, BUFFER_SIZE - remaining);
+        int read = channel.read(target.asMutableBuffer(), channelPosition + remaining);
+        bufferLength += read;
+
+        // Final check if we read enough data
+        if (bufferRemaining() < length) {
+            throw new EOFException("Expected at least " + length + " bytes, but only " + bufferRemaining() + " available");
+        }
+    }
+
+    private int bufferRemaining() {
+        return bufferLength - bufferPosition;
     }
 
     @Override
     public void close() throws IOException {
         channel.close();
-    }
-
-    private void ensureRefilled(int length) throws IOException {
-        if (buffer.remaining() < length) {
-            refill();
-            if (buffer.remaining() < length) {
-                throw new EOFException("Expected to read " + length + " bytes, but only " + buffer.remaining() + " bytes are available");
-            }
-        }
-    }
-
-    private void refill() throws IOException {
-        bufferOffset += buffer.position();
-        buffer.compact();
-
-        int toRead = (int) Math.min(buffer.remaining(), size - (bufferOffset + buffer.position()));
-        if (toRead > 0) {
-            channel.position(bufferOffset + buffer.position());
-            int limit = buffer.limit();
-            buffer.limit(buffer.position() + toRead);
-            while (buffer.hasRemaining()) {
-                if (channel.read(buffer) == -1) {
-                    throw new EOFException();
-                }
-            }
-            buffer.limit(limit);
-        }
-        buffer.flip();
+        channelPosition = 0;
+        bufferPosition = 0;
+        bufferLength = 0;
     }
 }
