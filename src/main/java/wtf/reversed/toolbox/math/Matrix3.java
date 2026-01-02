@@ -27,6 +27,7 @@ public record Matrix3(
         0.0f, 0.0f, 1.0f
     );
 
+
     @Override
     public Matrix3 add(Matrix3 other) {
         return new Matrix3(
@@ -43,6 +44,90 @@ public record Matrix3(
             m10 * scalar, m11 * scalar, m12 * scalar,
             m20 * scalar, m21 * scalar, m22 * scalar
         );
+    }
+
+
+    @Override
+    public Matrix3 multiply(Matrix3 other) {
+        return new Matrix3(
+            m00 * other.m00 + m01 * other.m10 + m02 * other.m20,
+            m00 * other.m01 + m01 * other.m11 + m02 * other.m21,
+            m00 * other.m02 + m01 * other.m12 + m02 * other.m22,
+            m10 * other.m00 + m11 * other.m10 + m12 * other.m20,
+            m10 * other.m01 + m11 * other.m11 + m12 * other.m21,
+            m10 * other.m02 + m11 * other.m12 + m12 * other.m22,
+            m20 * other.m00 + m21 * other.m10 + m22 * other.m20,
+            m20 * other.m01 + m21 * other.m11 + m22 * other.m21,
+            m20 * other.m02 + m21 * other.m12 + m22 * other.m22
+        );
+    }
+
+    @Override
+    public Matrix3 transpose() {
+        return new Matrix3(
+            m00, m10, m20,
+            m01, m11, m21,
+            m02, m12, m22
+        );
+    }
+
+    @Override
+    public float determinant() {
+        float r00 = +(m11 * m22 - m12 * m21);
+        float r10 = -(m10 * m22 - m12 * m20);
+        float r20 = +(m10 * m21 - m11 * m20);
+        return m00 * r00 + m01 * r10 + m02 * r20;
+    }
+
+    @Override
+    public Matrix3 inverse() {
+        float r00 = +(m11 * m22 - m12 * m21);
+        float r10 = -(m10 * m22 - m12 * m20);
+        float r20 = +(m10 * m21 - m11 * m20);
+        float det = m00 * r00 + m01 * r10 + m02 * r20;
+
+        if (Math.abs(det) < 1e-6) {
+            throw new ArithmeticException("Matrix is singular, cannot invert.");
+        }
+
+        float r01 = -(m01 * m22 - m02 * m21);
+        float r11 = +(m00 * m22 - m02 * m20);
+        float r21 = -(m00 * m21 - m01 * m20);
+
+        float r02 = +(m01 * m12 - m02 * m11);
+        float r12 = -(m00 * m12 - m02 * m10);
+        float r22 = +(m00 * m11 - m01 * m10);
+
+        return new Matrix3(
+            r00, r01, r02,
+            r10, r11, r12,
+            r20, r21, r22
+        ).divide(det);
+    }
+
+    @Override
+    public float get(int row, int column) {
+        return switch (row) {
+            case 0 -> switch (column) {
+                case 0 -> m00;
+                case 1 -> m01;
+                case 2 -> m02;
+                default -> throw new IndexOutOfBoundsException();
+            };
+            case 1 -> switch (column) {
+                case 0 -> m10;
+                case 1 -> m11;
+                case 2 -> m12;
+                default -> throw new IndexOutOfBoundsException();
+            };
+            case 2 -> switch (column) {
+                case 0 -> m20;
+                case 1 -> m21;
+                case 2 -> m22;
+                default -> throw new IndexOutOfBoundsException();
+            };
+            default -> throw new IndexOutOfBoundsException();
+        };
     }
 
 

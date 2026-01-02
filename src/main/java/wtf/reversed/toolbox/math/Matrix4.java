@@ -25,7 +25,7 @@ public record Matrix4(
     float m10, float m11, float m12, float m13,
     float m20, float m21, float m22, float m23,
     float m30, float m31, float m32, float m33
-) implements Linear<Matrix4> {
+) implements Matrix<Matrix4> {
     /**
      * The identity matrix for 4x4 transformations.
      */
@@ -54,6 +54,146 @@ public record Matrix4(
             m20 * scalar, m21 * scalar, m22 * scalar, m23 * scalar,
             m30 * scalar, m31 * scalar, m32 * scalar, m33 * scalar
         );
+    }
+
+
+    @Override
+    public Matrix4 multiply(Matrix4 other) {
+        return new Matrix4(
+            m00 * other.m00 + m01 * other.m10 + m02 * other.m20 + m03 * other.m30,
+            m00 * other.m01 + m01 * other.m11 + m02 * other.m21 + m03 * other.m31,
+            m00 * other.m02 + m01 * other.m12 + m02 * other.m22 + m03 * other.m32,
+            m00 * other.m03 + m01 * other.m13 + m02 * other.m23 + m03 * other.m33,
+            m10 * other.m00 + m11 * other.m10 + m12 * other.m20 + m13 * other.m30,
+            m10 * other.m01 + m11 * other.m11 + m12 * other.m21 + m13 * other.m31,
+            m10 * other.m02 + m11 * other.m12 + m12 * other.m22 + m13 * other.m32,
+            m10 * other.m03 + m11 * other.m13 + m12 * other.m23 + m13 * other.m33,
+            m20 * other.m00 + m21 * other.m10 + m22 * other.m20 + m23 * other.m30,
+            m20 * other.m01 + m21 * other.m11 + m22 * other.m21 + m23 * other.m31,
+            m20 * other.m02 + m21 * other.m12 + m22 * other.m22 + m23 * other.m32,
+            m20 * other.m03 + m21 * other.m13 + m22 * other.m23 + m23 * other.m33,
+            m30 * other.m00 + m31 * other.m10 + m32 * other.m20 + m33 * other.m30,
+            m30 * other.m01 + m31 * other.m11 + m32 * other.m21 + m33 * other.m31,
+            m30 * other.m02 + m31 * other.m12 + m32 * other.m22 + m33 * other.m32,
+            m30 * other.m03 + m31 * other.m13 + m32 * other.m23 + m33 * other.m33
+        );
+    }
+
+    @Override
+    public Matrix4 transpose() {
+        return new Matrix4(
+            m00, m10, m20, m30,
+            m01, m11, m21, m31,
+            m02, m12, m22, m32,
+            m03, m13, m23, m33
+        );
+    }
+
+    @Override
+    public float determinant() {
+        float m2233 = m22 * m33 - m23 * m32;
+        float m2133 = m21 * m33 - m23 * m31;
+        float m2132 = m21 * m32 - m22 * m31;
+        float m2033 = m20 * m33 - m23 * m30;
+        float m2032 = m20 * m32 - m22 * m30;
+        float m2031 = m20 * m31 - m21 * m30;
+
+        float r00 = +(m11 * m2233 - m12 * m2133 + m13 * m2132);
+        float r10 = -(m10 * m2233 - m12 * m2033 + m13 * m2032);
+        float r20 = +(m10 * m2133 - m11 * m2033 + m13 * m2031);
+        float r30 = -(m10 * m2132 - m11 * m2032 + m12 * m2031);
+        return m00 * r00 + m01 * r10 + m02 * r20 + m03 * r30;
+    }
+
+    @Override
+    public Matrix4 inverse() {
+        float m2233 = m22 * m33 - m23 * m32;
+        float m2133 = m21 * m33 - m23 * m31;
+        float m2132 = m21 * m32 - m22 * m31;
+        float m2033 = m20 * m33 - m23 * m30;
+        float m2032 = m20 * m32 - m22 * m30;
+        float m2031 = m20 * m31 - m21 * m30;
+
+        float r00 = +(m11 * m2233 - m12 * m2133 + m13 * m2132);
+        float r10 = -(m10 * m2233 - m12 * m2033 + m13 * m2032);
+        float r20 = +(m10 * m2133 - m11 * m2033 + m13 * m2031);
+        float r30 = -(m10 * m2132 - m11 * m2032 + m12 * m2031);
+        float det = m00 * r00 + m01 * r10 + m02 * r20 + m03 * r30;
+
+        if (Math.abs(det) < 1e-6) {
+            throw new ArithmeticException("Matrix is singular, cannot invert.");
+        }
+
+        float r01 = -(m01 * m2233 - m02 * m2133 + m03 * m2132);
+        float r11 = +(m00 * m2233 - m02 * m2033 + m03 * m2032);
+        float r21 = -(m00 * m2133 - m01 * m2033 + m03 * m2031);
+        float r31 = +(m00 * m2132 - m01 * m2032 + m02 * m2031);
+
+        float m1233 = m12 * m33 - m13 * m32;
+        float m1133 = m11 * m33 - m13 * m31;
+        float m1132 = m11 * m32 - m12 * m31;
+        float m1033 = m10 * m33 - m13 * m30;
+        float m1032 = m10 * m32 - m12 * m30;
+        float m1031 = m10 * m31 - m11 * m30;
+
+        float r02 = +(m01 * m1233 - m02 * m1133 + m03 * m1132);
+        float r12 = -(m00 * m1233 - m02 * m1033 + m03 * m1032);
+        float r22 = +(m00 * m1133 - m01 * m1033 + m03 * m1031);
+        float r32 = -(m00 * m1132 - m01 * m1032 + m02 * m1031);
+
+        float m1223 = m12 * m23 - m13 * m22;
+        float m1123 = m11 * m23 - m13 * m21;
+        float m1122 = m11 * m22 - m12 * m21;
+        float m1023 = m10 * m23 - m13 * m20;
+        float m1022 = m10 * m22 - m12 * m20;
+        float m1021 = m10 * m21 - m11 * m20;
+
+        float r03 = -(m01 * m1223 - m02 * m1123 + m03 * m1122);
+        float r13 = +(m00 * m1223 - m02 * m1023 + m03 * m1022);
+        float r23 = -(m00 * m1123 - m01 * m1023 + m03 * m1021);
+        float r33 = +(m00 * m1122 - m01 * m1022 + m02 * m1021);
+
+        return new Matrix4(
+            r00, r01, r02, r03,
+            r10, r11, r12, r13,
+            r20, r21, r22, r23,
+            r30, r31, r32, r33
+        ).divide(det);
+    }
+
+    @Override
+    public float get(int row, int column) {
+        return switch (row) {
+            case 0 -> switch (column) {
+                case 0 -> m00;
+                case 1 -> m01;
+                case 2 -> m02;
+                case 3 -> m03;
+                default -> throw new IndexOutOfBoundsException();
+            };
+            case 1 -> switch (column) {
+                case 0 -> m10;
+                case 1 -> m11;
+                case 2 -> m12;
+                case 3 -> m13;
+                default -> throw new IndexOutOfBoundsException();
+            };
+            case 2 -> switch (column) {
+                case 0 -> m20;
+                case 1 -> m21;
+                case 2 -> m22;
+                case 3 -> m23;
+                default -> throw new IndexOutOfBoundsException();
+            };
+            case 3 -> switch (column) {
+                case 0 -> m30;
+                case 1 -> m31;
+                case 2 -> m32;
+                case 3 -> m33;
+                default -> throw new IndexOutOfBoundsException();
+            };
+            default -> throw new IndexOutOfBoundsException();
+        };
     }
 
 

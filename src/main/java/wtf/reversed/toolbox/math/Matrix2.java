@@ -20,6 +20,7 @@ public record Matrix2(
         0.0f, 1.0f
     );
 
+
     @Override
     public Matrix2 add(Matrix2 other) {
         return new Matrix2(
@@ -34,6 +35,61 @@ public record Matrix2(
             m00 * scalar, m01 * scalar,
             m10 * scalar, m11 * scalar
         );
+    }
+
+
+    @Override
+    public Matrix2 multiply(Matrix2 other) {
+        return new Matrix2(
+            m00 * other.m00 + m01 * other.m10,
+            m00 * other.m01 + m01 * other.m11,
+            m10 * other.m00 + m11 * other.m10,
+            m10 * other.m01 + m11 * other.m11
+        );
+    }
+
+    @Override
+    public Matrix2 transpose() {
+        return new Matrix2(
+            m00, m10,
+            m01, m11
+        );
+    }
+
+    @Override
+    public float determinant() {
+        return m00 * m11 - m01 * m10;
+    }
+
+    @Override
+    public Matrix2 inverse() {
+        float det = determinant();
+
+        if (Math.abs(determinant()) < 1e-6) {
+            throw new ArithmeticException("Matrix is singular, cannot invert.");
+        }
+
+        return new Matrix2(
+            +m11, -m01,
+            -m10, +m00
+        ).divide(det);
+    }
+
+    @Override
+    public float get(int row, int column) {
+        return switch (row) {
+            case 0 -> switch (column) {
+                case 0 -> m00;
+                case 1 -> m01;
+                default -> throw new IndexOutOfBoundsException();
+            };
+            case 1 -> switch (column) {
+                case 0 -> m10;
+                case 1 -> m11;
+                default -> throw new IndexOutOfBoundsException();
+            };
+            default -> throw new IndexOutOfBoundsException();
+        };
     }
 
 
