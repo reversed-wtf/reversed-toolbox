@@ -1,5 +1,9 @@
 package wtf.reversed.toolbox.math;
 
+import wtf.reversed.toolbox.collect.*;
+
+import java.nio.*;
+
 /**
  * Represents a 4x4 matrix in row-major order.
  *
@@ -25,7 +29,7 @@ public record Matrix4(
     float m10, float m11, float m12, float m13,
     float m20, float m21, float m22, float m23,
     float m30, float m31, float m32, float m33
-) implements Matrix<Matrix4> {
+) implements Matrix<Matrix4>, Primitive {
     /**
      * The identity matrix for 4x4 transformations.
      */
@@ -274,6 +278,52 @@ public record Matrix4(
             r20, r21, r22, r23,
             r30, r31, r32, r33
         ).divide(det);
+    }
+
+
+    @Override
+    public int componentCount() {
+        return 16;
+    }
+
+    @Override
+    public void toSliceUnsafe(Floats.Mutable floats, int offset) {
+        floats.set(offset/* */, m00);
+        floats.set(offset + +1, m01);
+        floats.set(offset + +2, m02);
+        floats.set(offset + +3, m03);
+        floats.set(offset + +4, m10);
+        floats.set(offset + +5, m11);
+        floats.set(offset + +6, m12);
+        floats.set(offset + +7, m13);
+        floats.set(offset + +8, m20);
+        floats.set(offset + +9, m21);
+        floats.set(offset + 10, m22);
+        floats.set(offset + 11, m23);
+        floats.set(offset + 12, m30);
+        floats.set(offset + 13, m31);
+        floats.set(offset + 14, m32);
+        floats.set(offset + 15, m33);
+    }
+
+    @Override
+    public void toBufferUnsafe(FloatBuffer floats) {
+        floats.put(m00);
+        floats.put(m01);
+        floats.put(m02);
+        floats.put(m03);
+        floats.put(m10);
+        floats.put(m11);
+        floats.put(m12);
+        floats.put(m13);
+        floats.put(m20);
+        floats.put(m21);
+        floats.put(m22);
+        floats.put(m23);
+        floats.put(m30);
+        floats.put(m31);
+        floats.put(m32);
+        floats.put(m33);
     }
 
 

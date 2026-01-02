@@ -1,5 +1,9 @@
 package wtf.reversed.toolbox.math;
 
+import wtf.reversed.toolbox.collect.*;
+
+import java.nio.*;
+
 /**
  * Represents a 2x2 matrix in row-major order.
  *
@@ -11,7 +15,7 @@ package wtf.reversed.toolbox.math;
 public record Matrix2(
     float m00, float m01,
     float m10, float m11
-) implements Matrix<Matrix2> {
+) implements Matrix<Matrix2>, Primitive {
     /**
      * The identity matrix for 2x2 transformations.
      */
@@ -145,6 +149,28 @@ public record Matrix2(
             +m11, -m01,
             -m10, +m00
         ).divide(det);
+    }
+
+
+    @Override
+    public int componentCount() {
+        return 4;
+    }
+
+    @Override
+    public void toSliceUnsafe(Floats.Mutable floats, int offset) {
+        floats.set(offset/**/, m00);
+        floats.set(offset + 1, m01);
+        floats.set(offset + 2, m10);
+        floats.set(offset + 3, m11);
+    }
+
+    @Override
+    public void toBufferUnsafe(FloatBuffer floats) {
+        floats.put(m00);
+        floats.put(m01);
+        floats.put(m10);
+        floats.put(m11);
     }
 
 

@@ -2,7 +2,6 @@ package wtf.reversed.toolbox.math;
 
 import wtf.reversed.toolbox.collect.*;
 import wtf.reversed.toolbox.io.*;
-import wtf.reversed.toolbox.util.*;
 
 import java.io.*;
 import java.nio.*;
@@ -126,20 +125,24 @@ public record Vector4(
 
 
     @Override
-    public void copyTo(Floats.Mutable floats, int offset) {
-        Check.fromIndexSize(offset, 4, floats.length());
-        floats.set(offset/**/, x);
-        floats.set(offset + 1, y);
-        floats.set(offset + 2, z);
-        floats.set(offset + 3, w);
+    public int componentCount() {
+        return 4;
     }
 
     @Override
-    public void copyTo(FloatBuffer floats) {
+    public void toBufferUnsafe(FloatBuffer floats) {
         floats.put(x);
         floats.put(y);
         floats.put(z);
         floats.put(w);
+    }
+
+    @Override
+    public void toSliceUnsafe(Floats.Mutable floats, int offset) {
+        floats.set(offset/**/, x);
+        floats.set(offset + 1, y);
+        floats.set(offset + 2, z);
+        floats.set(offset + 3, w);
     }
 
 

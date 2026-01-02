@@ -1,5 +1,9 @@
 package wtf.reversed.toolbox.math;
 
+import wtf.reversed.toolbox.collect.*;
+
+import java.nio.*;
+
 /**
  * Represents a 3x3 matrix in row-major order.
  *
@@ -17,7 +21,7 @@ public record Matrix3(
     float m00, float m01, float m02,
     float m10, float m11, float m12,
     float m20, float m21, float m22
-) implements Matrix<Matrix3> {
+) implements Matrix<Matrix3>, Primitive {
     /**
      * The identity matrix for 3x3 transformations.
      */
@@ -215,6 +219,38 @@ public record Matrix3(
             r10, r11, r12,
             r20, r21, r22
         ).divide(det);
+    }
+
+
+    @Override
+    public int componentCount() {
+        return 9;
+    }
+
+    @Override
+    public void toSliceUnsafe(Floats.Mutable floats, int offset) {
+        floats.set(offset/**/, m00);
+        floats.set(offset + 1, m01);
+        floats.set(offset + 2, m02);
+        floats.set(offset + 3, m10);
+        floats.set(offset + 4, m11);
+        floats.set(offset + 5, m12);
+        floats.set(offset + 6, m20);
+        floats.set(offset + 7, m21);
+        floats.set(offset + 8, m22);
+    }
+
+    @Override
+    public void toBufferUnsafe(FloatBuffer floats) {
+        floats.put(m00);
+        floats.put(m01);
+        floats.put(m02);
+        floats.put(m10);
+        floats.put(m11);
+        floats.put(m12);
+        floats.put(m20);
+        floats.put(m21);
+        floats.put(m22);
     }
 
 
