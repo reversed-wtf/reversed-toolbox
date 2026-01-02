@@ -1,7 +1,9 @@
 package wtf.reversed.toolbox.math;
 
 import wtf.reversed.toolbox.collect.*;
+import wtf.reversed.toolbox.io.*;
 
+import java.io.*;
 import java.nio.*;
 
 /**
@@ -62,6 +64,26 @@ public record Matrix2(
         return new Matrix2(
             sx, 0f,
             0f, sy
+        );
+    }
+
+
+    /**
+     * Creates a new matrix from a binary source.
+     *
+     * @param source The binary source.
+     * @return The vector.
+     * @throws IOException If an I/O error occurs.
+     */
+    public static Matrix2 read(BinarySource source) throws IOException {
+        float m00 = source.readFloat();
+        float m01 = source.readFloat();
+        float m10 = source.readFloat();
+        float m11 = source.readFloat();
+
+        return new Matrix2(
+            m00, m01,
+            m10, m11
         );
     }
 

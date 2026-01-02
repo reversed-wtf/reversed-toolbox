@@ -1,7 +1,9 @@
 package wtf.reversed.toolbox.math;
 
 import wtf.reversed.toolbox.collect.*;
+import wtf.reversed.toolbox.io.*;
 
+import java.io.*;
 import java.nio.*;
 
 /**
@@ -88,6 +90,54 @@ public record Matrix3(
             sx, 0f, 0f,
             0f, sy, 0f,
             0f, 0f, sz
+        );
+    }
+
+
+    /**
+     * Creates a new matrix from a binary source.
+     *
+     * @param source The binary source.
+     * @return The vector.
+     * @throws IOException If an I/O error occurs.
+     */
+    public static Matrix3 read(BinarySource source) throws IOException {
+        float m00 = source.readFloat();
+        float m01 = source.readFloat();
+        float m02 = source.readFloat();
+        float m10 = source.readFloat();
+        float m11 = source.readFloat();
+        float m12 = source.readFloat();
+        float m20 = source.readFloat();
+        float m21 = source.readFloat();
+        float m22 = source.readFloat();
+
+        return new Matrix3(
+            m00, m01, m02,
+            m10, m11, m12,
+            m20, m21, m22
+        );
+    }
+
+    /**
+     * Creates a new matrix from a binary source, reading only a 3x2 matrix, ignoring the last row.
+     *
+     * @param source The binary source.
+     * @return The matrix.
+     * @throws IOException If an I/O error occurs.
+     */
+    public static Matrix3 read3x2(BinarySource source) throws IOException {
+        float m00 = source.readFloat();
+        float m01 = source.readFloat();
+        float m02 = source.readFloat();
+        float m10 = source.readFloat();
+        float m11 = source.readFloat();
+        float m12 = source.readFloat();
+
+        return new Matrix3(
+            m00, m01, m02,
+            m10, m11, m12,
+            0.f, 0.f, 1.f
         );
     }
 
