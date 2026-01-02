@@ -28,6 +28,118 @@ public record Matrix3(
     );
 
 
+    /**
+     * Creates a new matrix representing a rotation transformation.
+     *
+     * @param rotation The quaternion representing the rotation.
+     * @return A new matrix representing a rotation transformation.
+     */
+    public static Matrix3 fromRotation(Quaternion rotation) {
+        float x = rotation.x();
+        float y = rotation.y();
+        float w = rotation.w();
+        float z = rotation.z();
+
+        float x2 = x * x;
+        float y2 = y * y;
+        float z2 = z * z;
+
+        float xx = x * x2;
+        float xy = x * y2;
+        float xz = x * z2;
+        float yy = y * y2;
+        float yz = y * z2;
+        float zz = z * z2;
+        float wx = w * x2;
+        float wy = w * y2;
+        float wz = w * z2;
+
+        return new Matrix3(
+            1.0f - yy - zz, xy + wz, xz - wy,
+            xy - wz, 1.0f - xx - zz, yz + wx,
+            xz + wy, yz - wx, 1.0f - xx - yy
+        );
+    }
+
+    /**
+     * Creates a new matrix representing a rotation transformation.
+     *
+     * @param scale The scale vector.
+     * @return A new matrix representing a rotation transformation.
+     */
+    public static Matrix3 fromScale(Vector3 scale) {
+        return fromScale(scale.x(), scale.y(), scale.z());
+    }
+
+    /**
+     * Creates a matrix representing a scale transformation.
+     *
+     * @param sx The scale factor along the x-axis.
+     * @param sy The scale factor along the y-axis.
+     * @param sz The scale factor along the z-axis.
+     * @return A new matrix representing a scale transformation.
+     */
+    public static Matrix3 fromScale(float sx, float sy, float sz) {
+        return new Matrix3(
+            sx, 0f, 0f,
+            0f, sy, 0f,
+            0f, 0f, sz
+        );
+    }
+
+
+    /**
+     * Converts this matrix to a {@link Matrix2}.
+     *
+     * @return A {@link Matrix2} representation of this matrix.
+     */
+    public Matrix2 toMatrix2() {
+        return new Matrix2(
+            m00, m01,
+            m10, m11
+        );
+    }
+
+    /**
+     * Converts this matrix to a {@link Matrix4}.
+     *
+     * @return A {@link Matrix4} representation of this matrix.
+     */
+    public Matrix4 toMatrix4() {
+        return new Matrix4(
+            m00, m01, m02, 0.f,
+            m10, m11, m12, 0.f,
+            m20, m21, m22, 0.f,
+            0.f, 0.f, 0.f, 1.f
+        );
+    }
+
+
+    @Override
+    public float get(int row, int column) {
+        return switch (row) {
+            case 0 -> switch (column) {
+                case 0 -> m00;
+                case 1 -> m01;
+                case 2 -> m02;
+                default -> throw new IndexOutOfBoundsException();
+            };
+            case 1 -> switch (column) {
+                case 0 -> m10;
+                case 1 -> m11;
+                case 2 -> m12;
+                default -> throw new IndexOutOfBoundsException();
+            };
+            case 2 -> switch (column) {
+                case 0 -> m20;
+                case 1 -> m21;
+                case 2 -> m22;
+                default -> throw new IndexOutOfBoundsException();
+            };
+            default -> throw new IndexOutOfBoundsException();
+        };
+    }
+
     @Override
     public Matrix3 add(Matrix3 other) {
         return new Matrix3(
@@ -103,31 +215,6 @@ public record Matrix3(
             r10, r11, r12,
             r20, r21, r22
         ).divide(det);
-    }
-
-    @Override
-    public float get(int row, int column) {
-        return switch (row) {
-            case 0 -> switch (column) {
-                case 0 -> m00;
-                case 1 -> m01;
-                case 2 -> m02;
-                default -> throw new IndexOutOfBoundsException();
-            };
-            case 1 -> switch (column) {
-                case 0 -> m10;
-                case 1 -> m11;
-                case 2 -> m12;
-                default -> throw new IndexOutOfBoundsException();
-            };
-            case 2 -> switch (column) {
-                case 0 -> m20;
-                case 1 -> m21;
-                case 2 -> m22;
-                default -> throw new IndexOutOfBoundsException();
-            };
-            default -> throw new IndexOutOfBoundsException();
-        };
     }
 
 

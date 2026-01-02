@@ -36,6 +36,121 @@ public record Matrix4(
         0.0f, 0.0f, 0.0f, 1.0f
     );
 
+
+    /**
+     * Creates a new matrix representing a rotation transformation.
+     *
+     * @param rotation The quaternion representing the rotation.
+     * @return A new matrix representing a rotation transformation.
+     */
+    public static Matrix4 fromRotation(Quaternion rotation) {
+        return Matrix3.fromRotation(rotation).toMatrix4();
+    }
+
+    /**
+     * Creates a new matrix representing a rotation transformation.
+     *
+     * @param scale The scale vector.
+     * @return A new matrix representing a rotation transformation.
+     */
+    public static Matrix4 fromScale(Vector3 scale) {
+        return fromScale(scale.x(), scale.y(), scale.z());
+    }
+
+    /**
+     * Creates a matrix representing a scale transformation.
+     *
+     * @param sx The scale factor along the x-axis.
+     * @param sy The scale factor along the y-axis.
+     * @param sz The scale factor along the z-axis.
+     * @return A new matrix representing a scale transformation.
+     */
+    public static Matrix4 fromScale(float sx, float sy, float sz) {
+        return new Matrix4(
+            sx, 0f, 0f, 0f,
+            0f, sy, 0f, 0f,
+            0f, 0f, sz, 0f,
+            0f, 0f, 0f, 1f
+        );
+    }
+
+    /**
+     * Creates a new matrix representing a translation transformation.
+     *
+     * @param translation The translation vector.
+     * @return A new matrix representing a translation transformation.
+     */
+    public static Matrix4 fromTranslation(Vector3 translation) {
+        return fromTranslation(translation.x(), translation.y(), translation.z());
+    }
+
+    /**
+     * Creates a matrix representing a translation transformation.
+     *
+     * @param tx The translation along the x-axis.
+     * @param ty The translation along the y-axis.
+     * @param tz The translation along the z-axis.
+     * @return A new matrix representing a translation transformation.
+     */
+    public static Matrix4 fromTranslation(float tx, float ty, float tz) {
+        return new Matrix4(
+            1f, 0f, 0f, 0f,
+            0f, 1f, 0f, 0f,
+            0f, 0f, 1f, 0f,
+            tx, ty, tz, 1f
+        );
+    }
+
+
+    /**
+     * Converts this matrix to a {@link Matrix3}.
+     *
+     * @return A {@link Matrix3} representation of this matrix.
+     */
+    public Matrix3 toMatrix3() {
+        return new Matrix3(
+            m00, m01, m02,
+            m10, m11, m12,
+            m20, m21, m22
+        );
+    }
+
+
+    @Override
+    public float get(int row, int column) {
+        return switch (row) {
+            case 0 -> switch (column) {
+                case 0 -> m00;
+                case 1 -> m01;
+                case 2 -> m02;
+                case 3 -> m03;
+                default -> throw new IndexOutOfBoundsException();
+            };
+            case 1 -> switch (column) {
+                case 0 -> m10;
+                case 1 -> m11;
+                case 2 -> m12;
+                case 3 -> m13;
+                default -> throw new IndexOutOfBoundsException();
+            };
+            case 2 -> switch (column) {
+                case 0 -> m20;
+                case 1 -> m21;
+                case 2 -> m22;
+                case 3 -> m23;
+                default -> throw new IndexOutOfBoundsException();
+            };
+            case 3 -> switch (column) {
+                case 0 -> m30;
+                case 1 -> m31;
+                case 2 -> m32;
+                case 3 -> m33;
+                default -> throw new IndexOutOfBoundsException();
+            };
+            default -> throw new IndexOutOfBoundsException();
+        };
+    }
+
     @Override
     public Matrix4 add(Matrix4 other) {
         return new Matrix4(
@@ -159,41 +274,6 @@ public record Matrix4(
             r20, r21, r22, r23,
             r30, r31, r32, r33
         ).divide(det);
-    }
-
-    @Override
-    public float get(int row, int column) {
-        return switch (row) {
-            case 0 -> switch (column) {
-                case 0 -> m00;
-                case 1 -> m01;
-                case 2 -> m02;
-                case 3 -> m03;
-                default -> throw new IndexOutOfBoundsException();
-            };
-            case 1 -> switch (column) {
-                case 0 -> m10;
-                case 1 -> m11;
-                case 2 -> m12;
-                case 3 -> m13;
-                default -> throw new IndexOutOfBoundsException();
-            };
-            case 2 -> switch (column) {
-                case 0 -> m20;
-                case 1 -> m21;
-                case 2 -> m22;
-                case 3 -> m23;
-                default -> throw new IndexOutOfBoundsException();
-            };
-            case 3 -> switch (column) {
-                case 0 -> m30;
-                case 1 -> m31;
-                case 2 -> m32;
-                case 3 -> m33;
-                default -> throw new IndexOutOfBoundsException();
-            };
-            default -> throw new IndexOutOfBoundsException();
-        };
     }
 
 

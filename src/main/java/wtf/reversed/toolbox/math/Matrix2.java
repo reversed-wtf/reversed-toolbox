@@ -21,6 +21,78 @@ public record Matrix2(
     );
 
 
+    /**
+     * Creates a new matrix representing a rotation transformation.
+     *
+     * @param rotation The quaternion representing the rotation.
+     * @return A new matrix representing a rotation transformation.
+     */
+    public static Matrix2 fromRotation(float rotation, Angle unit) {
+        float sin = FloatMath.sin(unit.toRadians(rotation));
+        float cos = FloatMath.cos(unit.toRadians(rotation));
+
+        return new Matrix2(
+            +cos, +sin,
+            -sin, +cos
+        );
+    }
+
+    /**
+     * Creates a new matrix representing a rotation transformation.
+     *
+     * @param scale The scale vector.
+     * @return A new matrix representing a rotation transformation.
+     */
+    public static Matrix2 fromScale(Vector2 scale) {
+        return fromScale(scale.x(), scale.y());
+    }
+
+    /**
+     * Creates a matrix representing a scale transformation.
+     *
+     * @param sx The scale factor along the x-axis.
+     * @param sy The scale factor along the y-axis.
+     * @return A new matrix representing a scale transformation.
+     */
+    public static Matrix2 fromScale(float sx, float sy) {
+        return new Matrix2(
+            sx, 0f,
+            0f, sy
+        );
+    }
+
+
+    /**
+     * Converts this matrix to a {@link Matrix3}.
+     *
+     * @return A {@link Matrix3} representation of this matrix.
+     */
+    public Matrix3 toMatrix3() {
+        return new Matrix3(
+            m00, m01, 0.f,
+            m10, m11, 0.f,
+            0.f, 0.f, 1.f
+        );
+    }
+
+
+    @Override
+    public float get(int row, int column) {
+        return switch (row) {
+            case 0 -> switch (column) {
+                case 0 -> m00;
+                case 1 -> m01;
+                default -> throw new IndexOutOfBoundsException();
+            };
+            case 1 -> switch (column) {
+                case 0 -> m10;
+                case 1 -> m11;
+                default -> throw new IndexOutOfBoundsException();
+            };
+            default -> throw new IndexOutOfBoundsException();
+        };
+    }
+
     @Override
     public Matrix2 add(Matrix2 other) {
         return new Matrix2(
@@ -73,23 +145,6 @@ public record Matrix2(
             +m11, -m01,
             -m10, +m00
         ).divide(det);
-    }
-
-    @Override
-    public float get(int row, int column) {
-        return switch (row) {
-            case 0 -> switch (column) {
-                case 0 -> m00;
-                case 1 -> m01;
-                default -> throw new IndexOutOfBoundsException();
-            };
-            case 1 -> switch (column) {
-                case 0 -> m10;
-                case 1 -> m11;
-                default -> throw new IndexOutOfBoundsException();
-            };
-            default -> throw new IndexOutOfBoundsException();
-        };
     }
 
 
