@@ -20,7 +20,7 @@ public record Quaternion(
     float y,
     float z,
     float w
-) implements InnerProductSpace<Quaternion>, Primitive {
+) implements Vector<Quaternion>, Primitive {
     /**
      * The identity quaternion, representing no rotation.
      */
@@ -42,6 +42,17 @@ public record Quaternion(
         return new Quaternion(x, y, z, w);
     }
 
+
+    @Override
+    public float get(int index) {
+        return switch (index) {
+            case 0 -> x;
+            case 1 -> y;
+            case 2 -> z;
+            case 3 -> w;
+            default -> throw new IndexOutOfBoundsException();
+        };
+    }
 
     @Override
     public Quaternion add(Quaternion other) {
@@ -74,17 +85,6 @@ public record Quaternion(
         );
     }
 
-
-    @Override
-    public float get(int index) {
-        return switch (index) {
-            case 0 -> x;
-            case 1 -> y;
-            case 2 -> z;
-            case 3 -> w;
-            default -> throw new IndexOutOfBoundsException();
-        };
-    }
 
     @Override
     public void copyTo(Floats.Mutable floats, int offset) {

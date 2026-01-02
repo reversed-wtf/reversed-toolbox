@@ -20,7 +20,7 @@ public record Vector4(
     float y,
     float z,
     float w
-) implements InnerProductSpace<Vector4>, Primitive {
+) implements Vector<Vector4>, Primitive {
     /**
      * A vector with all components set to zero.
      */
@@ -99,6 +99,17 @@ public record Vector4(
 
 
     @Override
+    public float get(int index) {
+        return switch (index) {
+            case 0 -> x;
+            case 1 -> y;
+            case 2 -> z;
+            case 3 -> w;
+            default -> throw new IndexOutOfBoundsException();
+        };
+    }
+
+    @Override
     public Vector4 add(Vector4 other) {
         return new Vector4(x + other.x, y + other.y, z + other.z, w + other.w);
     }
@@ -113,17 +124,6 @@ public record Vector4(
         return x * other.x + y * other.y + z * other.z + w * other.w;
     }
 
-
-    @Override
-    public float get(int index) {
-        return switch (index) {
-            case 0 -> x;
-            case 1 -> y;
-            case 2 -> z;
-            case 3 -> w;
-            default -> throw new IndexOutOfBoundsException();
-        };
-    }
 
     @Override
     public void copyTo(Floats.Mutable floats, int offset) {

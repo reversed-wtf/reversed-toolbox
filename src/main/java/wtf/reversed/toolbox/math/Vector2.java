@@ -16,7 +16,7 @@ import java.nio.*;
 public record Vector2(
     float x,
     float y
-) implements InnerProductSpace<Vector2>, Primitive {
+) implements Vector<Vector2>, Primitive {
     /**
      * A vector with all components set to zero.
      */
@@ -62,6 +62,15 @@ public record Vector2(
 
 
     @Override
+    public float get(int index) {
+        return switch (index) {
+            case 0 -> x;
+            case 1 -> y;
+            default -> throw new IndexOutOfBoundsException();
+        };
+    }
+
+    @Override
     public Vector2 add(Vector2 other) {
         return new Vector2(x + other.x, y + other.y);
     }
@@ -76,15 +85,6 @@ public record Vector2(
         return x * other.x + y * other.y;
     }
 
-
-    @Override
-    public float get(int index) {
-        return switch (index) {
-            case 0 -> x;
-            case 1 -> y;
-            default -> throw new IndexOutOfBoundsException();
-        };
-    }
 
     @Override
     public void copyTo(Floats.Mutable floats, int offset) {

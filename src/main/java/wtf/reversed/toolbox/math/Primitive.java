@@ -4,14 +4,12 @@ import wtf.reversed.toolbox.collect.*;
 
 import java.nio.*;
 
+/**
+ * Primitive represents a mathematical primitive with a fixed number of components.
+ * <p>
+ * These can be written to and read from buffers.
+ */
 public interface Primitive {
-
-    /**
-     * Gets the component at the given index.
-     *
-     * @param index the index of the component to get
-     */
-    float get(int index);
 
     /**
      * Copies the components of this primitive into the given mutable float collection.
