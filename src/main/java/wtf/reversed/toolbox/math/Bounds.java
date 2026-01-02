@@ -26,6 +26,15 @@ public record Bounds(
     );
 
     /**
+     * Creates a new builder for bounds.
+     *
+     * @return A new builder
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /**
      * Reads bounds from a binary source.
      *
      * @param source The source to read from
@@ -40,43 +49,6 @@ public record Bounds(
         float maxY = source.readFloat();
         float maxZ = source.readFloat();
 
-        return new Bounds(
-            minX, minY, minZ,
-            maxX, maxY, maxZ
-        );
-    }
-
-    /**
-     * Compute bounds from a list of vertices, returning an empty bounds if the list is empty
-     *
-     * @param vertices The vertices to calculate bounds from
-     * @return The calculated bounds
-     */
-    public static Bounds calculate(Floats vertices) {
-        if (vertices.length() % 3 != 0) {
-            throw new IllegalArgumentException("Vertices must be a multiple of 3");
-        }
-        if (vertices.length() == 0) {
-            return EMPTY;
-        }
-
-        float minX = vertices.get(0);
-        float maxX = vertices.get(0);
-        float minY = vertices.get(1);
-        float maxY = vertices.get(1);
-        float minZ = vertices.get(2);
-        float maxZ = vertices.get(2);
-        for (int i = 3; i < vertices.length(); i += 3) {
-            float x = vertices.get(i/**/);
-            float y = vertices.get(i + 1);
-            float z = vertices.get(i + 2);
-            minX = Math.min(minX, x);
-            minY = Math.min(minY, y);
-            minZ = Math.min(minZ, z);
-            maxX = Math.max(maxX, x);
-            maxY = Math.max(maxY, y);
-            maxZ = Math.max(maxZ, z);
-        }
         return new Bounds(
             minX, minY, minZ,
             maxX, maxY, maxZ
@@ -165,5 +137,52 @@ public record Bounds(
         return "" +
             "[[" + minX + ", " + minY + ", " + minZ + "]\n" +
             " [" + maxX + ", " + maxY + ", " + maxZ + "]]";
+    }
+
+    /**
+     * Builder for bounds.
+     */
+    public static final class Builder {
+        private float minX = Float.POSITIVE_INFINITY;
+        private float minY = Float.POSITIVE_INFINITY;
+        private float minZ = Float.POSITIVE_INFINITY;
+        private float maxX = Float.NEGATIVE_INFINITY;
+        private float maxY = Float.NEGATIVE_INFINITY;
+        private float maxZ = Float.NEGATIVE_INFINITY;
+
+        /**
+         * Adds a point to the bounds.
+         *
+         * @param point The point to add
+         * @return This builder
+         */
+        public Builder add(Vector3 point) {
+            return add(point.x(), point.y(), point.z());
+        }
+
+        /**
+         * Adds a point to the bounds.
+         *
+         * @param x The x coordinate
+         * @param y The y coordinate
+         * @param z The z coordinate
+         * @return This builder
+         */
+        public Builder add(float x, float y, float z) {
+            minX = Math.min(minX, x);
+            minY = Math.min(minY, y);
+            minZ = Math.min(minZ, z);
+            maxX = Math.max(maxX, x);
+            maxY = Math.max(maxY, y);
+            maxZ = Math.max(maxZ, z);
+            return this;
+        }
+
+        public Bounds build() {
+            return new Bounds(
+                minX, minY, minZ,
+                maxX, maxY, maxZ
+            );
+        }
     }
 }
