@@ -26,7 +26,6 @@ public record Quaternion(
      */
     public static final Quaternion IDENTITY = new Quaternion(0.0f, 0.0f, 0.0f, 1.0f);
 
-
     /**
      * Creates a new quaternion from a binary source.
      *
@@ -74,7 +73,7 @@ public record Quaternion(
      * Multiplies this quaternion with another quaternion.
      *
      * @param other The other quaternion.
-     * @return The result quaternion.
+     * @return The product.
      */
     public Quaternion multiply(Quaternion other) {
         return new Quaternion(
@@ -83,6 +82,24 @@ public record Quaternion(
             w * other.z + x * other.y - y * other.x + z * other.w,
             w * other.w - x * other.x - y * other.y - z * other.z
         );
+    }
+
+    /**
+     * Returns the conjugate of this quaternion.
+     *
+     * @return The conjugate.
+     */
+    public Quaternion conjugate() {
+        return new Quaternion(-x, -y, -z, w);
+    }
+
+    /**
+     * Returns the inverse of this quaternion.
+     *
+     * @return The inverse.
+     */
+    public Quaternion inverse() {
+        return conjugate().multiply(1.0f / dot(this));
     }
 
 
