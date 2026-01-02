@@ -6,6 +6,7 @@ module wtf.reversed.toolbox {
     exports wtf.reversed.toolbox.compress;
     exports wtf.reversed.toolbox.hash;
     exports wtf.reversed.toolbox.io;
+    exports wtf.reversed.toolbox.math;
     exports wtf.reversed.toolbox.type;
     exports wtf.reversed.toolbox.util;
 }
