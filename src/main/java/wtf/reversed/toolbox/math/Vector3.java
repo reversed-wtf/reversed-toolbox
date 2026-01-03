@@ -104,6 +104,49 @@ public record Vector3(
     }
 
 
+    /**
+     * Calculates the cross product of this vector and another vector.
+     *
+     * @param other The other vector.
+     * @return The cross product.
+     */
+    public Vector3 cross(Vector3 other) {
+        return new Vector3(
+            y * other.z - z * other.y,
+            z * other.x - x * other.z,
+            x * other.y - y * other.x
+        );
+    }
+
+    /**
+     * Transforms this vector by a {@link Matrix3}.
+     *
+     * @param matrix The matrix.
+     * @return The transformed vector.
+     */
+    public Vector3 transform(Matrix3 matrix) {
+        return new Vector3(
+            Math.fma(x, matrix.m00(), Math.fma(y, matrix.m10(), z * matrix.m20())),
+            Math.fma(x, matrix.m01(), Math.fma(y, matrix.m11(), z * matrix.m21())),
+            Math.fma(x, matrix.m02(), Math.fma(y, matrix.m12(), z * matrix.m22()))
+        );
+    }
+
+    /**
+     * Transforms this vector by a {@link Matrix4}.
+     *
+     * @param matrix The matrix.
+     * @return The transformed vector.
+     */
+    public Vector3 transform(Matrix4 matrix) {
+        return new Vector3(
+            Math.fma(x, matrix.m00(), Math.fma(y, matrix.m10(), Math.fma(z, matrix.m20(), matrix.m30()))),
+            Math.fma(x, matrix.m01(), Math.fma(y, matrix.m11(), Math.fma(z, matrix.m21(), matrix.m31()))),
+            Math.fma(x, matrix.m02(), Math.fma(y, matrix.m12(), Math.fma(z, matrix.m22(), matrix.m32())))
+        );
+    }
+
+
     @Override
     public int componentCount() {
         return 3;

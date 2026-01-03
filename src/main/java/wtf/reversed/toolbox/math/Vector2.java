@@ -85,6 +85,33 @@ public record Vector2(
     }
 
 
+    /**
+     * Transforms this vector by a {@link Matrix2}.
+     *
+     * @param matrix The matrix.
+     * @return The transformed vector.
+     */
+    public Vector2 transform(Matrix2 matrix) {
+        return new Vector2(
+            Math.fma(x, matrix.m00(), y * matrix.m10()),
+            Math.fma(x, matrix.m01(), y * matrix.m11())
+        );
+    }
+
+    /**
+     * Transforms this vector by a {@link Matrix3}.
+     *
+     * @param matrix The matrix.
+     * @return The transformed vector.
+     */
+    public Vector2 transform(Matrix3 matrix) {
+        return new Vector2(
+            Math.fma(x, matrix.m00(), Math.fma(y, matrix.m10(), matrix.m20())),
+            Math.fma(x, matrix.m01(), Math.fma(y, matrix.m11(), matrix.m21()))
+        );
+    }
+
+
     @Override
     public int componentCount() {
         return 2;

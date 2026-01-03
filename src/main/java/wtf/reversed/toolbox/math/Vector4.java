@@ -124,6 +124,22 @@ public record Vector4(
     }
 
 
+    /**
+     * Transforms this vector by a {@link Matrix4}.
+     *
+     * @param matrix The matrix.
+     * @return The transformed vector.
+     */
+    public Vector4 transform(Matrix4 matrix) {
+        return new Vector4(
+            Math.fma(x, matrix.m00(), Math.fma(y, matrix.m10(), Math.fma(z, matrix.m20(), w * matrix.m30()))),
+            Math.fma(x, matrix.m01(), Math.fma(y, matrix.m11(), Math.fma(z, matrix.m21(), w * matrix.m31()))),
+            Math.fma(x, matrix.m02(), Math.fma(y, matrix.m12(), Math.fma(z, matrix.m22(), w * matrix.m32()))),
+            Math.fma(x, matrix.m03(), Math.fma(y, matrix.m13(), Math.fma(z, matrix.m23(), w * matrix.m33())))
+        );
+    }
+
+
     @Override
     public int componentCount() {
         return 4;
