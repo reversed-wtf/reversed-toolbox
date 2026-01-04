@@ -52,6 +52,36 @@ public final class FloatMath {
     }
 
     /**
+     * Computes the arcsine of a float value.
+     *
+     * @param a the float value
+     * @return the arcsine of the value
+     */
+    public static float asin(float a) {
+        return (float) Math.asin(a);
+    }
+
+    /**
+     * Computes the arccosine of a float value.
+     *
+     * @param a the float value
+     * @return the arccosine of the value
+     */
+    public static float acos(float a) {
+        return (float) Math.acos(a);
+    }
+
+    /**
+     * Computes the arctangent of a float value.
+     *
+     * @param a the float value
+     * @return the arctangent of the value
+     */
+    public static float atan(float a) {
+        return (float) Math.atan(a);
+    }
+
+    /**
      * Computes the square root of a float value.
      *
      * @param a the float value
@@ -59,6 +89,16 @@ public final class FloatMath {
      */
     public static float sqrt(float a) {
         return (float) Math.sqrt(a);
+    }
+
+    /**
+     * Computes the reciprocal square root of a float value.
+     *
+     * @param a the float value
+     * @return the reciprocal square root of the value
+     */
+    public static float rsqrt(float a) {
+        return 1.0f / sqrt(a);
     }
 
 

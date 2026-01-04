@@ -19,11 +19,27 @@ public record Quaternion(
     float y,
     float z,
     float w
-) implements Vector<Quaternion>, Primitive {
+) implements Vector<Quaternion>, Divisible<Quaternion>, Primitive {
     /**
      * The identity quaternion, representing no rotation.
      */
     public static final Quaternion IDENTITY = new Quaternion(0.0f, 0.0f, 0.0f, 1.0f);
+
+    /**
+     * Creates a new quaternion from a binary source.
+     *
+     * @param source The binary source.
+     * @return The quaternion.
+     * @throws IOException If an I/O error occurs.
+     */
+    public static Quaternion read(BinarySource source) throws IOException {
+        float x = source.readFloat();
+        float y = source.readFloat();
+        float z = source.readFloat();
+        float w = source.readFloat();
+        return new Quaternion(x, y, z, w);
+    }
+
 
     /**
      * Creates a new quaternion from an axis and angle.
@@ -62,6 +78,9 @@ public record Quaternion(
 
     /**
      * Creates a new quaternion from Euler angles.
+     * <p>
+     * The specified order specifies <b>intrinsic</b> rotations.
+     * If you need extrinsic rotations, use the `swap()` method on the order.
      *
      * @param angle The Euler angles.
      * @param unit  The unit of the angles.
@@ -74,6 +93,9 @@ public record Quaternion(
 
     /**
      * Creates a new quaternion from Euler angles.
+     * <p>
+     * The specified order specifies <b>intrinsic</b> rotations.
+     * If you need extrinsic rotations, use the `swap()` method on the order.
      *
      * @param angleX The angle around the X axis.
      * @param angleY The angle around the Y axis.
@@ -82,7 +104,7 @@ public record Quaternion(
      * @param order  The order of rotation.
      * @return The quaternion.
      */
-    private static Quaternion fromEuler(float angleX, float angleY, float angleZ, Angle unit, Order order) {
+    public static Quaternion fromEuler(float angleX, float angleY, float angleZ, Angle unit, Order order) {
         float halfAngleX = unit.toRadians(angleX) * 0.5f;
         float sx = FloatMath.sin(halfAngleX);
         float cx = FloatMath.cos(halfAngleX);
@@ -106,11 +128,11 @@ public record Quaternion(
 
         return switch (order) {
             case XYZ -> new Quaternion(scc + css, csc - scs, ccs + ssc, ccc - sss);
+            case XZY -> new Quaternion(scc - css, csc - scs, ccs + ssc, ccc + sss);
             case YXZ -> new Quaternion(scc + css, csc - scs, ccs - ssc, ccc + sss);
+            case YZX -> new Quaternion(scc + css, csc + scs, ccs - ssc, ccc - sss);
             case ZXY -> new Quaternion(scc - css, csc + scs, ccs + ssc, ccc - sss);
             case ZYX -> new Quaternion(scc - css, csc + scs, ccs - ssc, ccc + sss);
-            case YZX -> new Quaternion(scc + css, csc + scs, ccs - ssc, ccc - sss);
-            case XZY -> new Quaternion(scc - css, csc - scs, ccs + ssc, ccc + sss);
         };
     }
 
@@ -122,9 +144,9 @@ public record Quaternion(
      */
     public static Quaternion fromMatrix(Matrix3 matrix) {
         return fromMatrix(
-            matrix.m00(), matrix.m01(), matrix.m02(),
-            matrix.m10(), matrix.m11(), matrix.m12(),
-            matrix.m20(), matrix.m21(), matrix.m22()
+            matrix.m11(), matrix.m21(), matrix.m31(),
+            matrix.m12(), matrix.m22(), matrix.m32(),
+            matrix.m13(), matrix.m23(), matrix.m33()
         );
     }
 
@@ -136,114 +158,110 @@ public record Quaternion(
      */
     public static Quaternion fromMatrix(Matrix4 matrix) {
         return fromMatrix(
-            matrix.m00(), matrix.m01(), matrix.m02(),
-            matrix.m10(), matrix.m11(), matrix.m12(),
-            matrix.m20(), matrix.m21(), matrix.m22()
+            matrix.m11(), matrix.m21(), matrix.m31(),
+            matrix.m12(), matrix.m22(), matrix.m32(),
+            matrix.m13(), matrix.m23(), matrix.m33()
         );
     }
 
     /**
      * Creates a new quaternion from a rotation matrix. The matrix must be orthogonal.
      *
-     * @param m00 The element at row 0, column 0 of the matrix.
-     * @param m01 The element at row 0, column 1 of the matrix.
-     * @param m02 The element at row 0, column 2 of the matrix.
-     * @param m10 The element at row 1, column 0 of the matrix.
      * @param m11 The element at row 1, column 1 of the matrix.
-     * @param m12 The element at row 1, column 2 of the matrix.
-     * @param m20 The element at row 2, column 0 of the matrix.
-     * @param m21 The element at row 2, column 1 of the matrix.
+     * @param m21 The element at row 1, column 2 of the matrix.
+     * @param m31 The element at row 1, column 3 of the matrix.
+     * @param m12 The element at row 2, column 1 of the matrix.
      * @param m22 The element at row 2, column 2 of the matrix.
+     * @param m32 The element at row 2, column 3 of the matrix.
+     * @param m13 The element at row 3, column 1 of the matrix.
+     * @param m23 The element at row 3, column 2 of the matrix.
+     * @param m33 The element at row 3, column 3 of the matrix.
      * @return The quaternion.
      */
     public static Quaternion fromMatrix(
-        float m00, float m01, float m02,
-        float m10, float m11, float m12,
-        float m20, float m21, float m22
+        float m11, float m21, float m31,
+        float m12, float m22, float m32,
+        float m13, float m23, float m33
     ) {
-        float inverseLengthX = 1.0f / FloatMath.sqrt(m00 * m00 + m10 * m10 + m20 * m20);
-        float inverseLengthY = 1.0f / FloatMath.sqrt(m01 * m01 + m11 * m11 + m21 * m21);
-        float inverseLengthZ = 1.0f / FloatMath.sqrt(m02 * m02 + m12 * m12 + m22 * m22);
+        float invLenX = FloatMath.rsqrt(m11 * m11 + m21 * m21 + m31 * m31);
+        float invLenY = FloatMath.rsqrt(m12 * m12 + m22 * m22 + m32 * m32);
+        float invLenZ = FloatMath.rsqrt(m13 * m13 + m23 * m23 + m33 * m33);
 
         return fromMatrixNormalized(
-            m00 * inverseLengthX, m01 * inverseLengthX, m02 * inverseLengthX,
-            m10 * inverseLengthY, m11 * inverseLengthY, m12 * inverseLengthY,
-            m20 * inverseLengthZ, m21 * inverseLengthZ, m22 * inverseLengthZ
+            m11 * invLenX, m21 * invLenX, m31 * invLenX,
+            m12 * invLenY, m22 * invLenY, m32 * invLenY,
+            m13 * invLenZ, m23 * invLenZ, m33 * invLenZ
         );
     }
 
     /**
      * Creates a new quaternion from a normalized rotation matrix.
      *
-     * @param m00 The element at row 0, column 0 of the matrix.
-     * @param m01 The element at row 0, column 1 of the matrix.
-     * @param m02 The element at row 0, column 2 of the matrix.
-     * @param m10 The element at row 1, column 0 of the matrix.
      * @param m11 The element at row 1, column 1 of the matrix.
-     * @param m12 The element at row 1, column 2 of the matrix.
-     * @param m20 The element at row 2, column 0 of the matrix.
-     * @param m21 The element at row 2, column 1 of the matrix.
+     * @param m21 The element at row 1, column 2 of the matrix.
+     * @param m31 The element at row 1, column 3 of the matrix.
+     * @param m12 The element at row 2, column 1 of the matrix.
      * @param m22 The element at row 2, column 2 of the matrix.
+     * @param m32 The element at row 2, column 3 of the matrix.
+     * @param m13 The element at row 3, column 1 of the matrix.
+     * @param m23 The element at row 3, column 2 of the matrix.
+     * @param m33 The element at row 3, column 3 of the matrix.
      * @return The quaternion.
      */
     public static Quaternion fromMatrixNormalized(
-        float m00, float m01, float m02,
-        float m10, float m11, float m12,
-        float m20, float m21, float m22
+        float m11, float m21, float m31,
+        float m12, float m22, float m32,
+        float m13, float m23, float m33
     ) {
-        float trace = m00 + m11 + m22;
+        float trace = m11 + m22 + m33;
         if (trace > 0.0f) {
             float s = FloatMath.sqrt(1.0f + trace);
             float invS = 0.5f / s;
             return new Quaternion(
-                (m12 - m21) * invS,
-                (m20 - m02) * invS,
-                (m01 - m10) * invS,
+                (m32 - m23) * invS,
+                (m13 - m31) * invS,
+                (m21 - m12) * invS,
                 0.5f * s
             );
-        } else if (m00 > m11 && m00 > m22) {
-            float s = FloatMath.sqrt(1.0f + m00 - m11 - m22);
+        } else if (m11 > m22 && m11 > m33) {
+            float s = FloatMath.sqrt(1.0f + m11 - m22 - m33);
             float invS = 0.5f / s;
             return new Quaternion(
                 0.5f * s,
-                (m01 + m10) * invS,
-                (m20 + m02) * invS,
-                (m12 - m21) * invS
+                (m21 + m12) * invS,
+                (m13 + m31) * invS,
+                (m32 - m23) * invS
             );
-        } else if (m11 > m22) {
-            float s = FloatMath.sqrt(1.0f + m11 - m00 - m22);
+        } else if (m22 > m33) {
+            float s = FloatMath.sqrt(1.0f + m22 - m11 - m33);
             float invS = 0.5f / s;
             return new Quaternion(
-                (m01 + m10) * invS,
+                (m21 + m12) * invS,
                 0.5f * s,
-                (m12 + m21) * invS,
-                (m20 - m02) * invS
+                (m32 + m23) * invS,
+                (m13 - m31) * invS
             );
         } else {
-            float s = FloatMath.sqrt(1.0f + m22 - m00 - m11);
+            float s = FloatMath.sqrt(1.0f + m33 - m11 - m22);
             float invS = 0.5f / s;
             return new Quaternion(
-                (m20 + m02) * invS,
-                (m12 + m21) * invS,
+                (m13 + m31) * invS,
+                (m32 + m23) * invS,
                 0.5f * s,
-                (m01 - m10) * invS
+                (m21 - m12) * invS
             );
         }
     }
 
-    /**
-     * Creates a new quaternion from a binary source.
-     *
-     * @param source The binary source.
-     * @return The quaternion.
-     * @throws IOException If an I/O error occurs.
-     */
-    public static Quaternion read(BinarySource source) throws IOException {
-        float x = source.readFloat();
-        float y = source.readFloat();
-        float z = source.readFloat();
-        float w = source.readFloat();
-        return new Quaternion(x, y, z, w);
+
+    @Override
+    public Quaternion add(Quaternion other) {
+        return new Quaternion(x + other.x, y + other.y, z + other.z, w + other.w);
+    }
+
+    @Override
+    public Quaternion multiply(float scalar) {
+        return new Quaternion(x * scalar, y * scalar, z * scalar, w * scalar);
     }
 
 
@@ -259,27 +277,17 @@ public record Quaternion(
     }
 
     @Override
-    public Quaternion add(Quaternion other) {
-        return new Quaternion(x + other.x, y + other.y, z + other.z, w + other.w);
-    }
-
-    @Override
-    public Quaternion multiply(float scalar) {
-        return new Quaternion(x * scalar, y * scalar, z * scalar, w * scalar);
-    }
-
-    @Override
     public float dot(Quaternion other) {
         return x * other.x + y * other.y + z * other.z + w * other.w;
     }
 
 
-    /**
-     * Multiplies this quaternion with another quaternion.
-     *
-     * @param other The other quaternion.
-     * @return The product.
-     */
+    @Override
+    public Quaternion one() {
+        return IDENTITY;
+    }
+
+    @Override
     public Quaternion multiply(Quaternion other) {
         return new Quaternion(
             w * other.x + x * other.w + y * other.z - z * other.y,
@@ -289,22 +297,9 @@ public record Quaternion(
         );
     }
 
-    /**
-     * Returns the conjugate of this quaternion.
-     *
-     * @return The conjugate.
-     */
-    public Quaternion conjugate() {
-        return new Quaternion(-x, -y, -z, w);
-    }
-
-    /**
-     * Returns the inverse of this quaternion.
-     *
-     * @return The inverse.
-     */
+    @Override
     public Quaternion inverse() {
-        return conjugate().multiply(1.0f / dot(this));
+        return conjugate().divide(lengthSquared());
     }
 
 
@@ -330,6 +325,45 @@ public record Quaternion(
     }
 
 
+    /**
+     * Calculates the conjugate of this quaternion.
+     *
+     * @return The conjugate.
+     */
+    public Quaternion conjugate() {
+        return new Quaternion(-x, -y, -z, w);
+    }
+
+    /**
+     * Calculates the spherical linear interpolation between this quaternion and another one.
+     *
+     * @param other The other quaternion.
+     * @param t     The interpolation factor.
+     * @return The interpolated quaternion.
+     */
+    public Quaternion slerp(Quaternion other, float t) {
+        float cosOmega = dot(other);
+        float sign = 1.0f;
+        if (cosOmega < 0.0f) {
+            cosOmega = -cosOmega;
+            sign = -1.0f;
+        }
+
+        float s1;
+        float s2;
+        if (cosOmega > 1.0f - EPSILON) {
+            s1 = 1.0f - t;
+            s2 = t * sign;
+        } else {
+            float omega = FloatMath.acos(cosOmega);
+            float invSinOmega = 1.0f / FloatMath.sin(omega);
+            s1 = FloatMath.sin((1.0f - t) * omega) * invSinOmega;
+            s2 = FloatMath.sin(t * omega) * invSinOmega * sign;
+        }
+        return multiply(s1).add(other.multiply(s2));
+    }
+
+
     @Override
     public boolean equals(Object obj) {
         return obj instanceof Quaternion other
@@ -342,10 +376,10 @@ public record Quaternion(
     @Override
     public int hashCode() {
         int result = 0;
-        result = 31 * result + Float.hashCode(x);
-        result = 31 * result + Float.hashCode(y);
-        result = 31 * result + Float.hashCode(z);
-        result = 31 * result + Float.hashCode(w);
+        result = 31 * result + FloatMath.hashCode(x);
+        result = 31 * result + FloatMath.hashCode(y);
+        result = 31 * result + FloatMath.hashCode(z);
+        result = 31 * result + FloatMath.hashCode(w);
         return result;
     }
 

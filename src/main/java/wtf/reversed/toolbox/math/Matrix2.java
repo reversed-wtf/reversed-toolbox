@@ -1,22 +1,26 @@
 package wtf.reversed.toolbox.math;
 
 import wtf.reversed.toolbox.collect.*;
-import wtf.reversed.toolbox.io.*;
 
-import java.io.*;
 import java.nio.*;
 
 /**
- * Represents a 2x2 matrix in row-major order.
+ * Represents a 2x2 matrix.
+ * <p>
+ * This matrix is stored in column-major order. Meaning the elements are laid out in memory
+ * such that the first four elements represent the first column, the next four elements
+ * represent the second column, and so on.
+ * <p>
+ * This is the same order as OpenGL uses.
  *
- * @param m00 The value in the first row and first column.
- * @param m01 The value in the first row and second column.
- * @param m10 The value in the second row and first column.
- * @param m11 The value in the second row and second column.
+ * @param m11 The element in the first row and the first column.
+ * @param m21 The element in the second row and the first column.
+ * @param m12 The element in the first row and the second column.
+ * @param m22 The element in the second row and the second column.
  */
 public record Matrix2(
-    float m00, float m01,
-    float m10, float m11
+    float m11, float m21,
+    float m12, float m22
 ) implements Matrix<Matrix2>, Primitive {
     /**
      * The identity matrix for 2x2 transformations.
@@ -33,13 +37,25 @@ public record Matrix2(
      * @param rotation The quaternion representing the rotation.
      * @return A new matrix representing a rotation transformation.
      */
-    public static Matrix2 fromRotation(float rotation, Angle unit) {
-        float sin = FloatMath.sin(unit.toRadians(rotation));
-        float cos = FloatMath.cos(unit.toRadians(rotation));
+    public static Matrix2 fromRotation(Quaternion rotation) {
+        float x = rotation.x();
+        float y = rotation.y();
+        float z = rotation.z();
+        float w = rotation.w();
+
+        float x2 = x + x;
+        float y2 = y + y;
+        float z2 = z + z;
+
+        float wz = w * z2;
+        float xx = x * x2;
+        float xy = x * y2;
+        float yy = y * y2;
+        float zz = z * z2;
 
         return new Matrix2(
-            +cos, +sin,
-            -sin, +cos
+            1.0f - yy - zz, xy + wz,
+            xy - wz, 1.0f - xx - zz
         );
     }
 
@@ -68,37 +84,65 @@ public record Matrix2(
     }
 
 
-    /**
-     * Creates a new matrix from a binary source.
-     *
-     * @param source The binary source.
-     * @return The vector.
-     * @throws IOException If an I/O error occurs.
-     */
-    public static Matrix2 read(BinarySource source) throws IOException {
-        float m00 = source.readFloat();
-        float m01 = source.readFloat();
-        float m10 = source.readFloat();
-        float m11 = source.readFloat();
-
+    @Override
+    public Matrix2 add(Matrix2 other) {
         return new Matrix2(
-            m00, m01,
-            m10, m11
+            m11 + other.m11, m21 + other.m21,
+            m12 + other.m12, m22 + other.m22
+        );
+    }
+
+    @Override
+    public Matrix2 multiply(float scalar) {
+        return new Matrix2(
+            m11 * scalar, m21 * scalar,
+            m12 * scalar, m22 * scalar
         );
     }
 
 
-    /**
-     * Converts this matrix to a {@link Matrix3}.
-     *
-     * @return A {@link Matrix3} representation of this matrix.
-     */
-    public Matrix3 toMatrix3() {
-        return new Matrix3(
-            m00, m01, 0.f,
-            m10, m11, 0.f,
-            0.f, 0.f, 1.f
+    @Override
+    public Matrix2 one() {
+        return IDENTITY;
+    }
+
+    @Override
+    public Matrix2 multiply(Matrix2 other) {
+        return new Matrix2(
+            Math.fma(m11, other.m11, m12 * other.m21),
+            Math.fma(m21, other.m11, m22 * other.m21),
+            Math.fma(m11, other.m12, m12 * other.m22),
+            Math.fma(m21, other.m12, m22 * other.m22)
         );
+    }
+
+    @Override
+    public Matrix2 inverse() {
+        float det = determinant();
+
+        // TODO: Fix epsilons
+        if (Math.abs(det) < 1e-6f) {
+            throw new ArithmeticException("Cannot invert matrix with near-zero determinant");
+        }
+
+        return new Matrix2(
+            +m22, -m21,
+            -m12, +m11
+        ).divide(det);
+    }
+
+
+    @Override
+    public Matrix2 transpose() {
+        return new Matrix2(
+            m11, m12,
+            m21, m22
+        );
+    }
+
+    @Override
+    public float determinant() {
+        return m11 * m22 - m21 * m12;
     }
 
 
@@ -106,73 +150,18 @@ public record Matrix2(
     public float get(int row, int column) {
         return switch (row) {
             case 0 -> switch (column) {
-                case 0 -> m00;
-                case 1 -> m01;
+                case 0 -> m11;
+                case 1 -> m12;
                 default -> throw new IndexOutOfBoundsException();
             };
             case 1 -> switch (column) {
-                case 0 -> m10;
-                case 1 -> m11;
+                case 0 -> m21;
+                case 1 -> m22;
                 default -> throw new IndexOutOfBoundsException();
             };
             default -> throw new IndexOutOfBoundsException();
         };
     }
-
-    @Override
-    public Matrix2 add(Matrix2 other) {
-        return new Matrix2(
-            m00 + other.m00, m01 + other.m01,
-            m10 + other.m10, m11 + other.m11
-        );
-    }
-
-    @Override
-    public Matrix2 multiply(float scalar) {
-        return new Matrix2(
-            m00 * scalar, m01 * scalar,
-            m10 * scalar, m11 * scalar
-        );
-    }
-
-
-    @Override
-    public Matrix2 multiply(Matrix2 other) {
-        return new Matrix2(
-            m00 * other.m00 + m01 * other.m10,
-            m00 * other.m01 + m01 * other.m11,
-            m10 * other.m00 + m11 * other.m10,
-            m10 * other.m01 + m11 * other.m11
-        );
-    }
-
-    @Override
-    public Matrix2 transpose() {
-        return new Matrix2(
-            m00, m10,
-            m01, m11
-        );
-    }
-
-    @Override
-    public float determinant() {
-        return m00 * m11 - m01 * m10;
-    }
-
-    @Override
-    public Matrix2 inverse() {
-        float det = determinant();
-
-        if (Math.abs(determinant()) < 1e-6) {
-            throw new ArithmeticException("Matrix is singular, cannot invert.");
-        }
-
-        return new Matrix2(
-            +m11, -m01,
-            -m10, +m00
-        ).divide(det);
-    }
-
 
     @Override
     public int componentCount() {
@@ -181,44 +170,44 @@ public record Matrix2(
 
     @Override
     public void toSliceUnsafe(Floats.Mutable floats, int offset) {
-        floats.set(offset/**/, m00);
-        floats.set(offset + 1, m01);
-        floats.set(offset + 2, m10);
-        floats.set(offset + 3, m11);
+        floats.set(offset/**/, m11);
+        floats.set(offset + 1, m21);
+        floats.set(offset + 2, m12);
+        floats.set(offset + 3, m22);
     }
 
     @Override
     public void toBufferUnsafe(FloatBuffer floats) {
-        floats.put(m00);
-        floats.put(m01);
-        floats.put(m10);
         floats.put(m11);
+        floats.put(m21);
+        floats.put(m12);
+        floats.put(m22);
     }
 
 
     @Override
     public boolean equals(Object obj) {
-        return obj instanceof Matrix2 other
-            && FloatMath.equals(m00, other.m00)
-            && FloatMath.equals(m01, other.m01)
-            && FloatMath.equals(m10, other.m10)
-            && FloatMath.equals(m11, other.m11);
+        return this == obj || obj instanceof Matrix2 other
+            && FloatMath.equals(m11, other.m11)
+            && FloatMath.equals(m21, other.m21)
+            && FloatMath.equals(m12, other.m12)
+            && FloatMath.equals(m22, other.m22);
     }
 
     @Override
     public int hashCode() {
         int result = 0;
-        result = 31 * result + FloatMath.hashCode(m00);
-        result = 31 * result + FloatMath.hashCode(m01);
-        result = 31 * result + FloatMath.hashCode(m10);
         result = 31 * result + FloatMath.hashCode(m11);
+        result = 31 * result + FloatMath.hashCode(m21);
+        result = 31 * result + FloatMath.hashCode(m12);
+        result = 31 * result + FloatMath.hashCode(m22);
         return result;
     }
 
     @Override
     public String toString() {
         return "" +
-            "[[" + m00 + ", " + m01 + "]\n" +
-            " [" + m10 + ", " + m11 + "]]";
+            "[[" + m11 + ", " + m12 + "]\n" +
+            " [" + m21 + ", " + m22 + "]]";
     }
 }

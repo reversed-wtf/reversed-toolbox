@@ -98,6 +98,17 @@ public record Vector4(
 
 
     @Override
+    public Vector4 add(Vector4 other) {
+        return new Vector4(x + other.x, y + other.y, z + other.z, w + other.w);
+    }
+
+    @Override
+    public Vector4 multiply(float scalar) {
+        return new Vector4(x * scalar, y * scalar, z * scalar, w * scalar);
+    }
+
+
+    @Override
     public float get(int index) {
         return switch (index) {
             case 0 -> x;
@@ -109,48 +120,14 @@ public record Vector4(
     }
 
     @Override
-    public Vector4 add(Vector4 other) {
-        return new Vector4(x + other.x, y + other.y, z + other.z, w + other.w);
-    }
-
-    @Override
-    public Vector4 multiply(float scalar) {
-        return new Vector4(x * scalar, y * scalar, z * scalar, w * scalar);
-    }
-
-    @Override
     public float dot(Vector4 other) {
         return x * other.x + y * other.y + z * other.z + w * other.w;
-    }
-
-
-    /**
-     * Transforms this vector by a {@link Matrix4}.
-     *
-     * @param matrix The matrix.
-     * @return The transformed vector.
-     */
-    public Vector4 transform(Matrix4 matrix) {
-        return new Vector4(
-            Math.fma(x, matrix.m00(), Math.fma(y, matrix.m10(), Math.fma(z, matrix.m20(), w * matrix.m30()))),
-            Math.fma(x, matrix.m01(), Math.fma(y, matrix.m11(), Math.fma(z, matrix.m21(), w * matrix.m31()))),
-            Math.fma(x, matrix.m02(), Math.fma(y, matrix.m12(), Math.fma(z, matrix.m22(), w * matrix.m32()))),
-            Math.fma(x, matrix.m03(), Math.fma(y, matrix.m13(), Math.fma(z, matrix.m23(), w * matrix.m33())))
-        );
     }
 
 
     @Override
     public int componentCount() {
         return 4;
-    }
-
-    @Override
-    public void toBufferUnsafe(FloatBuffer floats) {
-        floats.put(x);
-        floats.put(y);
-        floats.put(z);
-        floats.put(w);
     }
 
     @Override
@@ -161,22 +138,45 @@ public record Vector4(
         floats.set(offset + 3, w);
     }
 
+    @Override
+    public void toBufferUnsafe(FloatBuffer floats) {
+        floats.put(x);
+        floats.put(y);
+        floats.put(z);
+        floats.put(w);
+    }
+
 
     /**
-     * Converts this vector to a {@link Vector2} by dropping the z and w components.
+     * Transforms this vector by the given matrix.
      *
-     * @return The new vector.
+     * @param matrix The matrix to transform by.
+     * @return The transformed vector.
      */
-    public Vector2 toVector2() {
+    public Vector4 transform(Matrix4 matrix) {
+        return new Vector4(
+            Math.fma(x, matrix.m11(), Math.fma(y, matrix.m12(), Math.fma(z, matrix.m13(), w * matrix.m14()))),
+            Math.fma(x, matrix.m21(), Math.fma(y, matrix.m22(), Math.fma(z, matrix.m23(), w * matrix.m24()))),
+            Math.fma(x, matrix.m31(), Math.fma(y, matrix.m32(), Math.fma(z, matrix.m33(), w * matrix.m34()))),
+            Math.fma(x, matrix.m41(), Math.fma(y, matrix.m42(), Math.fma(z, matrix.m43(), w * matrix.m44())))
+        );
+    }
+
+    /**
+     * Returns the xy components of this vector.
+     *
+     * @return xy components of this vector
+     */
+    public Vector2 xy() {
         return new Vector2(x, y);
     }
 
     /**
-     * Converts this vector to a {@link Vector3} by dropping the w component.
+     * Returns the xyz components of this vector.
      *
-     * @return The new vector.
+     * @return xyz components of this vector
      */
-    public Vector3 toVector3() {
+    public Vector3 xyz() {
         return new Vector3(x, y, z);
     }
 
@@ -193,10 +193,10 @@ public record Vector4(
     @Override
     public int hashCode() {
         int result = 0;
-        result = 31 * result + Float.hashCode(x);
-        result = 31 * result + Float.hashCode(y);
-        result = 31 * result + Float.hashCode(z);
-        result = 31 * result + Float.hashCode(w);
+        result = 31 * result + FloatMath.hashCode(x);
+        result = 31 * result + FloatMath.hashCode(y);
+        result = 31 * result + FloatMath.hashCode(z);
+        result = 31 * result + FloatMath.hashCode(w);
         return result;
     }
 
@@ -204,4 +204,5 @@ public record Vector4(
     public String toString() {
         return "[" + x + ", " + y + ", " + z + ", " + w + "]";
     }
+
 }

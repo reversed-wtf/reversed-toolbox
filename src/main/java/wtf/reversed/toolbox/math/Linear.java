@@ -22,6 +22,7 @@ package wtf.reversed.toolbox.math;
  * @param <T> the concrete type implementing this interface
  */
 public interface Linear<T extends Linear<T>> {
+    float EPSILON = 1e-6f;
 
     /**
      * Adds another element to this one.
@@ -66,6 +67,17 @@ public interface Linear<T extends Linear<T>> {
      */
     default T negate() {
         return multiply(-1.0f);
+    }
+
+    /**
+     * Linearly interpolates between this element and another one.
+     *
+     * @param other the other element
+     * @param t     the interpolation factor
+     * @return the interpolated element
+     */
+    default T lerp(T other, float t) {
+        return multiply(1.0f - t).add(other.multiply(t));
     }
 
 }

@@ -61,15 +61,6 @@ public record Vector2(
 
 
     @Override
-    public float get(int index) {
-        return switch (index) {
-            case 0 -> x;
-            case 1 -> y;
-            default -> throw new IndexOutOfBoundsException();
-        };
-    }
-
-    @Override
     public Vector2 add(Vector2 other) {
         return new Vector2(x + other.x, y + other.y);
     }
@@ -79,36 +70,19 @@ public record Vector2(
         return new Vector2(x * scalar, y * scalar);
     }
 
+
+    @Override
+    public float get(int index) {
+        return switch (index) {
+            case 0 -> x;
+            case 1 -> y;
+            default -> throw new IndexOutOfBoundsException();
+        };
+    }
+
     @Override
     public float dot(Vector2 other) {
         return x * other.x + y * other.y;
-    }
-
-
-    /**
-     * Transforms this vector by a {@link Matrix2}.
-     *
-     * @param matrix The matrix.
-     * @return The transformed vector.
-     */
-    public Vector2 transform(Matrix2 matrix) {
-        return new Vector2(
-            Math.fma(x, matrix.m00(), y * matrix.m10()),
-            Math.fma(x, matrix.m01(), y * matrix.m11())
-        );
-    }
-
-    /**
-     * Transforms this vector by a {@link Matrix3}.
-     *
-     * @param matrix The matrix.
-     * @return The transformed vector.
-     */
-    public Vector2 transform(Matrix3 matrix) {
-        return new Vector2(
-            Math.fma(x, matrix.m00(), Math.fma(y, matrix.m10(), matrix.m20())),
-            Math.fma(x, matrix.m01(), Math.fma(y, matrix.m11(), matrix.m21()))
-        );
     }
 
 
@@ -118,15 +92,42 @@ public record Vector2(
     }
 
     @Override
+    public void toSliceUnsafe(Floats.Mutable floats, int offset) {
+        floats.set(offset/**/, x);
+        floats.set(offset + 1, y);
+    }
+
+    @Override
     public void toBufferUnsafe(FloatBuffer floats) {
         floats.put(x);
         floats.put(y);
     }
 
-    @Override
-    public void toSliceUnsafe(Floats.Mutable floats, int offset) {
-        floats.set(offset/**/, x);
-        floats.set(offset + 1, y);
+
+    /**
+     * Transforms this vector by the given matrix.
+     *
+     * @param matrix The matrix to transform by.
+     * @return The transformed vector.
+     */
+    public Vector2 transform(Matrix2 matrix) {
+        return new Vector2(
+            Math.fma(x, matrix.m11(), y * matrix.m12()),
+            Math.fma(x, matrix.m21(), y * matrix.m22())
+        );
+    }
+
+    /**
+     * Transforms this vector by the given matrix.
+     *
+     * @param matrix The matrix to transform by.
+     * @return The transformed vector.
+     */
+    public Vector2 transform(Matrix3 matrix) {
+        return new Vector2(
+            Math.fma(x, matrix.m11(), Math.fma(y, matrix.m12(), matrix.m13())),
+            Math.fma(x, matrix.m21(), Math.fma(y, matrix.m22(), matrix.m23()))
+        );
     }
 
 
@@ -140,8 +141,8 @@ public record Vector2(
     @Override
     public int hashCode() {
         int result = 0;
-        result = 31 * result + Float.hashCode(x);
-        result = 31 * result + Float.hashCode(y);
+        result = 31 * result + FloatMath.hashCode(x);
+        result = 31 * result + FloatMath.hashCode(y);
         return result;
     }
 
@@ -149,4 +150,5 @@ public record Vector2(
     public String toString() {
         return "[" + x + ", " + y + "]";
     }
+
 }

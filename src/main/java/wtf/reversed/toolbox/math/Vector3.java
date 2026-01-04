@@ -54,7 +54,7 @@ public record Vector3(
     }
 
     /**
-     * Creates a new vector from an existing {@link Vector2} and a z and w component.
+     * Creates a new vector from an existing {@link Vector2} and a z component.
      *
      * @param v The vector.
      * @param z The z component.
@@ -79,6 +79,17 @@ public record Vector3(
 
 
     @Override
+    public Vector3 add(Vector3 other) {
+        return new Vector3(x + other.x, y + other.y, z + other.z);
+    }
+
+    @Override
+    public Vector3 multiply(float scalar) {
+        return new Vector3(x * scalar, y * scalar, z * scalar);
+    }
+
+
+    @Override
     public float get(int index) {
         return switch (index) {
             case 0 -> x;
@@ -89,61 +100,8 @@ public record Vector3(
     }
 
     @Override
-    public Vector3 add(Vector3 other) {
-        return new Vector3(x + other.x, y + other.y, z + other.z);
-    }
-
-    @Override
-    public Vector3 multiply(float scalar) {
-        return new Vector3(x * scalar, y * scalar, z * scalar);
-    }
-
-    @Override
     public float dot(Vector3 other) {
         return x * other.x + y * other.y + z * other.z;
-    }
-
-
-    /**
-     * Calculates the cross product of this vector and another vector.
-     *
-     * @param other The other vector.
-     * @return The cross product.
-     */
-    public Vector3 cross(Vector3 other) {
-        return new Vector3(
-            y * other.z - z * other.y,
-            z * other.x - x * other.z,
-            x * other.y - y * other.x
-        );
-    }
-
-    /**
-     * Transforms this vector by a {@link Matrix3}.
-     *
-     * @param matrix The matrix.
-     * @return The transformed vector.
-     */
-    public Vector3 transform(Matrix3 matrix) {
-        return new Vector3(
-            Math.fma(x, matrix.m00(), Math.fma(y, matrix.m10(), z * matrix.m20())),
-            Math.fma(x, matrix.m01(), Math.fma(y, matrix.m11(), z * matrix.m21())),
-            Math.fma(x, matrix.m02(), Math.fma(y, matrix.m12(), z * matrix.m22()))
-        );
-    }
-
-    /**
-     * Transforms this vector by a {@link Matrix4}.
-     *
-     * @param matrix The matrix.
-     * @return The transformed vector.
-     */
-    public Vector3 transform(Matrix4 matrix) {
-        return new Vector3(
-            Math.fma(x, matrix.m00(), Math.fma(y, matrix.m10(), Math.fma(z, matrix.m20(), matrix.m30()))),
-            Math.fma(x, matrix.m01(), Math.fma(y, matrix.m11(), Math.fma(z, matrix.m21(), matrix.m31()))),
-            Math.fma(x, matrix.m02(), Math.fma(y, matrix.m12(), Math.fma(z, matrix.m22(), matrix.m32())))
-        );
     }
 
 
@@ -153,26 +111,68 @@ public record Vector3(
     }
 
     @Override
-    public void toBufferUnsafe(FloatBuffer floats) {
-        floats.put(x);
-        floats.put(y);
-        floats.put(z);
-    }
-
-    @Override
     public void toSliceUnsafe(Floats.Mutable floats, int offset) {
         floats.set(offset/**/, x);
         floats.set(offset + 1, y);
         floats.set(offset + 2, z);
     }
 
+    @Override
+    public void toBufferUnsafe(FloatBuffer floats) {
+        floats.put(x);
+        floats.put(y);
+        floats.put(z);
+    }
+
 
     /**
-     * Converts this vector to a {@link Vector2} by dropping the z and w components.
+     * Calculates the cross product of this vector and another.
      *
-     * @return The new vector.
+     * @param other The other vector.
+     * @return The cross product.
      */
-    public Vector2 toVector2() {
+    public Vector3 cross(Vector3 other) {
+        return new Vector3(
+            Math.fma(y, other.z(), -z * other.y()),
+            Math.fma(z, other.x(), -x * other.z()),
+            Math.fma(x, other.y(), -y * other.x())
+        );
+    }
+
+    /**
+     * Transforms this vector by the given matrix.
+     *
+     * @param matrix The matrix to transform by.
+     * @return The transformed vector.
+     */
+    public Vector3 transform(Matrix3 matrix) {
+        return new Vector3(
+            Math.fma(x, matrix.m11(), Math.fma(y, matrix.m12(), z * matrix.m13())),
+            Math.fma(x, matrix.m21(), Math.fma(y, matrix.m22(), z * matrix.m23())),
+            Math.fma(x, matrix.m31(), Math.fma(y, matrix.m32(), z * matrix.m33()))
+        );
+    }
+
+    /**
+     * Transforms this vector by the given matrix.
+     *
+     * @param matrix The matrix to transform by.
+     * @return The transformed vector.
+     */
+    public Vector3 transform(Matrix4 matrix) {
+        return new Vector3(
+            Math.fma(x, matrix.m11(), Math.fma(y, matrix.m12(), Math.fma(z, matrix.m13(), matrix.m14()))),
+            Math.fma(x, matrix.m21(), Math.fma(y, matrix.m22(), Math.fma(z, matrix.m23(), matrix.m24()))),
+            Math.fma(x, matrix.m31(), Math.fma(y, matrix.m32(), Math.fma(z, matrix.m33(), matrix.m34())))
+        );
+    }
+
+    /**
+     * Returns the xy components of this vector.
+     *
+     * @return xy components of this vector
+     */
+    public Vector2 xy() {
         return new Vector2(x, y);
     }
 
@@ -188,9 +188,9 @@ public record Vector3(
     @Override
     public int hashCode() {
         int result = 0;
-        result = 31 * result + Float.hashCode(x);
-        result = 31 * result + Float.hashCode(y);
-        result = 31 * result + Float.hashCode(z);
+        result = 31 * result + FloatMath.hashCode(x);
+        result = 31 * result + FloatMath.hashCode(y);
+        result = 31 * result + FloatMath.hashCode(z);
         return result;
     }
 
@@ -198,4 +198,5 @@ public record Vector3(
     public String toString() {
         return "[" + x + ", " + y + ", " + z + "]";
     }
+
 }

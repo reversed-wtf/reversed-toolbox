@@ -11,15 +11,7 @@ package wtf.reversed.toolbox.math;
  *
  * @param <T> the concrete type implementing this interface
  */
-public interface Matrix<T extends Matrix<T>> extends Linear<T> {
-
-    /**
-     * Multiplies this matrix by another matrix.
-     *
-     * @param other the matrix to multiply by
-     * @return the product matrix
-     */
-    T multiply(T other);
+public interface Matrix<T extends Matrix<T>> extends Divisible<T>, Linear<T> {
 
     /**
      * Returns the transpose of this matrix.
@@ -34,14 +26,6 @@ public interface Matrix<T extends Matrix<T>> extends Linear<T> {
      * @return the determinant
      */
     float determinant();
-
-    /**
-     * Returns the inverse of this matrix.
-     *
-     * @return the inverse matrix
-     * @throws ArithmeticException if the matrix is not invertible
-     */
-    T inverse();
 
     /**
      * Gets the component at the given row and column.

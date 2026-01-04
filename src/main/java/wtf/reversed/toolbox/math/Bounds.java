@@ -7,7 +7,7 @@ import java.io.*;
 import java.nio.*;
 
 /**
- * An axis aligned bounding box.
+ * An axis-aligned bounding box.
  *
  * @param minX The minimum x coordinate.
  * @param minY The minimum y coordinate.
@@ -84,6 +84,31 @@ public record Bounds(
     }
 
 
+    /**
+     * Checks if this bounds contains a point.
+     *
+     * @param point The point to check.
+     * @return True if the point is inside the bounds.
+     */
+    public boolean contains(Vector3 point) {
+        return point.x() >= minX && point.x() <= maxX
+            && point.y() >= minY && point.y() <= maxY
+            && point.z() >= minZ && point.z() <= maxZ;
+    }
+
+    /**
+     * Checks if this bounds intersects another bounds.
+     *
+     * @param other The other bounds.
+     * @return True if the bounds intersect.
+     */
+    public boolean intersects(Bounds other) {
+        return maxX >= other.minX && minX <= other.maxX
+            && maxY >= other.minY && minY <= other.maxY
+            && maxZ >= other.minZ && minZ <= other.maxZ;
+    }
+
+
     @Override
     public int componentCount() {
         return 6;
@@ -123,12 +148,12 @@ public record Bounds(
     @Override
     public int hashCode() {
         int result = 0;
-        result = 31 * result + Float.hashCode(minX);
-        result = 31 * result + Float.hashCode(minY);
-        result = 31 * result + Float.hashCode(minZ);
-        result = 31 * result + Float.hashCode(maxX);
-        result = 31 * result + Float.hashCode(maxY);
-        result = 31 * result + Float.hashCode(maxZ);
+        result = 31 * result + FloatMath.hashCode(minX);
+        result = 31 * result + FloatMath.hashCode(minY);
+        result = 31 * result + FloatMath.hashCode(minZ);
+        result = 31 * result + FloatMath.hashCode(maxX);
+        result = 31 * result + FloatMath.hashCode(maxY);
+        result = 31 * result + FloatMath.hashCode(maxZ);
         return result;
     }
 

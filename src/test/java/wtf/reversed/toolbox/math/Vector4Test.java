@@ -65,8 +65,8 @@ class Vector4Test {
     @Test
     void testConversions() {
         var v = new Vector4(1, 2, 3, 4);
-        assertThat(v.toVector2()).isEqualTo(new Vector2(1, 2));
-        assertThat(v.toVector3()).isEqualTo(new Vector3(1, 2, 3));
+        assertThat(v.xy()).isEqualTo(new Vector2(1, 2));
+        assertThat(v.xyz()).isEqualTo(new Vector3(1, 2, 3));
     }
 
     @Test
