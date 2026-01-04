@@ -1,7 +1,9 @@
 package wtf.reversed.toolbox.math;
 
 import wtf.reversed.toolbox.collect.*;
+import wtf.reversed.toolbox.io.*;
 
+import java.io.*;
 import java.nio.*;
 
 /**
@@ -36,6 +38,30 @@ public record Matrix3(
         0.0f, 1.0f, 0.0f,
         0.0f, 0.0f, 1.0f
     );
+
+    /**
+     * Reads a matrix from a {@link BinarySource}.
+     *
+     * @param source The source to read from.
+     * @return The read matrix.
+     * @throws IOException If an I/O error occurs.
+     */
+    public static Matrix3 read(BinarySource source) throws IOException {
+        float m11 = source.readFloat();
+        float m21 = source.readFloat();
+        float m31 = source.readFloat();
+        float m12 = source.readFloat();
+        float m22 = source.readFloat();
+        float m32 = source.readFloat();
+        float m13 = source.readFloat();
+        float m23 = source.readFloat();
+        float m33 = source.readFloat();
+        return new Matrix3(
+            m11, m21, m31,
+            m12, m22, m32,
+            m13, m23, m33
+        );
+    }
 
 
     /**
