@@ -12,14 +12,14 @@ class FloatMathTest {
     @Test
     void testSin() {
         assertThat(FloatMath.sin(0.0f)).isCloseTo(0.0f, EPSILON);
-        assertThat(FloatMath.sin(FloatMath.FRAC_PI_2)).isCloseTo(1.0f, EPSILON);
+        assertThat(FloatMath.sin(FloatMath.PI_2)).isCloseTo(1.0f, EPSILON);
         assertThat(FloatMath.sin(FloatMath.PI)).isCloseTo(0.0f, EPSILON);
     }
 
     @Test
     void testCos() {
         assertThat(FloatMath.cos(0.0f)).isCloseTo(1.0f, EPSILON);
-        assertThat(FloatMath.cos(FloatMath.FRAC_PI_2)).isCloseTo(0.0f, EPSILON);
+        assertThat(FloatMath.cos(FloatMath.PI_2)).isCloseTo(0.0f, EPSILON);
         assertThat(FloatMath.cos(FloatMath.PI)).isCloseTo(-1.0f, EPSILON);
     }
 

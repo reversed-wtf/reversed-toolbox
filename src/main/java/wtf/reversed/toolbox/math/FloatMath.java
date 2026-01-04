@@ -11,11 +11,19 @@ public final class FloatMath {
     /**
      * The value of {@code 2 * PI}.
      */
-    public static final float TAU = (float) (2.0 * Math.PI);
+    public static final float TAU = (float) Math.TAU;
     /**
      * The value of {@code PI / 2}.
      */
-    public static final float FRAC_PI_2 = (float) (Math.PI / 2.0);
+    public static final float PI_2 = (float) (Math.PI / 2.0);
+    /**
+     * The value of {@code sqrt(1/2)} or {@code 1/sqrt(2)}.
+     */
+    public static final float SQRT1_2 = 0.70710678118654752440084436210485f;
+    /**
+     * The value of {@code sqrt(2)}.
+     */
+    public static final float SQRT_2 = 1.4142135623730950488016887242097f;
 
     private FloatMath() {
     }
