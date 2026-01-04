@@ -133,4 +133,105 @@ public final class FloatMath {
             ? 0x7fc00000
             : Float.floatToRawIntBits(a + 0.0f);
     }
+
+
+    /**
+     * Clamps a float value to the range [0.0, 1.0].
+     *
+     * @param f the value to clamp
+     * @return the clamped value between 0.0 and 1.0
+     */
+    public static float clamp01(float f) {
+        return Math.clamp(f, 0.0f, 1.0f);
+    }
+
+    /**
+     * Clamps a float value to the range [-1.0, 1.0].
+     *
+     * @param f the value to clamp
+     * @return the clamped value between -1.0 and 1.0
+     */
+    public static float clamp11(float f) {
+        return Math.clamp(f, -1.0f, 1.0f);
+    }
+
+    /**
+     * Unpacks an unsigned normalized 8-bit value to a float [0.0, 1.0].
+     *
+     * @param value the unsigned byte value
+     * @return a float between 0.0 and 1.0
+     */
+    public static float unpackUNorm8(byte value) {
+        return Byte.toUnsignedInt(value) * (1.0f / 255.0f);
+    }
+
+    /**
+     * Unpacks a signed normalized 8-bit value to a float [-1.0, 1.0].
+     *
+     * @param value the signed byte value
+     * @return a float between -1.0 and 1.0
+     */
+    public static float unpackSNorm8(byte value) {
+        return Math.max(-127, value) * (1.0f / 127.0f);
+    }
+
+    /**
+     * Unpacks an unsigned normalized 16-bit value to a float [0.0, 1.0].
+     *
+     * @param value the unsigned short value
+     * @return a float between 0.0 and 1.0
+     */
+    public static float unpackUNorm16(short value) {
+        return Short.toUnsignedInt(value) * (1.0f / 65535.0f);
+    }
+
+    /**
+     * Unpacks a signed normalized 16-bit value to a float [-1.0, 1.0].
+     *
+     * @param value the signed short value
+     * @return a float between -1.0 and 1.0
+     */
+    public static float unpackSNorm16(short value) {
+        return Math.max(-32767, value) * (1.0f / 32767.0f);
+    }
+
+    /**
+     * Packs a float [0.0, 1.0] to an unsigned normalized 8-bit value.
+     *
+     * @param value the float value to pack
+     * @return the packed byte value
+     */
+    public static byte packUNorm8(float value) {
+        return (byte) Math.fma(clamp01(value), 255.0f, 0.5f);
+    }
+
+    /**
+     * Packs a float [-1.0, 1.0] to a signed normalized 8-bit value.
+     *
+     * @param value the float value to pack
+     * @return the packed byte value
+     */
+    public static byte packSNorm8(float value) {
+        return (byte) Math.round(clamp11(value) * 127.0f);
+    }
+
+    /**
+     * Packs a float [0.0, 1.0] to an unsigned normalized 16-bit value.
+     *
+     * @param value the float value to pack
+     * @return the packed short value
+     */
+    public static short packUNorm16(float value) {
+        return (short) Math.fma(clamp01(value), 65535.0f, 0.5f);
+    }
+
+    /**
+     * Packs a float [-1.0, 1.0] to a signed normalized 16-bit value.
+     *
+     * @param value the float value to pack
+     * @return the packed short value
+     */
+    public static short packSNorm16(float value) {
+        return (short) Math.round(clamp11(value) * 32767.0f);
+    }
 }
