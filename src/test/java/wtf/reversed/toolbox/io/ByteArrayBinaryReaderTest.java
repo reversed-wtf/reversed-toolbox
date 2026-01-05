@@ -1,74 +1,64 @@
 package wtf.reversed.toolbox.io;
 
 import org.junit.jupiter.api.*;
+import wtf.reversed.toolbox.collect.*;
 
 import java.io.*;
 import java.nio.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class ByteArrayBinaryReaderTest {
+class BytesBinarySourceTest {
     @Test
     void testReader() throws IOException {
-        ByteBuffer buffer = ByteBuffer.allocate(16)
-            .order(ByteOrder.nativeOrder())
-            .put((byte) 0)
-            .put((byte) 1)
-            .putShort((short) 2)
-            .putInt(3)
-            .putLong(4)
-            .flip();
+        Bytes.Mutable bytes = Bytes.Mutable.allocate(16)
+            .set(0, (byte) 0)
+            .set(1, (byte) 1)
+            .setShort(2, (short) 2)
+            .setInt(4, 3)
+            .setLong(8, 4);
 
-        try (BinaryReader reader = BinaryReader.wrap(buffer)) {
-            assertEquals(0, reader.position());
-            assertEquals(16, reader.size());
-            assertEquals(16, reader.remaining());
-            assertFalse(reader.isDrained());
+        try (BinarySource source = BinarySource.wrap(bytes)) {
+            assertEquals(0, source.position());
+            assertEquals(16, source.size());
+            assertEquals(16, source.remaining());
+            assertNotEquals(0, source.remaining());
 
-            assertEquals(0, reader.readByte());
-            assertEquals(1, reader.readByte());
-            assertEquals(2, reader.readShort());
-            assertEquals(3, reader.readInt());
-            assertEquals(4, reader.readLong());
+            assertEquals(0, source.readByte());
+            assertEquals(1, source.readByte());
+            assertEquals(2, source.readShort());
+            assertEquals(3, source.readInt());
+            assertEquals(4, source.readLong());
 
-            assertEquals(16, reader.position());
-            assertEquals(0, reader.remaining());
-            assertTrue(reader.isDrained());
+            assertEquals(16, source.position());
+            assertEquals(0, source.remaining());
+            assertEquals(0, source.remaining());
 
-            reader.position(8);
-            assertEquals(8, reader.position());
-            assertEquals(8, reader.remaining());
+            source.position(8);
+            assertEquals(8, source.position());
+            assertEquals(8, source.remaining());
 
-            assertEquals(4, reader.readLong());
-            assertTrue(reader.isDrained());
+            assertEquals(4, source.readLong());
+            assertEquals(0, source.remaining());
         }
     }
 
     @Test
     void testEndian() throws IOException {
-        ByteBuffer buffer = ByteBuffer.allocate(12)
-            .order(ByteOrder.nativeOrder())
-            .putInt(0x10203040)
-            .order(ByteOrder.BIG_ENDIAN)
-            .putInt(0x10203040)
-            .order(ByteOrder.LITTLE_ENDIAN)
-            .putInt(0x10203040)
-            .flip();
+        Bytes.Mutable buffer = Bytes.Mutable.allocate(12)
+            .setInt(0, 0x10203040)
+            .setInt(4, Integer.reverseBytes(0x10203040))
+            .setInt(8, 0x10203040);
 
-        try (BinaryReader reader = BinaryReader.wrap(buffer)) {
-            reader.order(ByteOrder.nativeOrder());
-            assertEquals(0x10203040, reader.readInt());
+        try (BinarySource source = BinarySource.wrap(buffer)) {
+            source.order(ByteOrder.nativeOrder());
+            assertEquals(0x10203040, source.readInt());
 
-            reader.order(ByteOrder.BIG_ENDIAN);
-            assertEquals(0x10203040, reader.readInt());
+            source.order(ByteOrder.BIG_ENDIAN);
+            assertEquals(0x10203040, source.readInt());
 
-            reader.order(ByteOrder.LITTLE_ENDIAN);
-            assertEquals(0x10203040, reader.readInt());
+            source.order(ByteOrder.LITTLE_ENDIAN);
+            assertEquals(0x10203040, source.readInt());
         }
-    }
-
-    @Test
-    void testWrapDirectBuffer() {
-        assertThrows(IllegalArgumentException.class, () -> BinaryReader.wrap(ByteBuffer.allocateDirect(10)));
     }
 }
