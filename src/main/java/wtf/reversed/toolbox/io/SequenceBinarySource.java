@@ -21,22 +21,32 @@ final class SequenceBinarySource extends BufferedBinarySource {
 
     @Override
     int readImpl(ByteBuffer target, long position) throws IOException {
+        reposition(position);
+        int remaining = target.remaining();
         while (target.hasRemaining()) {
-            if (source == null || source.remaining() == 0) {
-                var entry = sources.floorEntry(position);
-                long base = entry.getKey();
-                source = entry.getValue();
-                source.position(position - base);
-            }
+            refill(position);
+            int size = Math.min(Math.toIntExact(source.remaining()), target.remaining());
+            source.readBytes(Bytes.Mutable.wrap(target.array(), target.position(), size));
+            target.position(target.position() + size);
+            position += size;
+        }
+        return remaining;
+    }
+
+    private void refill(long position) throws EOFException {
+        if (source.remaining() == 0) {
+            reposition(position);
             if (source.remaining() == 0) {
                 throw new EOFException();
             }
-            int read = Math.min(Math.toIntExact(source.remaining()), target.remaining());
-            source.readBytes(Bytes.Mutable.wrap(target.array(), target.position(), read));
-            target.position(target.position() + read);
-            position += read;
         }
-        return target.position();
+    }
+
+    private void reposition(long position) {
+        var entry = sources.floorEntry(position);
+        var base = (long) entry.getKey();
+        source = entry.getValue();
+        source.position(position - base);
     }
 
     @Override
