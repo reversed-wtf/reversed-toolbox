@@ -175,6 +175,7 @@ public record Matrix2(
         };
     }
 
+
     @Override
     public int componentCount() {
         return 4;
@@ -194,6 +195,19 @@ public record Matrix2(
         floats.put(m21);
         floats.put(m12);
         floats.put(m22);
+    }
+
+    /**
+     * Converts the matrix to a 3x3 matrix.
+     *
+     * @return 3x3 matrix representation of this matrix.
+     */
+    public Matrix3 toMatrix3() {
+        return new Matrix3(
+            m11, m21, 0.f,
+            m12, m22, 0.f,
+            0.f, 0.f, 1.f
+        );
     }
 
 

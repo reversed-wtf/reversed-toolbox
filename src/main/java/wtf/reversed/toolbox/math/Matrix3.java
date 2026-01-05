@@ -228,6 +228,7 @@ public record Matrix3(
         };
     }
 
+
     @Override
     public int componentCount() {
         return 9;
@@ -257,6 +258,80 @@ public record Matrix3(
         floats.put(m13);
         floats.put(m23);
         floats.put(m33);
+    }
+
+
+    /**
+     * Decomposes the matrix into translation, rotation, and scale components.
+     * <p>
+     * Translation will be set to {@link Vector3#ZERO}.
+     *
+     * @return TRS record containing translation, rotation, and scale components.
+     */
+    public TRS decompose() {
+        var axisX = new Vector3(m11, m21, m31);
+        var axisY = new Vector3(m12, m22, m32);
+        var axisZ = new Vector3(m13, m23, m33);
+        var scale = new Vector3(axisX.length(), axisY.length(), axisZ.length());
+
+        axisX = axisX.normalize();
+        axisY = axisY.normalize();
+        axisZ = axisZ.normalize();
+
+        var rotation = Quaternion.fromMatrixNormalized(
+            axisX.x(), axisX.y(), axisX.z(),
+            axisY.x(), axisY.y(), axisY.z(),
+            axisZ.x(), axisZ.y(), axisZ.z()
+        );
+        return new TRS(Vector3.ZERO, rotation, scale);
+    }
+
+    /**
+     * Returns the rotation component of the matrix.
+     *
+     * @return rotation component of the matrix
+     */
+    public Quaternion toRotation() {
+        return Quaternion.fromMatrix(this);
+    }
+
+    /**
+     * Returns the scale component of the matrix.
+     *
+     * @return scale component of the matrix
+     */
+    public Vector3 toScale() {
+        return new Vector3(
+            FloatMath.sqrt(m11 * m11 + m21 * m21 + m31 * m31),
+            FloatMath.sqrt(m12 * m12 + m22 * m22 + m32 * m32),
+            FloatMath.sqrt(m13 * m13 + m23 * m23 + m33 * m33)
+        );
+    }
+
+    /**
+     * Converts the matrix to a 2x2 matrix.
+     *
+     * @return 2x2 matrix representation of this matrix.
+     */
+    public Matrix2 toMatrix2() {
+        return new Matrix2(
+            m11, m21,
+            m12, m22
+        );
+    }
+
+    /**
+     * Converts the matrix to a 4x4 matrix.
+     *
+     * @return 4x4 matrix representation of this matrix.
+     */
+    public Matrix4 toMatrix4() {
+        return new Matrix4(
+            m11, m21, m31, 0.f,
+            m12, m22, m32, 0.f,
+            m13, m23, m33, 0.f,
+            0.f, 0.f, 0.f, 1.f
+        );
     }
 
 

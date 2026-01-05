@@ -32,4 +32,25 @@ public class Matrix4Test {
         }
         assertThat(sum).isEqualTo(0f, offset(Linear.EPSILON));
     }
+
+    @Test
+    void testDecompose() {
+        var translation = new Vector3(10, 20, 30);
+        var rotation = Quaternion.fromAxisAngle(Vector3.X, 90, Angle.DEGREES);
+        var scale = new Vector3(4, 5, 6);
+
+        Matrix4 m = Matrix4.fromTranslation(translation)
+            .multiply(Matrix4.fromRotation(rotation))
+            .multiply(Matrix4.fromScale(scale));
+
+        var decomposed = m.decompose();
+
+        assertThat(decomposed.translation().subtract(translation).lengthSquared()).isLessThan(Linear.EPSILON);
+        assertThat(decomposed.rotation().subtract(rotation).lengthSquared()).isLessThan(Linear.EPSILON);
+        assertThat(decomposed.scale().subtract(scale).lengthSquared()).isLessThan(Linear.EPSILON);
+
+        assertThat(m.toTranslation().subtract(translation).lengthSquared()).isLessThan(Linear.EPSILON);
+        assertThat(m.toRotation().subtract(rotation).lengthSquared()).isLessThan(Linear.EPSILON);
+        assertThat(m.toScale().subtract(scale).lengthSquared()).isLessThan(Linear.EPSILON);
+    }
 }
