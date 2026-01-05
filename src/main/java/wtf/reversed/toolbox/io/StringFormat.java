@@ -3,7 +3,7 @@ package wtf.reversed.toolbox.io;
 /**
  * Defines the strategy used to encode or decode strings within a binary stream.
  * <p>
- * This enum is typically used by {@link BinaryReader} to determine how to identify
+ * This enum is typically used by {@link BinarySource} to determine how to identify
  * the length or boundaries of a string during read operations.
  */
 public enum StringFormat {
