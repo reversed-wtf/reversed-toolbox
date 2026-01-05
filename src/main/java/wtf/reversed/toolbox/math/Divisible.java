@@ -9,37 +9,21 @@ package wtf.reversed.toolbox.math;
  *
  * <p>Implementations must provide:
  * <ul>
- *   <li>{@link #one()} - multiplicative identity</li>
  *   <li>{@link #multiply(T)} - multiplication operation</li>
- *   <li>{@link #inverse()} - multiplicative inverse</li>
+ *   <li>{@link #conjugate()} - conjugate</li>
  * </ul>
  *
  * @param <T> the concrete type implementing this interface
  */
-public interface Divisible<T extends Divisible<T>> {
+public interface Divisible<T extends Divisible<T>> extends Vector<T> {
     /**
-     * Returns the multiplicative identity element.
+     * Multiplies this element by another element.
+     * This operation need not be commutative.
      *
-     * @return the identity element
-     */
-    T one();
-
-    /**
-     * Multiplies this element by another.
-     *
-     * @param other The element to multiply by.
-     * @return The product of this and other.
+     * @param other the element to multiply by
+     * @return the product of this and other
      */
     T multiply(T other);
-
-    /**
-     * Returns the multiplicative inverse of this element.
-     * For a non-zero element x, {@code x.multiply(x.inverse())} equals {@code one()}.
-     *
-     * @return the multiplicative inverse
-     * @throws ArithmeticException if this element has no inverse (e.g., zero)
-     */
-    T inverse();
 
     /**
      * Right division: computes this / other = this × other⁻¹.
@@ -50,5 +34,33 @@ public interface Divisible<T extends Divisible<T>> {
      */
     default T divide(T other) {
         return multiply(other.inverse());
+    }
+
+    /**
+     * Returns the conjugate of this element.
+     *
+     * <p>For complex numbers z = a + bi: conjugate(z) = a - bi
+     * <br>For quaternions q = w + xi + yj + zk: conjugate(q) = w - xi - yj - zk
+     *
+     * <p>The conjugate satisfies: conjugate(xy) = conjugate(y) · conjugate(x)
+     * (note the reversal of order for non-commutative algebras)
+     *
+     * @return the conjugate of this element
+     */
+    T conjugate();
+
+    /**
+     * Returns the multiplicative inverse of this element using the formula:
+     * <pre>
+     *     inverse(x) = conjugate(x) / normSquared(x)
+     * </pre>
+     * <p>
+     * For a non-zero element x, x.multiply(x.inverse()) equals one().
+     *
+     * @return the multiplicative inverse
+     * @throws ArithmeticException if this element has no inverse (i.e., norm is zero)
+     */
+    default T inverse() {
+        return conjugate().divide(lengthSquared());
     }
 }

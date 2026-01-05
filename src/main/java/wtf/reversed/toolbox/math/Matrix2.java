@@ -122,11 +122,6 @@ public record Matrix2(
 
 
     @Override
-    public Matrix2 one() {
-        return IDENTITY;
-    }
-
-    @Override
     public Matrix2 multiply(Matrix2 other) {
         return new Matrix2(
             Math.fma(m11, other.m11, m12 * other.m21),
@@ -135,22 +130,6 @@ public record Matrix2(
             Math.fma(m21, other.m12, m22 * other.m22)
         );
     }
-
-    @Override
-    public Matrix2 inverse() {
-        float det = determinant();
-
-        // TODO: Fix epsilons
-        if (Math.abs(det) < 1e-6f) {
-            throw new ArithmeticException("Cannot invert matrix with near-zero determinant");
-        }
-
-        return new Matrix2(
-            +m22, -m21,
-            -m12, +m11
-        ).divide(det);
-    }
-
 
     @Override
     public Matrix2 transpose() {
@@ -165,6 +144,19 @@ public record Matrix2(
         return m11 * m22 - m21 * m12;
     }
 
+    @Override
+    public Matrix2 inverse() throws ArithmeticException {
+        float det = determinant();
+
+        if (Math.abs(det) < EPSILON) {
+            throw new ArithmeticException("Cannot invert matrix with near-zero determinant");
+        }
+
+        return new Matrix2(
+            +m22, -m21,
+            -m12, +m11
+        ).divide(det);
+    }
 
     @Override
     public float get(int row, int column) {

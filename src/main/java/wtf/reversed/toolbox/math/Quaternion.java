@@ -283,11 +283,6 @@ public record Quaternion(
 
 
     @Override
-    public Quaternion one() {
-        return IDENTITY;
-    }
-
-    @Override
     public Quaternion multiply(Quaternion other) {
         return new Quaternion(
             w * other.x + x * other.w + y * other.z - z * other.y,
@@ -298,8 +293,8 @@ public record Quaternion(
     }
 
     @Override
-    public Quaternion inverse() {
-        return conjugate().divide(lengthSquared());
+    public Quaternion conjugate() {
+        return new Quaternion(-x, -y, -z, w);
     }
 
 
@@ -324,15 +319,6 @@ public record Quaternion(
         floats.put(w);
     }
 
-
-    /**
-     * Calculates the conjugate of this quaternion.
-     *
-     * @return The conjugate.
-     */
-    public Quaternion conjugate() {
-        return new Quaternion(-x, -y, -z, w);
-    }
 
     /**
      * Calculates the spherical linear interpolation between this quaternion and another one.

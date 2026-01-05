@@ -192,11 +192,6 @@ public record Matrix4(
 
 
     @Override
-    public Matrix4 one() {
-        return IDENTITY;
-    }
-
-    @Override
     public Matrix4 multiply(Matrix4 other) {
         return new Matrix4(
             Math.fma(m11, other.m11, Math.fma(m12, other.m21, Math.fma(m13, other.m31, m14 * other.m41))),
@@ -219,7 +214,34 @@ public record Matrix4(
     }
 
     @Override
-    public Matrix4 inverse() {
+    public Matrix4 transpose() {
+        return new Matrix4(
+            m11, m12, m13, m14,
+            m21, m22, m23, m24,
+            m31, m32, m33, m34,
+            m41, m42, m43, m44
+        );
+    }
+
+    @Override
+    public float determinant() {
+        float m3344 = m33 * m44 - m43 * m34;
+        float m2344 = m23 * m44 - m43 * m24;
+        float m2334 = m23 * m34 - m33 * m24;
+        float m1344 = m13 * m44 - m43 * m14;
+        float m1334 = m13 * m34 - m33 * m14;
+        float m1324 = m13 * m24 - m23 * m14;
+
+        float a11 = +(m22 * m3344 - m32 * m2344 + m42 * m2334);
+        float a12 = -(m12 * m3344 - m32 * m1344 + m42 * m1334);
+        float a13 = +(m12 * m2344 - m22 * m1344 + m42 * m1324);
+        float a14 = -(m12 * m2334 - m22 * m1334 + m32 * m1324);
+
+        return m11 * a11 + m21 * a12 + m31 * a13 + m41 * a14;
+    }
+
+    @Override
+    public Matrix4 inverse() throws ArithmeticException {
         float m3344 = m33 * m44 - m43 * m34;
         float m2344 = m23 * m44 - m43 * m24;
         float m2334 = m23 * m34 - m33 * m24;
@@ -234,8 +256,7 @@ public record Matrix4(
 
         float det = m11 * a11 + m21 * a12 + m31 * a13 + m41 * a14;
 
-        // TODO: Fix epsilons
-        if (Math.abs(det) < 1e-6f) {
+        if (Math.abs(det) < EPSILON) {
             throw new ArithmeticException("Cannot invert matrix with near-zero determinant");
         }
 
@@ -274,34 +295,6 @@ public record Matrix4(
             a13, a23, a33, a43,
             a14, a24, a34, a44
         ).divide(det);
-    }
-
-
-    @Override
-    public Matrix4 transpose() {
-        return new Matrix4(
-            m11, m12, m13, m14,
-            m21, m22, m23, m24,
-            m31, m32, m33, m34,
-            m41, m42, m43, m44
-        );
-    }
-
-    @Override
-    public float determinant() {
-        float m3344 = m33 * m44 - m43 * m34;
-        float m2344 = m23 * m44 - m43 * m24;
-        float m2334 = m23 * m34 - m33 * m24;
-        float m1344 = m13 * m44 - m43 * m14;
-        float m1334 = m13 * m34 - m33 * m14;
-        float m1324 = m13 * m24 - m23 * m14;
-
-        float a11 = +(m22 * m3344 - m32 * m2344 + m42 * m2334);
-        float a12 = -(m12 * m3344 - m32 * m1344 + m42 * m1334);
-        float a13 = +(m12 * m2344 - m22 * m1344 + m42 * m1324);
-        float a14 = -(m12 * m2334 - m22 * m1334 + m32 * m1324);
-
-        return m11 * a11 + m21 * a12 + m31 * a13 + m41 * a14;
     }
 
     @Override

@@ -158,22 +158,33 @@ public record Matrix3(
         );
     }
 
-
     @Override
-    public Matrix3 one() {
-        return IDENTITY;
+    public Matrix3 transpose() {
+        return new Matrix3(
+            m11, m12, m13,
+            m21, m22, m23,
+            m31, m32, m33
+        );
     }
 
     @Override
-    public Matrix3 inverse() {
+    public float determinant() {
+        float a11 = +(m22 * m33 - m32 * m23);
+        float a12 = -(m12 * m33 - m32 * m13);
+        float a13 = +(m12 * m23 - m22 * m13);
+
+        return m11 * a11 + m21 * a12 + m31 * a13;
+    }
+
+    @Override
+    public Matrix3 inverse() throws ArithmeticException {
         float a11 = +(m22 * m33 - m32 * m23);
         float a12 = -(m12 * m33 - m32 * m13);
         float a13 = +(m12 * m23 - m22 * m13);
 
         float det = m11 * a11 + m21 * a12 + m31 * a13;
 
-        // TODO: Fix epsilons
-        if (Math.abs(det) < 1e-6f) {
+        if (Math.abs(det) < EPSILON) {
             throw new ArithmeticException("Cannot invert matrix with near-zero determinant");
         }
 
@@ -191,26 +202,6 @@ public record Matrix3(
             a13, a23, a33
         ).divide(det);
     }
-
-    @Override
-    public Matrix3 transpose() {
-        return new Matrix3(
-            m11, m12, m13,
-            m21, m22, m23,
-            m31, m32, m33
-        );
-    }
-
-
-    @Override
-    public float determinant() {
-        float a11 = +(m22 * m33 - m32 * m23);
-        float a12 = -(m12 * m33 - m32 * m13);
-        float a13 = +(m12 * m23 - m22 * m13);
-
-        return m11 * a11 + m21 * a12 + m31 * a13;
-    }
-
 
     @Override
     public float get(int row, int column) {
