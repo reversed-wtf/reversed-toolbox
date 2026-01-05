@@ -413,21 +413,21 @@ public record Matrix4(
      * @return TRS record containing translation, rotation, and scale components.
      */
     public TRS decompose() {
-        var axisX = new Vector3(m11, m21, m31);
-        var axisY = new Vector3(m12, m22, m32);
-        var axisZ = new Vector3(m13, m23, m33);
-        var scale = new Vector3(axisX.length(), axisY.length(), axisZ.length());
+        float lenX = FloatMath.sqrt(m11 * m11 + m21 * m21 + m31 * m31);
+        float lenY = FloatMath.sqrt(m12 * m12 + m22 * m22 + m32 * m32);
+        float lenZ = FloatMath.sqrt(m13 * m13 + m23 * m23 + m33 * m33);
+        Vector3 scale = new Vector3(lenX, lenY, lenZ);
 
-        axisX = axisX.normalize();
-        axisY = axisY.normalize();
-        axisZ = axisZ.normalize();
+        float invLenX = 1.0f / lenX;
+        float invLenY = 1.0f / lenY;
+        float invLenZ = 1.0f / lenZ;
 
-        var rotation = Quaternion.fromMatrixNormalized(
-            axisX.x(), axisX.y(), axisX.z(),
-            axisY.x(), axisY.y(), axisY.z(),
-            axisZ.x(), axisZ.y(), axisZ.z()
+        Quaternion rotation = Quaternion.fromMatrixNormalized(
+            m11 * invLenX, m21 * invLenX, m31 * invLenX,
+            m12 * invLenY, m22 * invLenY, m32 * invLenY,
+            m13 * invLenZ, m23 * invLenZ, m33 * invLenZ
         );
-        var translation = new Vector3(m14, m24, m34);
+        Vector3 translation = new Vector3(m14, m24, m34);
         return new TRS(translation, rotation, scale);
     }
 
