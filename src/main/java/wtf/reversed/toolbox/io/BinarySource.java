@@ -19,7 +19,7 @@ public abstract class BinarySource implements Closeable {
     }
 
     public static BinarySource open(Path path) throws IOException {
-        return new ChannelBinarySource(Files.newByteChannel(path, StandardOpenOption.READ));
+        return FileBinarySource.create(path);
     }
 
     public static BinarySource wrap(Bytes bytes) throws IOException {

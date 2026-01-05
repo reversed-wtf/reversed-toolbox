@@ -4,39 +4,36 @@ import wtf.reversed.toolbox.collect.*;
 import wtf.reversed.toolbox.util.*;
 
 import java.io.*;
-import java.nio.channels.*;
+import java.nio.*;
 
-final class ChannelBinarySource extends BinarySource {
+abstract class BufferedBinarySource extends BinarySource {
     private static final int BUFFER_SIZE = 0x2000;
     private final Bytes.Mutable buffer = Bytes.Mutable.allocate(BUFFER_SIZE);
-    private final FileChannel channel;
-    private long channelPosition = 0; // Always points to buffer[0]
+    private long sourcePosition = 0; // Always points to buffer[0]
     private int bufferPosition = 0; // Points to the next byte to read
     private int bufferLength = 0; // Number of bytes in the buffer
 
-    ChannelBinarySource(SeekableByteChannel channel) throws IOException {
-        super(channel.size());
-        if (!(channel instanceof FileChannel fileChannel)) {
-            throw new IllegalArgumentException("channel must be a FileChannel");
-        }
-        this.channel = fileChannel;
+    BufferedBinarySource(long size) throws IOException {
+        super(size);
+    }
+
+    abstract int readImpl(ByteBuffer target, long position) throws IOException;
+
+    @Override
+    public final long position() {
+        return sourcePosition + bufferPosition;
     }
 
     @Override
-    public long position() {
-        return channelPosition + bufferPosition;
-    }
-
-    @Override
-    public BinarySource position(long position) {
+    public final BinarySource position(long position) {
         Check.position(position, size, "position");
 
-        if (channelPosition <= position && position <= channelPosition + bufferLength) {
+        if (sourcePosition <= position && position <= sourcePosition + bufferLength) {
             // If we fit in the current buffer, just adjust the position
-            bufferPosition = (int) (position - channelPosition);
+            bufferPosition = (int) (position - sourcePosition);
         } else {
             // If not, move the channel position and mark the buffer empty
-            channelPosition = position;
+            sourcePosition = position;
             bufferPosition = 0;
             bufferLength = 0;
         }
@@ -44,7 +41,7 @@ final class ChannelBinarySource extends BinarySource {
     }
 
     @Override
-    public void readBytes(Bytes.Mutable target) throws IOException {
+    public final void readBytes(Bytes.Mutable target) throws IOException {
         // If the buffer has enough data, just copy the data and return
         if (bufferRemaining() >= target.length()) {
             buffer.slice(bufferPosition, target.length()).copyTo(target, 0);
@@ -60,7 +57,7 @@ final class ChannelBinarySource extends BinarySource {
             targetPosition += remaining;
 
             // We drained the buffer, so update our channelPosition, and mark it empty
-            channelPosition += bufferLength;
+            sourcePosition += bufferLength;
             bufferPosition = 0;
             bufferLength = 0;
         }
@@ -75,15 +72,15 @@ final class ChannelBinarySource extends BinarySource {
         }
 
         // If not, do a straight read, buffer is emptied
-        int read = channel.read(target.slice(targetPosition, targetRemaining).asMutableBuffer(), channelPosition);
+        int read = readImpl(target.slice(targetPosition, targetRemaining).asMutableBuffer(), sourcePosition);
         if (read != targetRemaining) {
             throw new EOFException("Unexpected end of stream, expected " + targetRemaining + " bytes, got " + read);
         }
-        channelPosition += read;
+        sourcePosition += read;
     }
 
     @Override
-    public byte readByte() throws IOException {
+    public final byte readByte() throws IOException {
         refill(Byte.BYTES);
         byte result = buffer.get(bufferPosition);
         bufferPosition++;
@@ -91,7 +88,7 @@ final class ChannelBinarySource extends BinarySource {
     }
 
     @Override
-    public short readShort() throws IOException {
+    public final short readShort() throws IOException {
         refill(Short.BYTES);
         short result = buffer.getShort(bufferPosition);
         bufferPosition += Short.BYTES;
@@ -99,7 +96,7 @@ final class ChannelBinarySource extends BinarySource {
     }
 
     @Override
-    public int readInt() throws IOException {
+    public final int readInt() throws IOException {
         refill(Integer.BYTES);
         int result = buffer.getInt(bufferPosition);
         bufferPosition += Integer.BYTES;
@@ -107,7 +104,7 @@ final class ChannelBinarySource extends BinarySource {
     }
 
     @Override
-    public long readLong() throws IOException {
+    public final long readLong() throws IOException {
         refill(Long.BYTES);
         long result = buffer.getLong(bufferPosition);
         bufferPosition += Long.BYTES;
@@ -122,13 +119,13 @@ final class ChannelBinarySource extends BinarySource {
 
         // First we have to move the leftover data to the front
         buffer.slice(bufferPosition, remaining).copyTo(buffer, 0);
-        channelPosition += bufferPosition;
+        sourcePosition += bufferPosition;
         bufferPosition = 0;
         bufferLength = remaining;
 
         // Then we can copy in new data from the channel
         Bytes.Mutable target = buffer.slice(remaining, BUFFER_SIZE - remaining);
-        int read = channel.read(target.asMutableBuffer(), channelPosition + remaining);
+        int read = readImpl(target.asMutableBuffer(), sourcePosition + remaining);
         bufferLength += read;
 
         // Final check if we read enough data
@@ -143,8 +140,7 @@ final class ChannelBinarySource extends BinarySource {
 
     @Override
     public void close() throws IOException {
-        channel.close();
-        channelPosition = 0;
+        sourcePosition = 0;
         bufferPosition = 0;
         bufferLength = 0;
     }
