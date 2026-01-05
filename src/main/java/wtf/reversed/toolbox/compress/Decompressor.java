@@ -49,6 +49,6 @@ public sealed interface Decompressor
     }
 
     default void decompress(byte[] src, int srcOff, int srcLen, byte[] dst, int dstOff, int dstLen) throws IOException {
-        decompress(Bytes.wrap(src, srcOff, srcOff + srcLen), Bytes.Mutable.wrap(dst, dstOff, dstOff + dstLen));
+        decompress(Bytes.wrap(src, srcOff, srcLen), Bytes.Mutable.wrap(dst, dstOff, dstLen));
     }
 }
