@@ -4,7 +4,6 @@ import wtf.reversed.toolbox.collect.*;
 import wtf.reversed.toolbox.util.*;
 
 import java.io.*;
-import java.nio.*;
 
 abstract class BufferedBinarySource extends BinarySource {
     private static final int BUFFER_SIZE = 0x2000;
@@ -17,7 +16,7 @@ abstract class BufferedBinarySource extends BinarySource {
         super(size);
     }
 
-    abstract int readImpl(ByteBuffer target, long position) throws IOException;
+    abstract int readImpl(Bytes.Mutable target, long position) throws IOException;
 
     @Override
     public final long position() {
@@ -72,7 +71,7 @@ abstract class BufferedBinarySource extends BinarySource {
         }
 
         // If not, do a straight read, buffer is emptied
-        int read = readImpl(target.slice(targetPosition, targetRemaining).asMutableBuffer(), sourcePosition);
+        int read = readImpl(target.slice(targetPosition, targetRemaining), sourcePosition);
         if (read != targetRemaining) {
             throw new EOFException("Unexpected end of stream, expected " + targetRemaining + " bytes, got " + read);
         }
@@ -125,7 +124,7 @@ abstract class BufferedBinarySource extends BinarySource {
 
         // Then we can copy in new data from the channel
         Bytes.Mutable target = buffer.slice(remaining, BUFFER_SIZE - remaining);
-        int read = readImpl(target.asMutableBuffer(), sourcePosition + remaining);
+        int read = readImpl(target, sourcePosition + remaining);
         bufferLength += read;
 
         // Final check if we read enough data

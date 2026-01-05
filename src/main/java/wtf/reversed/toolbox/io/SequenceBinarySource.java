@@ -3,7 +3,6 @@ package wtf.reversed.toolbox.io;
 import wtf.reversed.toolbox.collect.*;
 
 import java.io.*;
-import java.nio.*;
 import java.util.*;
 
 final class SequenceBinarySource extends BufferedBinarySource {
@@ -20,17 +19,16 @@ final class SequenceBinarySource extends BufferedBinarySource {
     }
 
     @Override
-    int readImpl(ByteBuffer target, long position) throws IOException {
+    int readImpl(Bytes.Mutable target, long position) throws IOException {
         reposition(position);
-        int remaining = target.remaining();
-        while (target.hasRemaining()) {
-            refill(position);
-            int size = Math.min(Math.toIntExact(source.remaining()), target.remaining());
-            source.readBytes(Bytes.Mutable.wrap(target.array(), target.position(), size));
-            target.position(target.position() + size);
-            position += size;
+        for (int read = 0; read < target.length(); ) {
+            refill(position + read);
+            int remaining = target.length() - read;
+            int size = Math.min(Math.toIntExact(source.remaining()), remaining);
+            source.readBytes(target.slice(read, size));
+            read += size;
         }
-        return remaining;
+        return target.length();
     }
 
     private void refill(long position) throws EOFException {

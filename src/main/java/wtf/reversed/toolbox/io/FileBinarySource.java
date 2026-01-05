@@ -1,7 +1,8 @@
 package wtf.reversed.toolbox.io;
 
+import wtf.reversed.toolbox.collect.*;
+
 import java.io.*;
-import java.nio.*;
 import java.nio.channels.*;
 import java.nio.file.*;
 
@@ -18,8 +19,8 @@ final class FileBinarySource extends BufferedBinarySource {
     }
 
     @Override
-    int readImpl(ByteBuffer target, long position) throws IOException {
-        return channel.read(target, position);
+    int readImpl(Bytes.Mutable target, long position) throws IOException {
+        return channel.read(target.asMutableBuffer(), position);
     }
 
     @Override
