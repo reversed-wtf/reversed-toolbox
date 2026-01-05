@@ -13,7 +13,7 @@ abstract class BufferedBinarySource extends BinarySource {
     private int bufferPosition = 0; // Points to the next byte to read
     private int bufferLength = 0; // Number of bytes in the buffer
 
-    BufferedBinarySource(long size) throws IOException {
+    BufferedBinarySource(long size) {
         super(size);
     }
 

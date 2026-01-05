@@ -26,6 +26,11 @@ public abstract class BinarySource implements Closeable {
         return new BytesBinarySource(bytes);
     }
 
+    public static BinarySource sequence(List<? extends BinarySource> readers) {
+        Check.argument(!readers.isEmpty(), "At least one reader must be provided");
+        return new SequenceBinarySource(readers);
+    }
+
 
     public final ByteOrder order() {
         return bigEndian ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN;
