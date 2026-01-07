@@ -9,9 +9,9 @@ package wtf.reversed.toolbox.math;
  * <p>
  * The inner product must satisfy:
  * <ul>
- *   <li>Symmetry: {@code a * b = b * a}</li>
- *   <li>Linearity: {@code (ka) * b = k(a * b)}</li>
- *   <li>Positive definiteness: {@code a * a ≥ 0}, with equality if {@code a = 0}</li>
+ *   <li>Symmetry: {@code a × b = b × a}</li>
+ *   <li>Linearity: {@code (k × a) × b = k × (a × b)}</li>
+ *   <li>Positive definiteness: {@code a × a ≥ 0}, with equality if {@code a = 0}</li>
  * </ul>
  *
  * @param <T> the concrete type implementing this interface

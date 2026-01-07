@@ -175,6 +175,9 @@ public record Bounds(
         private float maxY = Float.NEGATIVE_INFINITY;
         private float maxZ = Float.NEGATIVE_INFINITY;
 
+        private Builder() {
+        }
+
         /**
          * Adds a point to the bounds.
          *

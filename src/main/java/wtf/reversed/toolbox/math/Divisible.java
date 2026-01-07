@@ -42,7 +42,7 @@ public interface Divisible<T extends Divisible<T>> extends Vector<T> {
      * <p>For complex numbers z = a + bi: conjugate(z) = a - bi
      * <br>For quaternions q = w + xi + yj + zk: conjugate(q) = w - xi - yj - zk
      *
-     * <p>The conjugate satisfies: conjugate(xy) = conjugate(y) · conjugate(x)
+     * <p>The conjugate satisfies: conjugate(xy) = conjugate(y) × conjugate(x)
      * (note the reversal of order for non-commutative algebras)
      *
      * @return the conjugate of this element
