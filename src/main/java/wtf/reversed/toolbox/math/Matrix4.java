@@ -212,7 +212,7 @@ public record Matrix4(
      * @return A new matrix representing a perspective projection transformation.
      */
     public static Matrix4 perspective(float fov, float aspect, float near, float far) {
-        float f = (float) (1f / Math.tan(fov / 2f));
+        float f = 1f / FloatMath.tan(fov / 2f);
 
         float m11 = f / aspect;
         float m22 = f;
@@ -240,7 +240,6 @@ public record Matrix4(
      * @return A new matrix representing an orthographic projection transformation.
      */
     public static Matrix4 orthographic(float left, float right, float bottom, float top, float near, float far) {
-
         float m11 = +2.0f / (right - left);
         float m22 = +2.0f / (top - bottom);
         float m33 = -2.0f / (far - near);
