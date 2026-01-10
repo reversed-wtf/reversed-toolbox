@@ -39,6 +39,11 @@ public record Matrix4(
     float m14, float m24, float m34, float m44
 ) implements Matrix<Matrix4>, Primitive {
     /**
+     * The number of bytes required to store a 4x4 matrix.
+     */
+    public static final int BYTES = Float.BYTES * 16;
+
+    /**
      * The identity matrix for 4x4 transformations.
      */
     public static final Matrix4 IDENTITY = new Matrix4(
@@ -197,6 +202,84 @@ public record Matrix4(
         );
     }
 
+    /**
+     * Creates a new matrix representing a perspective projection transformation.
+     *
+     * @param fov    The field of view in radians.
+     * @param aspect The aspect ratio (width / height).
+     * @param near   The near clipping plane distance.
+     * @param far    The far clipping plane distance.
+     * @return A new matrix representing a perspective projection transformation.
+     */
+    public static Matrix4 perspective(float fov, float aspect, float near, float far) {
+        float f = (float) (1f / Math.tan(fov / 2f));
+
+        float m11 = f / aspect;
+        float m22 = f;
+        float m33 = (far + near) / (near - far);
+        float m43 = -1.0f;
+        float m34 = (2f * far * near) / (near - far);
+
+        return new Matrix4(
+            m11, 0.f, 0.f, 0.f,
+            0.f, m22, 0.f, 0.f,
+            0.f, 0.f, m33, m43,
+            0.f, 0.f, m34, 0.f
+        );
+    }
+
+    /**
+     * Creates a new matrix representing an orthographic projection transformation.
+     *
+     * @param left   The left clipping plane.
+     * @param right  The right clipping plane.
+     * @param bottom The bottom clipping plane.
+     * @param top    The top clipping plane.
+     * @param near   The near clipping plane.
+     * @param far    The far clipping plane.
+     * @return A new matrix representing an orthographic projection transformation.
+     */
+    public static Matrix4 orthographic(float left, float right, float bottom, float top, float near, float far) {
+
+        float m11 = +2.0f / (right - left);
+        float m22 = +2.0f / (top - bottom);
+        float m33 = -2.0f / (far - near);
+
+        float tx = (right + left) / (left - right);
+        float ty = (top + bottom) / (bottom - top);
+        float tz = (far + near) / (near - far);
+
+        return new Matrix4(
+            m11, 0.f, 0.f, 0.f,
+            0.f, m22, 0.f, 0.f,
+            0.f, 0.f, m33, 0.f,
+            tx, ty, tz, 1.f
+        );
+    }
+
+    /**
+     * Creates a viewing matrix derived from an eye point, a reference point
+     * indicating the center of the scene, and an up vector.
+     *
+     * @param eye    The position of the eye/camera.
+     * @param center The point to look at.
+     * @param up     The up direction.
+     * @return The lookAt matrix.
+     */
+    public static Matrix4 lookAt(Vector3 eye, Vector3 center, Vector3 up) {
+        Vector3 dir = eye.subtract(center).normalize();
+        Vector3 left = up.cross(dir).normalize();
+        Vector3 upn = dir.cross(left);
+
+        Matrix4 translation = fromTranslation(-eye.x(), -eye.y(), -eye.z());
+        Matrix4 rotation = new Matrix3(
+            left.x(), upn.x(), dir.x(),
+            left.y(), upn.y(), dir.y(),
+            left.z(), upn.z(), dir.z()
+        ).toMatrix4();
+
+        return rotation.multiply(translation);
+    }
 
     @Override
     public Matrix4 add(Matrix4 other) {

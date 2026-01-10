@@ -25,6 +25,11 @@ public record Matrix2(
     float m12, float m22
 ) implements Matrix<Matrix2>, Primitive {
     /**
+     * The number of bytes required to store a 4x4 matrix.
+     */
+    public static final int BYTES = Float.BYTES * 4;
+
+    /**
      * The identity matrix for 2x2 transformations.
      */
     public static final Matrix2 IDENTITY = new Matrix2(
