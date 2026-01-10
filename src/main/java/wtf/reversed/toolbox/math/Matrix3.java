@@ -31,6 +31,11 @@ public record Matrix3(
     float m13, float m23, float m33
 ) implements Matrix<Matrix3>, Primitive {
     /**
+     * The number of bytes required to store a 3x3 matrix.
+     */
+    public static final int BYTES = Float.BYTES * 9;
+
+    /**
      * The identity matrix for 3x3 transformations.
      */
     public static final Matrix3 IDENTITY = new Matrix3(

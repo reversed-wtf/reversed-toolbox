@@ -109,6 +109,46 @@ public record Bounds(
     }
 
 
+    /**
+     * Returns a new bounds that encapsulates both this and the other bounds.
+     *
+     * @param other The other bounds.
+     * @return The encapsulating bounds.
+     */
+    public Bounds combine(Bounds other) {
+        float minX = Math.min(this.minX, other.minX);
+        float minY = Math.min(this.minY, other.minY);
+        float minZ = Math.min(this.minZ, other.minZ);
+        float maxX = Math.max(this.maxX, other.maxX);
+        float maxY = Math.max(this.maxY, other.maxY);
+        float maxZ = Math.max(this.maxZ, other.maxZ);
+
+        return new Bounds(
+            minX, minY, minZ,
+            maxX, maxY, maxZ
+        );
+    }
+
+    /**
+     * Transforms the bounds by the given matrix.
+     *
+     * @param matrix The matrix to transform by.
+     * @return The transformed bounds.
+     */
+    public Bounds transform(Matrix4 matrix) {
+        var bounds = Bounds.builder();
+        bounds.add(new Vector3(minX, minY, minZ).transform(matrix));
+        bounds.add(new Vector3(minX, minY, maxZ).transform(matrix));
+        bounds.add(new Vector3(minX, maxY, minZ).transform(matrix));
+        bounds.add(new Vector3(minX, maxY, maxZ).transform(matrix));
+        bounds.add(new Vector3(maxX, minY, minZ).transform(matrix));
+        bounds.add(new Vector3(maxX, minY, maxZ).transform(matrix));
+        bounds.add(new Vector3(maxX, maxY, minZ).transform(matrix));
+        bounds.add(new Vector3(maxX, maxY, maxZ).transform(matrix));
+        return bounds.build();
+    }
+
+
     @Override
     public int componentCount() {
         return 6;

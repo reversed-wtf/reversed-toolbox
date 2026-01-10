@@ -15,6 +15,7 @@ class Vector4Test {
 
     @Test
     void testConstants() {
+        assertThat(Vector4.BYTES).isEqualTo(16);
         assertThat(Vector4.ZERO).isEqualTo(new Vector4(0, 0, 0, 0));
         assertThat(Vector4.ONE).isEqualTo(new Vector4(1, 1, 1, 1));
         assertThat(Vector4.X).isEqualTo(new Vector4(1, 0, 0, 0));

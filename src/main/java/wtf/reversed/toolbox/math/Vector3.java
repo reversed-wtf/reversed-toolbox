@@ -19,6 +19,11 @@ public record Vector3(
     float z
 ) implements Vector<Vector3>, Primitive {
     /**
+     * The number of bytes required to store a three-dimensional vector.
+     */
+    public static final int BYTES = Float.BYTES * 3;
+
+    /**
      * A vector with all components set to zero.
      */
     public static final Vector3 ZERO = new Vector3(0.0f, 0.0f, 0.0f);
@@ -140,6 +145,34 @@ public record Vector3(
     }
 
     /**
+     * Calculates the distance between this vector and another.
+     *
+     * @param other The other vector.
+     * @return The distance.
+     */
+    public float distance(Vector3 other) {
+        float dx = x - other.x;
+        float dy = y - other.y;
+        float dz = z - other.z;
+        return FloatMath.sqrt(Math.fma(dx, dx, Math.fma(dy, dy, dz * dz)));
+    }
+
+    /**
+     * Performs a fused multiply-add operation on this vector.
+     *
+     * @param mul The multiplier.
+     * @param add The addend vector.
+     * @return The result of the fused multiply-add operation.
+     */
+    public Vector3 fma(float mul, Vector3 add) {
+        return new Vector3(
+            Math.fma(x, mul, add.x),
+            Math.fma(y, mul, add.y),
+            Math.fma(z, mul, add.z)
+        );
+    }
+
+    /**
      * Transforms this vector by the given matrix.
      *
      * @param matrix The matrix to transform by.
@@ -198,5 +231,4 @@ public record Vector3(
     public String toString() {
         return "[" + x + ", " + y + ", " + z + "]";
     }
-
 }

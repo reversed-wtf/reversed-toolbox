@@ -17,6 +17,11 @@ public record Vector2(
     float y
 ) implements Vector<Vector2>, Primitive {
     /**
+     * The number of bytes required to store a two-dimensional vector.
+     */
+    public static final int BYTES = Float.BYTES * 2;
+
+    /**
      * A vector with all components set to zero.
      */
     public static final Vector2 ZERO = new Vector2(0.0f, 0.0f);

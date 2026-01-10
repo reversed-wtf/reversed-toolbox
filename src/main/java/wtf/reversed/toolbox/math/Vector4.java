@@ -21,6 +21,11 @@ public record Vector4(
     float w
 ) implements Vector<Vector4>, Primitive {
     /**
+     * The number of bytes required to store a four-dimensional vector.
+     */
+    public static final int BYTES = Float.BYTES * 4;
+
+    /**
      * A vector with all components set to zero.
      */
     public static final Vector4 ZERO = new Vector4(0.0f, 0.0f, 0.0f, 0.0f);
