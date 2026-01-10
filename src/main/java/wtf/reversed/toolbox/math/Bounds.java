@@ -115,7 +115,7 @@ public record Bounds(
      * @param other The other bounds.
      * @return The encapsulating bounds.
      */
-    public Bounds encapsulate(Bounds other) {
+    public Bounds combine(Bounds other) {
         float minX = Math.min(this.minX, other.minX);
         float minY = Math.min(this.minY, other.minY);
         float minZ = Math.min(this.minZ, other.minZ);
@@ -147,6 +147,7 @@ public record Bounds(
         bounds.add(new Vector3(maxX, maxY, maxZ).transform(matrix));
         return bounds.build();
     }
+
 
     @Override
     public int componentCount() {
