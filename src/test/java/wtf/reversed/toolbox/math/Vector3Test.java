@@ -15,6 +15,7 @@ class Vector3Test {
 
     @Test
     void testConstants() {
+        assertThat(Vector3.BYTES).isEqualTo(12);
         assertThat(Vector3.ZERO).isEqualTo(new Vector3(0, 0, 0));
         assertThat(Vector3.ONE).isEqualTo(new Vector3(1, 1, 1));
         assertThat(Vector3.X).isEqualTo(new Vector3(1, 0, 0));
@@ -57,6 +58,7 @@ class Vector3Test {
         assertThat(v1.lengthSquared()).isEqualTo(14);
         assertThat(v1.length()).isEqualTo(FloatMath.sqrt(14));
         assertThat(v1.normalize()).isEqualTo(new Vector3(1, 2, 3).divide(FloatMath.sqrt(14)));
+        assertThat(v1.distance(v2)).isEqualTo(FloatMath.sqrt(48));
     }
 
     @Test
@@ -79,5 +81,19 @@ class Vector3Test {
         var translation = Matrix4.fromTranslation(4, 5, 6);
         var result = v.transform(translation);
         assertThat(result).isEqualTo(new Vector3(5, 7, 9));
+    }
+
+    @Test
+    void testDistance() {
+        var v1 = new Vector3(1, 2, 3);
+        var v2 = new Vector3(4, 5, 6);
+        assertThat(v1.distance(v2)).isEqualTo(FloatMath.sqrt(27));
+    }
+
+    @Test
+    void testFma() {
+        var v1 = new Vector3(1, 2, 3);
+        var v2 = new Vector3(4, 5, 6);
+        assertThat(v1.fma(7, v2)).isEqualTo(new Vector3(11, 19, 27));
     }
 }

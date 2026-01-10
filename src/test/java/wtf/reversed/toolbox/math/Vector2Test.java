@@ -15,6 +15,7 @@ class Vector2Test {
 
     @Test
     void testConstants() {
+        assertThat(Vector2.BYTES).isEqualTo(8);
         assertThat(Vector2.ZERO).isEqualTo(new Vector2(0, 0));
         assertThat(Vector2.ONE).isEqualTo(new Vector2(1, 1));
         assertThat(Vector2.X).isEqualTo(new Vector2(1, 0));
