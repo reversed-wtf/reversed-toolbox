@@ -5,7 +5,11 @@ import wtf.reversed.toolbox.collect.*;
 import java.nio.charset.*;
 
 public sealed interface HashFunction
-    permits FNV1a64, FarmHashFingerprint64, MessageDigestHashFunction, MurmurHash3x64, MurmurHash64B, XXHash32, XXHash64 {
+    permits CRC, FNV1a64, FarmHashFingerprint64, MessageDigestHashFunction, MurmurHash3x64, MurmurHash64B, XXHash32, XXHash64 {
+
+    static HashFunction crc(CRCAlgorithm algorithm) {
+        return new CRC(algorithm);
+    }
 
     static HashFunction farmHashFingerprint64() {
         return FarmHashFingerprint64.INSTANCE;
