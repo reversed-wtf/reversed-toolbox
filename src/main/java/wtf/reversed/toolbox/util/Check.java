@@ -168,7 +168,10 @@ public final class Check {
      * @throws IndexOutOfBoundsException if the sub-range is out of bounds
      */
     public static int fromIndexSize(int fromIndex, int size, int length) {
-        return Objects.checkFromIndexSize(fromIndex, size, length);
+        if (fromIndex < 0 || size < 0 || fromIndex + size > length) {
+            throw new IndexOutOfBoundsException(String.format("Range [%s, %<s + %s) out of bounds for length %s", fromIndex, size, length));
+        }
+        return fromIndex;
     }
 
     /**
@@ -181,7 +184,10 @@ public final class Check {
      * @throws IndexOutOfBoundsException if the sub-range is out of bounds
      */
     public static long fromIndexSize(long fromIndex, long size, long length) {
-        return Objects.checkFromIndexSize(fromIndex, size, length);
+        if (fromIndex < 0 || size < 0 || fromIndex + size > length) {
+            throw new IndexOutOfBoundsException(String.format("Range [%s, %<s + %s) out of bounds for length %s", fromIndex, size, length));
+        }
+        return fromIndex;
     }
 
     /**
