@@ -9,11 +9,10 @@ final class FlagEnums {
     private FlagEnums() {
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
+    @SuppressWarnings("unchecked")
     static <E extends Enum<E> & FlagEnum> E[] lookup(Class<E> enumClass) {
         if (!VALID.contains(enumClass)) {
             validate(enumClass);
-            VALID.add(enumClass);
         }
         return (E[]) LOOKUP.computeIfAbsent(enumClass, clazz -> (Enum<?>[]) clazz.getEnumConstants());
     }
@@ -21,14 +20,15 @@ final class FlagEnums {
     static <E extends Enum<E> & FlagEnum> void validate(Class<E> enumClass) {
         long seen = 0;
         for (E flag : enumClass.getEnumConstants()) {
+            // Check for zero values, which make no sense for flags
             if (flag.value() == 0) {
-                throw new IllegalArgumentException(String.format(
+                throw new IllegalStateException(String.format(
                     "Flag value cannot be 0 in %s: '%s'.",
                     enumClass.getSimpleName(), flag.name()
                 ));
             }
 
-            // 2. Check for bit overlap with any previously seen flags
+            // Check for bit overlap with any previously seen flags
             if ((seen & flag.value()) != 0) {
                 throw new IllegalStateException(String.format(
                     "Bitflag collision in %s: '%s' (0x%X) overlaps with existing flags.",
@@ -38,5 +38,6 @@ final class FlagEnums {
 
             seen |= flag.value();
         }
+        VALID.add(enumClass);
     }
 }

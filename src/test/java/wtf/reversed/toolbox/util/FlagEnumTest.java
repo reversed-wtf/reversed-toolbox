@@ -37,9 +37,13 @@ class FlagEnumTest {
     }
 
     @Test
+    void testZeroValue() {
+        assertThatIllegalStateException().isThrownBy(() -> FlagEnum.fromValue(ZeroFlagEnum.class, 0));
+    }
+
+    @Test
     void testOverlappingBits() {
-        assertThatExceptionOfType(IllegalStateException.class)
-            .isThrownBy(() -> FlagEnum.fromValue(OverlappingFlagEnum.class, 0x3));
+        assertThatIllegalStateException().isThrownBy(() -> FlagEnum.fromValue(OverlappingFlagEnum.class, 0x3));
     }
 
     enum TestFlagEnum implements FlagEnum {
@@ -67,6 +71,21 @@ class FlagEnumTest {
         private final int value;
 
         OverlappingFlagEnum(int value) {
+            this.value = value;
+        }
+
+        @Override
+        public long value() {
+            return value;
+        }
+    }
+
+    enum ZeroFlagEnum implements FlagEnum {
+        ZERO(0);
+
+        private final int value;
+
+        ZeroFlagEnum(int value) {
             this.value = value;
         }
 
