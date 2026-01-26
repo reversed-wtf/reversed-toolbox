@@ -18,7 +18,7 @@ final class FlagEnums {
     }
 
     static <E extends Enum<E> & FlagEnum> void validate(Class<E> enumClass) {
-        long seen = 0;
+        int seen = 0;
         for (E flag : enumClass.getEnumConstants()) {
             // Check for zero values, which make no sense for flags
             if (flag.value() == 0) {

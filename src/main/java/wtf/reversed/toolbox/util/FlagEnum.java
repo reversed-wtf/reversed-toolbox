@@ -6,7 +6,7 @@ import java.util.*;
  * Represents an enum constant that can be combined into a bitwise flag value.
  */
 public interface FlagEnum {
-    long value();
+    int value();
 
     /**
      * Converts a flag value to a set of enum constants.
@@ -16,17 +16,17 @@ public interface FlagEnum {
      * @param <E>       the enum type
      * @return the set of flags
      */
-    static <E extends Enum<E> & FlagEnum> Set<E> fromValue(Class<E> enumClass, long value) {
+    static <E extends Enum<E> & FlagEnum> Set<E> fromValue(Class<E> enumClass, int value) {
         EnumSet<E> result = EnumSet.noneOf(enumClass);
         for (E flag : FlagEnums.lookup(enumClass)) {
-            long flagValue = flag.value();
+            int flagValue = flag.value();
             if ((value & flagValue) == flagValue) {
                 result.add(flag);
                 value &= ~flagValue;
             }
         }
         if (value != 0) {
-            throw new IllegalArgumentException("Unknown bits: 0x" + Long.toHexString(value));
+            throw new IllegalArgumentException("Unknown bits: 0x" + Integer.toHexString(value));
         }
         return result;
     }
@@ -40,9 +40,9 @@ public interface FlagEnum {
      * @param flags the set of enum constants to be converted to an integer value
      * @return the integer value representing the combined flags
      */
-    static <E extends Enum<E> & FlagEnum> long toValue(Set<E> flags) {
+    static <E extends Enum<E> & FlagEnum> int toValue(Set<E> flags) {
         return flags.stream()
-            .mapToLong(FlagEnum::value)
+            .mapToInt(FlagEnum::value)
             .reduce(0, (a, b) -> a | b);
     }
 

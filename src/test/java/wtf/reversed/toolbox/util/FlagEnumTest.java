@@ -58,7 +58,7 @@ class FlagEnumTest {
         }
 
         @Override
-        public long value() {
+        public int value() {
             return value;
         }
     }
@@ -75,7 +75,7 @@ class FlagEnumTest {
         }
 
         @Override
-        public long value() {
+        public int value() {
             return value;
         }
     }
@@ -90,7 +90,7 @@ class FlagEnumTest {
         }
 
         @Override
-        public long value() {
+        public int value() {
             return value;
         }
     }

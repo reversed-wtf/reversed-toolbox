@@ -147,7 +147,7 @@ final class LZ4FrameDecompressor implements Decompressor {
         }
 
         @Override
-        public long value() {
+        public int value() {
             return value;
         }
     }
