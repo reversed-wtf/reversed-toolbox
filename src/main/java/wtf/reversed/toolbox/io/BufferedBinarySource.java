@@ -27,7 +27,7 @@ abstract class BufferedBinarySource extends BinarySource {
     public final BinarySource position(long position) {
         Check.position(position, size, "position");
 
-        if (sourcePosition <= position && position <= sourcePosition + bufferLength) {
+        if (position >= sourcePosition && position < sourcePosition + bufferLength) {
             // If we fit in the current buffer, just adjust the position
             bufferPosition = (int) (position - sourcePosition);
         } else {
