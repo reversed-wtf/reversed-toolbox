@@ -7,7 +7,7 @@ import java.io.*;
 
 abstract class BufferedBinarySource extends BinarySource {
     private static final int BUFFER_SIZE = 0x2000;
-    private final Bytes.Mutable buffer = Bytes.Mutable.allocate(BUFFER_SIZE);
+    private final Bytes.Mutable buffer = Bytes.allocate(BUFFER_SIZE);
     private long sourcePosition = 0; // Always points to buffer[0]
     private int bufferPosition = 0; // Points to the next byte to read
     private int bufferLength = 0; // Number of bytes in the buffer

@@ -89,7 +89,7 @@ public abstract class BinarySource implements Closeable {
         }
         ensureRemaining(count * (long) Byte.BYTES);
 
-        var result = Bytes.Mutable.allocate(count);
+        var result = Bytes.allocate(count);
         readBytes(result);
         return result;
     }

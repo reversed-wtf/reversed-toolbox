@@ -3,7 +3,7 @@ package wtf.reversed.toolbox.collect;
 import wtf.reversed.toolbox.util.*;
 
 import java.nio.*;
-import java.util.Arrays;
+import java.util.*;
 import java.util.stream.*;
 
 public class Floats implements Slice, Comparable<Floats> {
@@ -34,9 +34,13 @@ public class Floats implements Slice, Comparable<Floats> {
         return new Floats(array, offset, length);
     }
 
+    public static Mutable allocate(int length) {
+        return new Mutable(new float[length], 0, length);
+    }
+
     public static Floats from(FloatBuffer buffer) {
         Check.argument(buffer.hasArray(), "buffer must be backed by an array");
-        return new Floats(buffer.array(), buffer.position(), buffer.limit());
+        return new Floats(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
     }
 
     public float get(int index) {
@@ -81,12 +85,13 @@ public class Floats implements Slice, Comparable<Floats> {
     }
 
     public void copyTo(Mutable target, int offset) {
+        Check.fromIndexSize(offset, length, target.length);
         System.arraycopy(array, this.offset, target.array, target.offset + offset, length);
     }
 
     @Override
     public FloatBuffer asBuffer() {
-        return FloatBuffer.wrap(array, offset, length).asReadOnlyBuffer();
+        return FloatBuffer.wrap(array, offset, length).slice().asReadOnlyBuffer();
     }
 
     public float[] toArray() {
@@ -134,10 +139,6 @@ public class Floats implements Slice, Comparable<Floats> {
             return new Mutable(array, offset, length);
         }
 
-        public static Mutable allocate(int length) {
-            return new Mutable(new float[length], 0, length);
-        }
-
         public Mutable set(int index, float value) {
             Check.index(index, length);
             array[offset + index] = value;
@@ -159,7 +160,7 @@ public class Floats implements Slice, Comparable<Floats> {
         }
 
         public FloatBuffer asMutableBuffer() {
-            return FloatBuffer.wrap(array, offset, length);
+            return FloatBuffer.wrap(array, offset, length).slice();
         }
     }
 }

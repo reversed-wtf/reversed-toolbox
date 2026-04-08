@@ -9,7 +9,6 @@ import java.nio.*;
 import java.nio.charset.*;
 import java.nio.file.*;
 import java.util.*;
-import java.util.Arrays;
 import java.util.stream.*;
 
 final class SliceGenerator {
@@ -79,7 +78,7 @@ final class SliceGenerator {
             .build());
         if (primitiveType == byte.class) {
             for (Class<?> type : List.of(short.class, int.class, long.class, float.class, double.class)) {
-                builder.addField(FieldSpec.builder(VarHandle.class, varHandleName(type), Modifier.STATIC, Modifier.FINAL)
+                builder.addField(FieldSpec.builder(VarHandle.class, varHandleName(type), Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
                     .initializer("$T.byteArrayViewVarHandle($T[].class, $T.$L).withInvokeExactBehavior()", MethodHandles.class, type, ByteOrder.class, ByteOrder.LITTLE_ENDIAN)
                     .build());
             }
@@ -124,12 +123,19 @@ final class SliceGenerator {
 
         addWrapMethods(builder, thisType);
 
+        builder.addMethod(MethodSpec.methodBuilder("allocate")
+            .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+            .addParameter(int.class, "length")
+            .returns(mutableType)
+            .addStatement("return new $L(new $L[length], 0, length)", mutableType, primitiveType)
+            .build());
+
         builder.addMethod(MethodSpec.methodBuilder("from")
             .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
             .addParameter(bufferType, "buffer")
             .returns(thisType)
             .addStatement("$T.argument(buffer.hasArray(), \"buffer must be backed by an array\")", CHECK_CLASS)
-            .addStatement("return new $L(buffer.array(), buffer.position(), buffer.limit())", thisType)
+            .addStatement("return new $L(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining())", thisType)
             .build());
     }
 
@@ -207,6 +213,7 @@ final class SliceGenerator {
             .addParameter(mutableType, "target")
             .addParameter(int.class, "offset")
             .returns(void.class)
+            .addStatement("$T.fromIndexSize(offset, length, target.length)", CHECK_CLASS)
             .addStatement("$T.arraycopy(array, this.offset, target.array, target.offset + offset, length)", System.class)
             .build());
     }
@@ -214,7 +221,7 @@ final class SliceGenerator {
     private void addConversions(TypeSpec.Builder builder) {
         builder.addMethod(JavaPoetUtils.override("asBuffer")
             .returns(bufferType)
-            .addStatement("return $T.wrap(array, offset, length).asReadOnlyBuffer()", bufferType)
+            .addStatement("return $T.wrap(array, offset, length).slice().asReadOnlyBuffer()", bufferType)
             .build());
 
         if (primitiveType == byte.class) {
@@ -350,13 +357,6 @@ final class SliceGenerator {
 
     private void addMutableFactories(TypeSpec.Builder builder) {
         addWrapMethods(builder, mutableType);
-
-        builder.addMethod(MethodSpec.methodBuilder("allocate")
-            .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-            .addParameter(int.class, "length")
-            .returns(mutableType)
-            .addStatement("return new $L(new $L[length], 0, length)", mutableType, primitiveType)
-            .build());
     }
 
     private void addMutableSetters(TypeSpec.Builder builder) {
@@ -393,7 +393,7 @@ final class SliceGenerator {
         builder.addMethod(MethodSpec.methodBuilder("asMutableBuffer")
             .addModifiers(Modifier.PUBLIC)
             .returns(bufferType)
-            .addStatement("return $T.wrap(array, offset, length)", bufferType)
+            .addStatement("return $T.wrap(array, offset, length).slice()", bufferType)
             .build());
     }
 

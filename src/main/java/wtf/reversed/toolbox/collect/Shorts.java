@@ -3,7 +3,7 @@ package wtf.reversed.toolbox.collect;
 import wtf.reversed.toolbox.util.*;
 
 import java.nio.*;
-import java.util.Arrays;
+import java.util.*;
 import java.util.stream.*;
 
 public class Shorts implements Slice, Comparable<Shorts> {
@@ -34,9 +34,13 @@ public class Shorts implements Slice, Comparable<Shorts> {
         return new Shorts(array, offset, length);
     }
 
+    public static Mutable allocate(int length) {
+        return new Mutable(new short[length], 0, length);
+    }
+
     public static Shorts from(ShortBuffer buffer) {
         Check.argument(buffer.hasArray(), "buffer must be backed by an array");
-        return new Shorts(buffer.array(), buffer.position(), buffer.limit());
+        return new Shorts(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
     }
 
     public short get(int index) {
@@ -85,12 +89,13 @@ public class Shorts implements Slice, Comparable<Shorts> {
     }
 
     public void copyTo(Mutable target, int offset) {
+        Check.fromIndexSize(offset, length, target.length);
         System.arraycopy(array, this.offset, target.array, target.offset + offset, length);
     }
 
     @Override
     public ShortBuffer asBuffer() {
-        return ShortBuffer.wrap(array, offset, length).asReadOnlyBuffer();
+        return ShortBuffer.wrap(array, offset, length).slice().asReadOnlyBuffer();
     }
 
     public short[] toArray() {
@@ -138,10 +143,6 @@ public class Shorts implements Slice, Comparable<Shorts> {
             return new Mutable(array, offset, length);
         }
 
-        public static Mutable allocate(int length) {
-            return new Mutable(new short[length], 0, length);
-        }
-
         public Mutable set(int index, short value) {
             Check.index(index, length);
             array[offset + index] = value;
@@ -163,7 +164,7 @@ public class Shorts implements Slice, Comparable<Shorts> {
         }
 
         public ShortBuffer asMutableBuffer() {
-            return ShortBuffer.wrap(array, offset, length);
+            return ShortBuffer.wrap(array, offset, length).slice();
         }
     }
 }

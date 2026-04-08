@@ -3,7 +3,7 @@ package wtf.reversed.toolbox.collect;
 import wtf.reversed.toolbox.util.*;
 
 import java.nio.*;
-import java.util.Arrays;
+import java.util.*;
 import java.util.stream.*;
 
 public class Doubles implements Slice, Comparable<Doubles> {
@@ -34,9 +34,13 @@ public class Doubles implements Slice, Comparable<Doubles> {
         return new Doubles(array, offset, length);
     }
 
+    public static Mutable allocate(int length) {
+        return new Mutable(new double[length], 0, length);
+    }
+
     public static Doubles from(DoubleBuffer buffer) {
         Check.argument(buffer.hasArray(), "buffer must be backed by an array");
-        return new Doubles(buffer.array(), buffer.position(), buffer.limit());
+        return new Doubles(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
     }
 
     public double get(int index) {
@@ -81,12 +85,13 @@ public class Doubles implements Slice, Comparable<Doubles> {
     }
 
     public void copyTo(Mutable target, int offset) {
+        Check.fromIndexSize(offset, length, target.length);
         System.arraycopy(array, this.offset, target.array, target.offset + offset, length);
     }
 
     @Override
     public DoubleBuffer asBuffer() {
-        return DoubleBuffer.wrap(array, offset, length).asReadOnlyBuffer();
+        return DoubleBuffer.wrap(array, offset, length).slice().asReadOnlyBuffer();
     }
 
     public double[] toArray() {
@@ -134,10 +139,6 @@ public class Doubles implements Slice, Comparable<Doubles> {
             return new Mutable(array, offset, length);
         }
 
-        public static Mutable allocate(int length) {
-            return new Mutable(new double[length], 0, length);
-        }
-
         public Mutable set(int index, double value) {
             Check.index(index, length);
             array[offset + index] = value;
@@ -159,7 +160,7 @@ public class Doubles implements Slice, Comparable<Doubles> {
         }
 
         public DoubleBuffer asMutableBuffer() {
-            return DoubleBuffer.wrap(array, offset, length);
+            return DoubleBuffer.wrap(array, offset, length).slice();
         }
     }
 }

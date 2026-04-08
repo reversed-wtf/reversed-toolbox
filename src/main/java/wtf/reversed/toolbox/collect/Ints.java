@@ -3,7 +3,7 @@ package wtf.reversed.toolbox.collect;
 import wtf.reversed.toolbox.util.*;
 
 import java.nio.*;
-import java.util.Arrays;
+import java.util.*;
 import java.util.stream.*;
 
 public class Ints implements Slice, Comparable<Ints> {
@@ -34,9 +34,13 @@ public class Ints implements Slice, Comparable<Ints> {
         return new Ints(array, offset, length);
     }
 
+    public static Mutable allocate(int length) {
+        return new Mutable(new int[length], 0, length);
+    }
+
     public static Ints from(IntBuffer buffer) {
         Check.argument(buffer.hasArray(), "buffer must be backed by an array");
-        return new Ints(buffer.array(), buffer.position(), buffer.limit());
+        return new Ints(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
     }
 
     public int get(int index) {
@@ -85,12 +89,13 @@ public class Ints implements Slice, Comparable<Ints> {
     }
 
     public void copyTo(Mutable target, int offset) {
+        Check.fromIndexSize(offset, length, target.length);
         System.arraycopy(array, this.offset, target.array, target.offset + offset, length);
     }
 
     @Override
     public IntBuffer asBuffer() {
-        return IntBuffer.wrap(array, offset, length).asReadOnlyBuffer();
+        return IntBuffer.wrap(array, offset, length).slice().asReadOnlyBuffer();
     }
 
     public int[] toArray() {
@@ -138,10 +143,6 @@ public class Ints implements Slice, Comparable<Ints> {
             return new Mutable(array, offset, length);
         }
 
-        public static Mutable allocate(int length) {
-            return new Mutable(new int[length], 0, length);
-        }
-
         public Mutable set(int index, int value) {
             Check.index(index, length);
             array[offset + index] = value;
@@ -163,7 +164,7 @@ public class Ints implements Slice, Comparable<Ints> {
         }
 
         public IntBuffer asMutableBuffer() {
-            return IntBuffer.wrap(array, offset, length);
+            return IntBuffer.wrap(array, offset, length).slice();
         }
     }
 }

@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class BytesBinarySourceTest {
     @Test
     void testReader() throws IOException {
-        Bytes.Mutable bytes = Bytes.Mutable.allocate(16)
+        Bytes.Mutable bytes = Bytes.allocate(16)
             .set(0, (byte) 0)
             .set(1, (byte) 1)
             .setShort(2, (short) 2)
@@ -45,7 +45,7 @@ class BytesBinarySourceTest {
 
     @Test
     void testEndian() throws IOException {
-        Bytes.Mutable buffer = Bytes.Mutable.allocate(12)
+        Bytes.Mutable buffer = Bytes.allocate(12)
             .setInt(0, 0x10203040)
             .setInt(4, Integer.reverseBytes(0x10203040))
             .setInt(8, 0x10203040);

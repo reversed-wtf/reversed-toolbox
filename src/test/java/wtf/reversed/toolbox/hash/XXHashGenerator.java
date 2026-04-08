@@ -10,7 +10,7 @@ final class XXHashGenerator {
     }
 
     static Bytes generate(int length) {
-        Bytes.Mutable bytes = Bytes.Mutable.allocate(length);
+        Bytes.Mutable bytes = Bytes.allocate(length);
         long byteGen = PRIME32;
         for (int i = 0; i < length; i++) {
             bytes.set(i, (byte) (byteGen >> 56));

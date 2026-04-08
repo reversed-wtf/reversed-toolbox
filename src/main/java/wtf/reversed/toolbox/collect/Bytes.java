@@ -7,21 +7,20 @@ import java.lang.invoke.*;
 import java.nio.*;
 import java.nio.charset.*;
 import java.util.*;
-import java.util.Arrays;
 import java.util.stream.*;
 
 public class Bytes implements Slice, Comparable<Bytes> {
     private static final Bytes EMPTY = wrap(new byte[0]);
 
-    static final VarHandle VH_SHORT_LE = MethodHandles.byteArrayViewVarHandle(short[].class, ByteOrder.LITTLE_ENDIAN).withInvokeExactBehavior();
+    private static final VarHandle VH_SHORT_LE = MethodHandles.byteArrayViewVarHandle(short[].class, ByteOrder.LITTLE_ENDIAN).withInvokeExactBehavior();
 
-    static final VarHandle VH_INT_LE = MethodHandles.byteArrayViewVarHandle(int[].class, ByteOrder.LITTLE_ENDIAN).withInvokeExactBehavior();
+    private static final VarHandle VH_INT_LE = MethodHandles.byteArrayViewVarHandle(int[].class, ByteOrder.LITTLE_ENDIAN).withInvokeExactBehavior();
 
-    static final VarHandle VH_LONG_LE = MethodHandles.byteArrayViewVarHandle(long[].class, ByteOrder.LITTLE_ENDIAN).withInvokeExactBehavior();
+    private static final VarHandle VH_LONG_LE = MethodHandles.byteArrayViewVarHandle(long[].class, ByteOrder.LITTLE_ENDIAN).withInvokeExactBehavior();
 
-    static final VarHandle VH_FLOAT_LE = MethodHandles.byteArrayViewVarHandle(float[].class, ByteOrder.LITTLE_ENDIAN).withInvokeExactBehavior();
+    private static final VarHandle VH_FLOAT_LE = MethodHandles.byteArrayViewVarHandle(float[].class, ByteOrder.LITTLE_ENDIAN).withInvokeExactBehavior();
 
-    static final VarHandle VH_DOUBLE_LE = MethodHandles.byteArrayViewVarHandle(double[].class, ByteOrder.LITTLE_ENDIAN).withInvokeExactBehavior();
+    private static final VarHandle VH_DOUBLE_LE = MethodHandles.byteArrayViewVarHandle(double[].class, ByteOrder.LITTLE_ENDIAN).withInvokeExactBehavior();
 
     final byte[] array;
 
@@ -48,9 +47,13 @@ public class Bytes implements Slice, Comparable<Bytes> {
         return new Bytes(array, offset, length);
     }
 
+    public static Mutable allocate(int length) {
+        return new Mutable(new byte[length], 0, length);
+    }
+
     public static Bytes from(ByteBuffer buffer) {
         Check.argument(buffer.hasArray(), "buffer must be backed by an array");
-        return new Bytes(buffer.array(), buffer.position(), buffer.limit());
+        return new Bytes(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
     }
 
     public byte get(int index) {
@@ -132,12 +135,13 @@ public class Bytes implements Slice, Comparable<Bytes> {
     }
 
     public void copyTo(Mutable target, int offset) {
+        Check.fromIndexSize(offset, length, target.length);
         System.arraycopy(array, this.offset, target.array, target.offset + offset, length);
     }
 
     @Override
     public ByteBuffer asBuffer() {
-        return ByteBuffer.wrap(array, offset, length).asReadOnlyBuffer();
+        return ByteBuffer.wrap(array, offset, length).slice().asReadOnlyBuffer();
     }
 
     public InputStream asInputStream() {
@@ -197,10 +201,6 @@ public class Bytes implements Slice, Comparable<Bytes> {
             return new Mutable(array, offset, length);
         }
 
-        public static Mutable allocate(int length) {
-            return new Mutable(new byte[length], 0, length);
-        }
-
         public Mutable set(int index, byte value) {
             Check.index(index, length);
             array[offset + index] = value;
@@ -252,7 +252,7 @@ public class Bytes implements Slice, Comparable<Bytes> {
         }
 
         public ByteBuffer asMutableBuffer() {
-            return ByteBuffer.wrap(array, offset, length);
+            return ByteBuffer.wrap(array, offset, length).slice();
         }
     }
 }
