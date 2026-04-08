@@ -4,7 +4,7 @@ import wtf.reversed.toolbox.collect.*;
 
 import java.io.*;
 
-final class LZ4BlockDecompressor extends LZDecompressor {
+final class LZ4BlockDecompressor implements Decompressor {
     static LZ4BlockDecompressor INSTANCE = new LZ4BlockDecompressor();
 
     private LZ4BlockDecompressor() {
@@ -15,7 +15,7 @@ final class LZ4BlockDecompressor extends LZDecompressor {
         decompress(src, dst, 0);
     }
 
-    int decompress(Bytes src, Bytes.Mutable dst, int dstOffset) throws IOException {
+    static int decompress(Bytes src, Bytes.Mutable dst, int dstOffset) throws IOException {
         // Special case
         if (dst.length() == 0) {
             if (src.length() != 1 || src.get(0) != 0) {
@@ -41,7 +41,7 @@ final class LZ4BlockDecompressor extends LZDecompressor {
                 }
 
                 // Copy the literal over
-                copyLiteral(src, srcOff, dst, dstOff, literalLength);
+                LZUtils.copyLiteral(src, srcOff, dst, dstOff, literalLength);
                 srcOff += literalLength;
                 dstOff += literalLength;
             }
@@ -67,7 +67,7 @@ final class LZ4BlockDecompressor extends LZDecompressor {
             matchLength += 4;
 
             // Can't copy past the end of the output
-            copyReference(dst, dstOff, offset, matchLength);
+            LZUtils.copyReference(dst, dstOff, offset, matchLength);
             dstOff += matchLength;
         }
     }

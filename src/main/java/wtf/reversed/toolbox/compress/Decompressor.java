@@ -6,7 +6,7 @@ import java.io.*;
 import java.nio.file.*;
 
 public sealed interface Decompressor
-    permits DeflateDecompressor, LZ4FrameDecompressor, LZDecompressor, LZMADecompressor, NoneDecompressor, OodleDecompressor {
+    permits DeflateDecompressor, FastLZDecompressor, LZ4BlockDecompressor, LZ4FrameDecompressor, LZMADecompressor, NoneDecompressor, OodleDecompressor {
 
     static Decompressor deflate(boolean nowrap) {
         return new DeflateDecompressor(nowrap);

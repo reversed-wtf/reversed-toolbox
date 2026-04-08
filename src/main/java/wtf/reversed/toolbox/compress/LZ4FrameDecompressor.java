@@ -43,7 +43,7 @@ final class LZ4FrameDecompressor implements Decompressor {
                 blockData.copyTo(dst, dstOffset);
                 dstOffset += blockData.length();
             } else {
-                dstOffset += LZ4BlockDecompressor.INSTANCE.decompress(blockData, dst, dstOffset);
+                dstOffset += LZ4BlockDecompressor.decompress(blockData, dst, dstOffset);
             }
         }
         if (dstOffset != dst.length()) {

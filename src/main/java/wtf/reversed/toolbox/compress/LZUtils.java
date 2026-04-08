@@ -3,21 +3,16 @@ package wtf.reversed.toolbox.compress;
 import wtf.reversed.toolbox.collect.*;
 import wtf.reversed.toolbox.util.*;
 
-abstract sealed class LZDecompressor implements Decompressor
-    permits FastLZDecompressor, LZ4BlockDecompressor {
-    LZDecompressor() {
+final class LZUtils {
+    private LZUtils() {
     }
 
-    void copyLiteral(Bytes src, int srcOff, Bytes.Mutable dst, int dstOff, int len) {
-        Check.fromIndexSize(srcOff, len, src.length());
-        Check.fromIndexSize(dstOff, len, dst.length());
-
+    static void copyLiteral(Bytes src, int srcOff, Bytes.Mutable dst, int dstOff, int len) {
         src.slice(srcOff, len).copyTo(dst, dstOff);
     }
 
-    void copyReference(Bytes.Mutable dst, int dstOff, int offset, int length) {
-        Check.fromIndexSize(dstOff, length, dst.length());
-        Check.argument(offset > 0 && dstOff - offset >= 0, "Invalid match");
+    static void copyReference(Bytes.Mutable dst, int dstOff, int offset, int length) {
+        Check.argument(offset > 0 && dstOff - offset >= 0, "Match before start");
 
         int srcPos = dstOff - offset;
         if (offset == 1) {

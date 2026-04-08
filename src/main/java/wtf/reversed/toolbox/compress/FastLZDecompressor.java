@@ -4,7 +4,7 @@ import wtf.reversed.toolbox.collect.*;
 
 import java.io.*;
 
-final class FastLZDecompressor extends LZDecompressor {
+final class FastLZDecompressor implements Decompressor {
     static final FastLZDecompressor INSTANCE = new FastLZDecompressor();
 
     private FastLZDecompressor() {
@@ -21,7 +21,7 @@ final class FastLZDecompressor extends LZDecompressor {
             if ((opcode & 0xE0) == 0x00) {
                 // If the upper 3 bits are 0, we have a literal
                 int literalLength = (opcode & 0x1F) + 1;
-                copyLiteral(src, srcOff, dst, dstOff, literalLength);
+                LZUtils.copyLiteral(src, srcOff, dst, dstOff, literalLength);
                 srcOff += literalLength;
                 dstOff += literalLength;
             } else {
@@ -56,7 +56,7 @@ final class FastLZDecompressor extends LZDecompressor {
                     }
                 }
 
-                copyReference(dst, dstOff, offset, matchLength);
+                LZUtils.copyReference(dst, dstOff, offset, matchLength);
                 dstOff += matchLength;
             }
 
