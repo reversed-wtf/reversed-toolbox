@@ -1,13 +1,19 @@
 package wtf.reversed.toolbox.collect;
 
-import wtf.reversed.toolbox.io.*;
-import wtf.reversed.toolbox.util.*;
-
-import javax.annotation.processing.*;
-import java.io.*;
-import java.nio.*;
-import java.util.*;
-import java.util.stream.*;
+import java.io.IOException;
+import java.lang.Comparable;
+import java.lang.Object;
+import java.lang.Override;
+import java.lang.Short;
+import java.lang.String;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.ShortBuffer;
+import java.util.Arrays;
+import java.util.stream.IntStream;
+import javax.annotation.processing.Generated;
+import wtf.reversed.toolbox.io.BinarySource;
+import wtf.reversed.toolbox.util.Check;
 
 @Generated("wtf.reversed.toolbox.util.SliceGenerator")
 public sealed class Shorts extends Slice implements Comparable<Shorts> {
@@ -91,7 +97,7 @@ public sealed class Shorts extends Slice implements Comparable<Shorts> {
     }
 
     public void copyTo(Mutable target, int offset) {
-        Check.fromIndexSize(offset, length, target.length);
+        Check.fromIndexSize(offset * Short.BYTES, length, target.length);
         System.arraycopy(array, this.offset, target.array, target.offset + offset * Short.BYTES, length);
     }
 
@@ -187,7 +193,8 @@ public sealed class Shorts extends Slice implements Comparable<Shorts> {
 
         public Mutable copyFrom(short[] src, int offset, int length) {
             Check.fromIndexSize(offset, length, src.length);
-            System.arraycopy(src, offset, array, this.offset, length);
+            Check.fromIndexSize(0, length, length());
+            asByteBuffer().asShortBuffer().put(src, offset, length);
             return this;
         }
 
@@ -207,7 +214,7 @@ public sealed class Shorts extends Slice implements Comparable<Shorts> {
             source.readBytes(new Bytes.Mutable(array, offset, length));
             if (source.order() == ByteOrder.BIG_ENDIAN) {
                 for (int i = 0, len = length(); i < len; i++) {
-                    setInternal(i, Short.reverseBytes(source.readShort()));
+                    setInternal(i, Short.reverseBytes(getInternal(i)));
                 }
             }
             return this;

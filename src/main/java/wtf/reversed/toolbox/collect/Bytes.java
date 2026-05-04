@@ -1,14 +1,26 @@
 package wtf.reversed.toolbox.collect;
 
-import wtf.reversed.toolbox.io.*;
-import wtf.reversed.toolbox.util.*;
-
-import javax.annotation.processing.*;
-import java.io.*;
-import java.nio.*;
-import java.nio.charset.*;
-import java.util.*;
-import java.util.stream.*;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.Byte;
+import java.lang.Comparable;
+import java.lang.Double;
+import java.lang.Float;
+import java.lang.Integer;
+import java.lang.Long;
+import java.lang.Object;
+import java.lang.Override;
+import java.lang.Short;
+import java.lang.String;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.util.Arrays;
+import java.util.HexFormat;
+import java.util.stream.IntStream;
+import javax.annotation.processing.Generated;
+import wtf.reversed.toolbox.io.BinarySource;
+import wtf.reversed.toolbox.util.Check;
 
 @Generated("wtf.reversed.toolbox.util.SliceGenerator")
 public sealed class Bytes extends Slice implements Comparable<Bytes> {
@@ -206,31 +218,31 @@ public sealed class Bytes extends Slice implements Comparable<Bytes> {
         }
 
         public Mutable setShort(int offset, short value) {
-            Check.fromIndexSize(offset, Byte.BYTES, this.length);
+            Check.fromIndexSize(offset, Short.BYTES, this.length);
             VH_SHORT.set(array, this.offset + offset, value);
             return this;
         }
 
         public Mutable setInt(int offset, int value) {
-            Check.fromIndexSize(offset, Byte.BYTES, this.length);
+            Check.fromIndexSize(offset, Integer.BYTES, this.length);
             VH_INT.set(array, this.offset + offset, value);
             return this;
         }
 
         public Mutable setLong(int offset, long value) {
-            Check.fromIndexSize(offset, Byte.BYTES, this.length);
+            Check.fromIndexSize(offset, Long.BYTES, this.length);
             VH_LONG.set(array, this.offset + offset, value);
             return this;
         }
 
         public Mutable setFloat(int offset, float value) {
-            Check.fromIndexSize(offset, Byte.BYTES, this.length);
+            Check.fromIndexSize(offset, Float.BYTES, this.length);
             VH_FLOAT.set(array, this.offset + offset, value);
             return this;
         }
 
         public Mutable setDouble(int offset, double value) {
-            Check.fromIndexSize(offset, Byte.BYTES, this.length);
+            Check.fromIndexSize(offset, Double.BYTES, this.length);
             VH_DOUBLE.set(array, this.offset + offset, value);
             return this;
         }
@@ -250,7 +262,8 @@ public sealed class Bytes extends Slice implements Comparable<Bytes> {
 
         public Mutable copyFrom(byte[] src, int offset, int length) {
             Check.fromIndexSize(offset, length, src.length);
-            System.arraycopy(src, offset, array, this.offset, length);
+            Check.fromIndexSize(0, length, this.length);
+            asByteBuffer().put(src, offset, length);
             return this;
         }
 

@@ -1,13 +1,20 @@
 package wtf.reversed.toolbox.collect;
 
-import wtf.reversed.toolbox.io.*;
-import wtf.reversed.toolbox.util.*;
-
-import javax.annotation.processing.*;
-import java.io.*;
-import java.nio.*;
-import java.util.*;
-import java.util.stream.*;
+import java.io.IOException;
+import java.lang.Comparable;
+import java.lang.Long;
+import java.lang.Object;
+import java.lang.Override;
+import java.lang.String;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.LongBuffer;
+import java.util.Arrays;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
+import javax.annotation.processing.Generated;
+import wtf.reversed.toolbox.io.BinarySource;
+import wtf.reversed.toolbox.util.Check;
 
 @Generated("wtf.reversed.toolbox.util.SliceGenerator")
 public sealed class Longs extends Slice implements Comparable<Longs> {
@@ -87,7 +94,7 @@ public sealed class Longs extends Slice implements Comparable<Longs> {
     }
 
     public void copyTo(Mutable target, int offset) {
-        Check.fromIndexSize(offset, length, target.length);
+        Check.fromIndexSize(offset * Long.BYTES, length, target.length);
         System.arraycopy(array, this.offset, target.array, target.offset + offset * Long.BYTES, length);
     }
 
@@ -183,7 +190,8 @@ public sealed class Longs extends Slice implements Comparable<Longs> {
 
         public Mutable copyFrom(long[] src, int offset, int length) {
             Check.fromIndexSize(offset, length, src.length);
-            System.arraycopy(src, offset, array, this.offset, length);
+            Check.fromIndexSize(0, length, length());
+            asByteBuffer().asLongBuffer().put(src, offset, length);
             return this;
         }
 
@@ -203,7 +211,7 @@ public sealed class Longs extends Slice implements Comparable<Longs> {
             source.readBytes(new Bytes.Mutable(array, offset, length));
             if (source.order() == ByteOrder.BIG_ENDIAN) {
                 for (int i = 0, len = length(); i < len; i++) {
-                    setInternal(i, Long.reverseBytes(source.readLong()));
+                    setInternal(i, Long.reverseBytes(getInternal(i)));
                 }
             }
             return this;

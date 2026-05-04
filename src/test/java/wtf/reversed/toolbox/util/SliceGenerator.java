@@ -239,7 +239,7 @@ final class SliceGenerator {
             .addParameter(mutableType, "target")
             .addParameter(int.class, "offset")
             .returns(void.class)
-            .addStatement("$T.fromIndexSize(offset, length, target.length)", CHECK_CLASS)
+            .addStatement("$T.fromIndexSize($L, length, target.length)", CHECK_CLASS, adjust("offset"))
             .addStatement("System.arraycopy(array, this.offset, target.array, target.offset + $L, length)", adjust("offset"))
             .build();
     }
@@ -423,11 +423,11 @@ final class SliceGenerator {
         builder.addMethod(generateSetInternal());
 
         if (type.isByte()) {
-            builder.addMethod(generateHandleSet(short.class, "setShort"));
-            builder.addMethod(generateHandleSet(int.class, "setInt"));
-            builder.addMethod(generateHandleSet(long.class, "setLong"));
-            builder.addMethod(generateHandleSet(float.class, "setFloat"));
-            builder.addMethod(generateHandleSet(double.class, "setDouble"));
+            builder.addMethod(generateHandleSet(short.class, Short.class, "setShort"));
+            builder.addMethod(generateHandleSet(int.class, Integer.class, "setInt"));
+            builder.addMethod(generateHandleSet(long.class, Long.class, "setLong"));
+            builder.addMethod(generateHandleSet(float.class, Float.class, "setFloat"));
+            builder.addMethod(generateHandleSet(double.class, Double.class, "setDouble"));
         }
 
         builder.addMethods(generateSliceMethods(mutableType));
@@ -518,7 +518,8 @@ final class SliceGenerator {
             .addParameter(int.class, "length")
             .returns(mutableType)
             .addStatement("$T.fromIndexSize(offset, length, src.length)", CHECK_CLASS)
-            .addStatement("System.arraycopy(src, offset, array, this.offset, length)")
+            .addStatement("$T.fromIndexSize(0, length, $L)", CHECK_CLASS, length())
+            .addStatement("asByteBuffer()$L.put(src, offset, length)", type.isByte() ? "" : ".as" + shortPrimitiveName() + "Buffer()")
             .addStatement("return this")
             .build());
 
@@ -582,7 +583,7 @@ final class SliceGenerator {
             } else if (primitiveType == double.class) {
                 builder.addStatement("setInternal(i, Double.longBitsToDouble(Long.reverseBytes(Double.doubleToRawLongBits(getInternal(i)))))");
             } else {
-                builder.addStatement("setInternal(i, $T.reverseBytes(source.read$L()))", boxedType, shortPrimitiveName());
+                builder.addStatement("setInternal(i, $T.reverseBytes(getInternal(i)))", boxedType);
             }
             builder
                 .endControlFlow()
@@ -599,13 +600,13 @@ final class SliceGenerator {
             .build());
     }
 
-    private MethodSpec generateHandleSet(Class<?> valueType, String name) {
+    private MethodSpec generateHandleSet(Class<?> valueType, Class<?> boxedType, String name) {
         return MethodSpec.methodBuilder(name)
             .addModifiers(Modifier.PUBLIC)
             .addParameter(int.class, "offset")
             .addParameter(valueType, "value")
             .returns(mutableType)
-            .addStatement("$T.fromIndexSize(offset, $L, $L)", CHECK_CLASS, bytes(), length())
+            .addStatement("$T.fromIndexSize(offset, $T.BYTES, $L)", CHECK_CLASS, boxedType, length())
             .addStatement("$L.set(array, this.offset + $L, value)", varHandleName(valueType), adjust("offset"))
             .addStatement("return this")
             .build();

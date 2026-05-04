@@ -1,12 +1,19 @@
 package wtf.reversed.toolbox.collect;
 
-import wtf.reversed.toolbox.io.*;
-import wtf.reversed.toolbox.util.*;
-
-import javax.annotation.processing.*;
-import java.io.*;
-import java.nio.*;
-import java.util.stream.*;
+import java.io.IOException;
+import java.lang.Comparable;
+import java.lang.Double;
+import java.lang.Object;
+import java.lang.Override;
+import java.lang.String;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.DoubleBuffer;
+import java.util.stream.DoubleStream;
+import java.util.stream.IntStream;
+import javax.annotation.processing.Generated;
+import wtf.reversed.toolbox.io.BinarySource;
+import wtf.reversed.toolbox.util.Check;
 
 @Generated("wtf.reversed.toolbox.util.SliceGenerator")
 public sealed class Doubles extends Slice implements Comparable<Doubles> {
@@ -86,7 +93,7 @@ public sealed class Doubles extends Slice implements Comparable<Doubles> {
     }
 
     public void copyTo(Mutable target, int offset) {
-        Check.fromIndexSize(offset, length, target.length);
+        Check.fromIndexSize(offset * Double.BYTES, length, target.length);
         System.arraycopy(array, this.offset, target.array, target.offset + offset * Double.BYTES, length);
     }
 
@@ -190,7 +197,8 @@ public sealed class Doubles extends Slice implements Comparable<Doubles> {
 
         public Mutable copyFrom(double[] src, int offset, int length) {
             Check.fromIndexSize(offset, length, src.length);
-            System.arraycopy(src, offset, array, this.offset, length);
+            Check.fromIndexSize(0, length, length());
+            asByteBuffer().asDoubleBuffer().put(src, offset, length);
             return this;
         }
 
