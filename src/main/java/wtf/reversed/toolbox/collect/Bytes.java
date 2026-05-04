@@ -2,25 +2,16 @@ package wtf.reversed.toolbox.collect;
 
 import wtf.reversed.toolbox.util.*;
 
+import javax.annotation.processing.*;
 import java.io.*;
-import java.lang.invoke.*;
 import java.nio.*;
 import java.nio.charset.*;
 import java.util.*;
 import java.util.stream.*;
 
-public class Bytes implements Slice, Comparable<Bytes> {
+@Generated("wtf.reversed.toolbox.util.SliceGenerator")
+public sealed class Bytes extends Slice implements Comparable<Bytes> {
     private static final Bytes EMPTY = wrap(new byte[0]);
-
-    private static final VarHandle VH_SHORT_LE = MethodHandles.byteArrayViewVarHandle(short[].class, ByteOrder.LITTLE_ENDIAN).withInvokeExactBehavior();
-
-    private static final VarHandle VH_INT_LE = MethodHandles.byteArrayViewVarHandle(int[].class, ByteOrder.LITTLE_ENDIAN).withInvokeExactBehavior();
-
-    private static final VarHandle VH_LONG_LE = MethodHandles.byteArrayViewVarHandle(long[].class, ByteOrder.LITTLE_ENDIAN).withInvokeExactBehavior();
-
-    private static final VarHandle VH_FLOAT_LE = MethodHandles.byteArrayViewVarHandle(float[].class, ByteOrder.LITTLE_ENDIAN).withInvokeExactBehavior();
-
-    private static final VarHandle VH_DOUBLE_LE = MethodHandles.byteArrayViewVarHandle(double[].class, ByteOrder.LITTLE_ENDIAN).withInvokeExactBehavior();
 
     final byte[] array;
 
@@ -28,7 +19,7 @@ public class Bytes implements Slice, Comparable<Bytes> {
 
     final int length;
 
-    Bytes(byte[] array, int offset, int length) {
+    private Bytes(byte[] array, int offset, int length) {
         Check.fromIndexSize(offset, length, array.length);
         this.array = array;
         this.offset = offset;
@@ -63,27 +54,27 @@ public class Bytes implements Slice, Comparable<Bytes> {
 
     public short getShort(int offset) {
         Check.fromIndexSize(offset, Short.BYTES, length);
-        return (short) VH_SHORT_LE.get(array, this.offset + offset);
+        return (short) VH_SHORT.get(array, this.offset + offset);
     }
 
     public int getInt(int offset) {
         Check.fromIndexSize(offset, Integer.BYTES, length);
-        return (int) VH_INT_LE.get(array, this.offset + offset);
+        return (int) VH_INT.get(array, this.offset + offset);
     }
 
     public long getLong(int offset) {
         Check.fromIndexSize(offset, Long.BYTES, length);
-        return (long) VH_LONG_LE.get(array, this.offset + offset);
+        return (long) VH_LONG.get(array, this.offset + offset);
     }
 
     public float getFloat(int offset) {
         Check.fromIndexSize(offset, Float.BYTES, length);
-        return (float) VH_FLOAT_LE.get(array, this.offset + offset);
+        return (float) VH_FLOAT.get(array, this.offset + offset);
     }
 
     public double getDouble(int offset) {
         Check.fromIndexSize(offset, Double.BYTES, length);
-        return (double) VH_DOUBLE_LE.get(array, this.offset + offset);
+        return (double) VH_DOUBLE.get(array, this.offset + offset);
     }
 
     public int getUnsigned(int offset) {
@@ -209,31 +200,31 @@ public class Bytes implements Slice, Comparable<Bytes> {
 
         public Mutable setShort(int offset, short value) {
             Check.fromIndexSize(offset, Short.BYTES, length);
-            VH_SHORT_LE.set(array, this.offset + offset, value);
+            VH_SHORT.set(array, this.offset + offset, value);
             return this;
         }
 
         public Mutable setInt(int offset, int value) {
             Check.fromIndexSize(offset, Integer.BYTES, length);
-            VH_INT_LE.set(array, this.offset + offset, value);
+            VH_INT.set(array, this.offset + offset, value);
             return this;
         }
 
         public Mutable setLong(int offset, long value) {
             Check.fromIndexSize(offset, Long.BYTES, length);
-            VH_LONG_LE.set(array, this.offset + offset, value);
+            VH_LONG.set(array, this.offset + offset, value);
             return this;
         }
 
         public Mutable setFloat(int offset, float value) {
             Check.fromIndexSize(offset, Float.BYTES, length);
-            VH_FLOAT_LE.set(array, this.offset + offset, value);
+            VH_FLOAT.set(array, this.offset + offset, value);
             return this;
         }
 
         public Mutable setDouble(int offset, double value) {
             Check.fromIndexSize(offset, Double.BYTES, length);
-            VH_DOUBLE_LE.set(array, this.offset + offset, value);
+            VH_DOUBLE.set(array, this.offset + offset, value);
             return this;
         }
 

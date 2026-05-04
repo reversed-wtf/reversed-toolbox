@@ -2,11 +2,13 @@ package wtf.reversed.toolbox.collect;
 
 import wtf.reversed.toolbox.util.*;
 
+import javax.annotation.processing.*;
 import java.nio.*;
 import java.util.*;
 import java.util.stream.*;
 
-public class Longs implements Slice, Comparable<Longs> {
+@Generated("wtf.reversed.toolbox.util.SliceGenerator")
+public sealed class Longs extends Slice implements Comparable<Longs> {
     private static final Longs EMPTY = wrap(new long[0]);
 
     final long[] array;
@@ -15,7 +17,7 @@ public class Longs implements Slice, Comparable<Longs> {
 
     final int length;
 
-    Longs(long[] array, int offset, int length) {
+    private Longs(long[] array, int offset, int length) {
         Check.fromIndexSize(offset, length, array.length);
         this.array = array;
         this.offset = offset;

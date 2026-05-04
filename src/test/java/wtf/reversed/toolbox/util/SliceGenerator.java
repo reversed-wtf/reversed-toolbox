@@ -2,9 +2,9 @@ package wtf.reversed.toolbox.util;
 
 import com.squareup.javapoet.*;
 
+import javax.annotation.processing.*;
 import javax.lang.model.element.*;
 import java.io.*;
-import java.lang.invoke.*;
 import java.nio.*;
 import java.nio.charset.*;
 import java.nio.file.*;
@@ -33,7 +33,7 @@ final class SliceGenerator {
     }
 
     static void main() throws IOException {
-        generateParent();
+        // generateParent();
         new SliceGenerator("Bytes", byte.class, Byte.class, ByteBuffer.class).generate();
         new SliceGenerator("Shorts", short.class, Short.class, ShortBuffer.class).generate();
         new SliceGenerator("Ints", int.class, Integer.class, IntBuffer.class).generate();
@@ -66,8 +66,11 @@ final class SliceGenerator {
 
     private TypeSpec createWrapperClass() {
         var builder = TypeSpec.classBuilder(thisType)
-            .addModifiers(Modifier.PUBLIC)
-            .addSuperinterface(PARENT_CLASS)
+            .addModifiers(Modifier.PUBLIC, Modifier.SEALED)
+            .superclass(PARENT_CLASS)
+            .addAnnotation(AnnotationSpec.builder(Generated.class)
+                .addMember("value", "$S", this.getClass().getName())
+                .build())
             /*.addAnnotation(AnnotationSpec.builder(Debug.Renderer.class)
                 .addMember("childrenArray", "$S", "java.util.Arrays.copyOfRange(array, offset, offset + length)")
                 .build())*/;
@@ -76,13 +79,6 @@ final class SliceGenerator {
         builder.addField(FieldSpec.builder(thisType, "EMPTY", Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
             .initializer("wrap(new $T[0])", primitiveType)
             .build());
-        if (primitiveType == byte.class) {
-            for (Class<?> type : List.of(short.class, int.class, long.class, float.class, double.class)) {
-                builder.addField(FieldSpec.builder(VarHandle.class, varHandleName(type), Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
-                    .initializer("$T.byteArrayViewVarHandle($T[].class, $T.$L).withInvokeExactBehavior()", MethodHandles.class, type, ByteOrder.class, ByteOrder.LITTLE_ENDIAN)
-                    .build());
-            }
-        }
 
         builder.addField(FieldSpec.builder(arrayType, "array", Modifier.FINAL).build());
         builder.addField(FieldSpec.builder(int.class, "offset", Modifier.FINAL).build());
@@ -104,6 +100,7 @@ final class SliceGenerator {
 
     private void addConstructors(TypeSpec.Builder builder) {
         builder.addMethod(MethodSpec.constructorBuilder()
+            .addModifiers(Modifier.PRIVATE)
             .addParameter(arrayType, "array")
             .addParameter(int.class, "offset")
             .addParameter(int.class, "length")
@@ -446,7 +443,7 @@ final class SliceGenerator {
     }
 
     private String varHandleName(Class<?> type) {
-        return "VH_" + type.getSimpleName().toUpperCase() + "_LE";
+        return "VH_" + type.getSimpleName().toUpperCase();
     }
 
     private static void writeClass(TypeSpec typeSpec) throws IOException {
