@@ -1,19 +1,12 @@
 package wtf.reversed.toolbox.collect;
 
-import java.io.IOException;
-import java.lang.Comparable;
-import java.lang.Double;
-import java.lang.Object;
-import java.lang.Override;
-import java.lang.String;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.DoubleBuffer;
-import java.util.stream.DoubleStream;
-import java.util.stream.IntStream;
-import javax.annotation.processing.Generated;
-import wtf.reversed.toolbox.io.BinarySource;
-import wtf.reversed.toolbox.util.Check;
+import wtf.reversed.toolbox.io.*;
+import wtf.reversed.toolbox.util.*;
+
+import javax.annotation.processing.*;
+import java.io.*;
+import java.nio.*;
+import java.util.stream.*;
 
 @Generated("wtf.reversed.toolbox.util.SliceGenerator")
 public sealed class Doubles extends Slice implements Comparable<Doubles> {

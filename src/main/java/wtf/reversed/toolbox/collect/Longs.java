@@ -1,20 +1,13 @@
 package wtf.reversed.toolbox.collect;
 
-import java.io.IOException;
-import java.lang.Comparable;
-import java.lang.Long;
-import java.lang.Object;
-import java.lang.Override;
-import java.lang.String;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.LongBuffer;
-import java.util.Arrays;
-import java.util.stream.IntStream;
-import java.util.stream.LongStream;
-import javax.annotation.processing.Generated;
-import wtf.reversed.toolbox.io.BinarySource;
-import wtf.reversed.toolbox.util.Check;
+import wtf.reversed.toolbox.io.*;
+import wtf.reversed.toolbox.util.*;
+
+import javax.annotation.processing.*;
+import java.io.*;
+import java.nio.*;
+import java.util.*;
+import java.util.stream.*;
 
 @Generated("wtf.reversed.toolbox.util.SliceGenerator")
 public sealed class Longs extends Slice implements Comparable<Longs> {
