@@ -1,6 +1,7 @@
 package wtf.reversed.toolbox.util;
 
 import com.squareup.javapoet.*;
+import wtf.reversed.toolbox.io.*;
 
 import javax.annotation.processing.*;
 import javax.lang.model.element.*;
@@ -14,6 +15,7 @@ import java.util.stream.*;
 final class SliceGenerator {
     private static final String PACKAGE_NAME = "wtf.reversed.toolbox.collect";
     private static final ClassName PARENT_CLASS = ClassName.get(PACKAGE_NAME, "Slice");
+    private static final ClassName BYTES_CLASS = ClassName.get(PACKAGE_NAME, "Bytes");
     private static final ClassName CHECK_CLASS = ClassName.get("wtf.reversed.toolbox.util", "Check");
 
     private final ClassName thisType;
@@ -211,7 +213,7 @@ final class SliceGenerator {
             .addParameter(int.class, "offset")
             .returns(void.class)
             .addStatement("$T.fromIndexSize(offset, length, target.length)", CHECK_CLASS)
-            .addStatement("$T.arraycopy(array, this.offset, target.array, target.offset + offset, length)", System.class)
+            .addStatement("System.arraycopy(array, this.offset, target.array, target.offset + offset, length)")
             .build());
     }
 
@@ -220,6 +222,18 @@ final class SliceGenerator {
             .returns(bufferType)
             .addStatement("return $T.wrap(array, offset, length).slice().asReadOnlyBuffer()", bufferType)
             .build());
+
+        var asBytesBuilder = JavaPoetUtils.override("asBytes")
+            .returns(BYTES_CLASS);
+        if (primitiveType == byte.class) {
+            asBytesBuilder.addStatement("return this");
+        } else {
+            asBytesBuilder
+                .addStatement("var result = $T.allocate(length * $T.BYTES).order($T.LITTLE_ENDIAN)", ByteBuffer.class, boxedType, ByteOrder.class)
+                .addStatement("result.as$LBuffer().put(array, offset, length)", shortPrimitiveName())
+                .addStatement("return Bytes.wrap(result.array())");
+        }
+        builder.addMethod(asBytesBuilder.build());
 
         if (primitiveType == byte.class) {
             builder.addMethod(MethodSpec.methodBuilder("asInputStream")
@@ -232,7 +246,7 @@ final class SliceGenerator {
         builder.addMethod(MethodSpec.methodBuilder("toArray")
             .addModifiers(Modifier.PUBLIC)
             .returns(arrayType)
-            .addStatement("return $T.copyOfRange(array, offset, offset + length)", java.util.Arrays.class)
+            .addStatement("return $T.copyOfRange(array, offset, offset + length)", Arrays.class)
             .build());
 
         if (primitiveType == byte.class) {
@@ -258,7 +272,7 @@ final class SliceGenerator {
             default -> throw new UnsupportedOperationException();
         };
         var statement = primitiveType == int.class || primitiveType == long.class || primitiveType == double.class
-            ? CodeBlock.of("return $T.stream(array, offset, offset + length)", java.util.Arrays.class)
+            ? CodeBlock.of("return $T.stream(array, offset, offset + length)", Arrays.class)
             : CodeBlock.of("return $T.range(offset, offset + length).map$L(i -> array[i])", IntStream.class, primitiveType == float.class ? "ToDouble" : "");
         builder.addMethod(MethodSpec.methodBuilder("stream")
             .addModifiers(Modifier.PUBLIC)
@@ -269,13 +283,13 @@ final class SliceGenerator {
 
     private void addComparableMethods(TypeSpec.Builder builder) {
         JavaPoetUtils.implementComparable(builder, thisType, methodBuilder -> {
-            methodBuilder.addStatement("return $T.compare(array, offset, offset + length, o.array, o.offset, o.offset + o.length)", java.util.Arrays.class);
+            methodBuilder.addStatement("return $T.compare(array, offset, offset + length, o.array, o.offset, o.offset + o.length)", Arrays.class);
         });
     }
 
     private void addObjectMethods(TypeSpec.Builder builder) {
         builder.addMethod(JavaPoetUtils.equalsBuilder("obj")
-            .addStatement("return obj instanceof $L o && $T.equals(array, offset, offset + length, o.array, o.offset, o.offset + o.length)", thisType, java.util.Arrays.class)
+            .addStatement("return obj instanceof $L o && $T.equals(array, offset, offset + length, o.array, o.offset, o.offset + o.length)", thisType, Arrays.class)
             .build());
 
         builder.addMethod(JavaPoetUtils.hashCodeBuilder()
@@ -285,18 +299,6 @@ final class SliceGenerator {
             .endControlFlow()
             .addStatement("return result")
             .build());
-
-//        builder.addMethod(JavaPoetUtils.toStringBuilder()
-//            .beginControlFlow("if (length == 0)")
-//            .addStatement("return \"[]\"")
-//            .endControlFlow()
-//            .addStatement("StringBuilder builder = new StringBuilder()")
-//            .addStatement("builder.append('[').append(array[offset])")
-//            .beginControlFlow("for (int i = offset + 1, limit = offset + length; i < limit; i++)")
-//            .addStatement("builder.append(\", \").append(array[i])")
-//            .endControlFlow()
-//            .addStatement("return builder.append(']').toString()")
-//            .build());
 
         builder.addMethod(JavaPoetUtils.toStringBuilder()
             .addStatement("return $S + $L + $S", "[", "length", " " + primitiveType.toString() + "s]")
@@ -377,11 +379,52 @@ final class SliceGenerator {
     }
 
     private void addMutableBulkMethods(TypeSpec.Builder builder) {
+        builder.addMethod(MethodSpec.methodBuilder("copyFrom")
+            .addModifiers(Modifier.PUBLIC)
+            .addParameter(arrayType, "src")
+            .returns(mutableType)
+            .addStatement("return copyFrom(src, 0, src.length)")
+            .build());
+
+        builder.addMethod(MethodSpec.methodBuilder("copyFrom")
+            .addModifiers(Modifier.PUBLIC)
+            .addParameter(arrayType, "src")
+            .addParameter(int.class, "offset")
+            .addParameter(int.class, "length")
+            .returns(mutableType)
+            .addStatement("$T.fromIndexSize(offset, length, src.length)", CHECK_CLASS)
+            .addStatement("System.arraycopy(src, offset, array, this.offset, length)")
+            .addStatement("return this")
+            .build());
+
+        builder.addMethod(MethodSpec.methodBuilder("copyWithin")
+            .addModifiers(Modifier.PUBLIC)
+            .addParameter(int.class, "srcIndex")
+            .addParameter(int.class, "dstIndex")
+            .addParameter(int.class, "length")
+            .returns(mutableType)
+            .addStatement("$T.fromIndexSize(srcIndex, length, this.length)", CHECK_CLASS)
+            .addStatement("$T.fromIndexSize(dstIndex, length, this.length)", CHECK_CLASS)
+            .addStatement("System.arraycopy(array, this.offset + srcIndex, array, this.offset + dstIndex, length)")
+            .addStatement("return this")
+            .build());
+
         builder.addMethod(MethodSpec.methodBuilder("fill")
             .addModifiers(Modifier.PUBLIC)
             .addParameter(primitiveType, "value")
             .returns(mutableType)
             .addStatement("$T.fill(array, offset, offset + length, value)", Arrays.class)
+            .addStatement("return this")
+            .build());
+
+        builder.addMethod(MethodSpec.methodBuilder("fillFrom")
+            .addModifiers(Modifier.PUBLIC)
+            .addParameter(BinarySource.class, "source")
+            .addException(IOException.class)
+            .returns(mutableType)
+            .beginControlFlow("for (int i = 0; i < length; i++)")
+            .addStatement("array[offset + i] = source.read$L()", shortPrimitiveName())
+            .endControlFlow()
             .addStatement("return this")
             .build());
     }
@@ -440,6 +483,11 @@ final class SliceGenerator {
             .returns(className)
             .addStatement("return new $L(array, offset, length)", className)
             .build());
+    }
+
+    private String shortPrimitiveName() {
+        var typeString = primitiveType.toString();
+        return Character.toUpperCase(typeString.charAt(0)) + typeString.substring(1);
     }
 
     private String varHandleName(Class<?> type) {

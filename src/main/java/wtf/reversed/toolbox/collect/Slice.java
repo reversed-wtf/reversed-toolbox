@@ -27,4 +27,7 @@ public sealed abstract class Slice permits Bytes, Shorts, Ints, Longs, Floats, D
     public abstract int length();
 
     public abstract Buffer asBuffer();
+
+    public abstract Bytes asBytes();
+
 }

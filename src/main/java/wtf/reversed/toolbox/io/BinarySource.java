@@ -89,9 +89,7 @@ public abstract class BinarySource implements Closeable {
         }
         ensureRemaining(count * (long) Byte.BYTES);
 
-        var result = Bytes.allocate(count);
-        readBytes(result);
-        return result;
+        return Bytes.allocate(count).fillFrom(this);
     }
 
     public final Shorts readShorts(int count) throws IOException {
@@ -99,12 +97,7 @@ public abstract class BinarySource implements Closeable {
             return Shorts.empty();
         }
         ensureRemaining(count * (long) Short.BYTES);
-
-        var result = Shorts.Mutable.allocate(count);
-        for (var i = 0; i < result.length(); i++) {
-            result.set(i, readShort());
-        }
-        return result;
+        return Shorts.allocate(count).fillFrom(this);
     }
 
     public final Ints readInts(int count) throws IOException {
@@ -112,12 +105,7 @@ public abstract class BinarySource implements Closeable {
             return Ints.empty();
         }
         ensureRemaining(count * (long) Integer.BYTES);
-
-        var result = Ints.Mutable.allocate(count);
-        for (var i = 0; i < result.length(); i++) {
-            result.set(i, readInt());
-        }
-        return result;
+        return Ints.allocate(count).fillFrom(this);
     }
 
     public final Longs readLongs(int count) throws IOException {
@@ -125,12 +113,23 @@ public abstract class BinarySource implements Closeable {
             return Longs.empty();
         }
         ensureRemaining(count * (long) Long.BYTES);
+        return Longs.allocate(count).fillFrom(this);
+    }
 
-        var result = Longs.Mutable.allocate(count);
-        for (var i = 0; i < result.length(); i++) {
-            result.set(i, readLong());
+    public final Floats readFloats(int count) throws IOException {
+        if (Check.positiveOrZero(count, "count") == 0) {
+            return Floats.empty();
         }
-        return result;
+        ensureRemaining(count * (long) Float.BYTES);
+        return Floats.allocate(count).fillFrom(this);
+    }
+
+    public final Doubles readDoubles(int count) throws IOException {
+        if (Check.positiveOrZero(count, "count") == 0) {
+            return Doubles.empty();
+        }
+        ensureRemaining(count * (long) Double.BYTES);
+        return Doubles.allocate(count).fillFrom(this);
     }
 
     public final Ints readLongsAsInts(int count) throws IOException {
@@ -155,32 +154,6 @@ public abstract class BinarySource implements Closeable {
         var result = Floats.Mutable.allocate(count);
         for (var i = 0; i < result.length(); i++) {
             result.set(i, readHalf());
-        }
-        return result;
-    }
-
-    public final Floats readFloats(int count) throws IOException {
-        if (Check.positiveOrZero(count, "count") == 0) {
-            return Floats.empty();
-        }
-        ensureRemaining(count * (long) Float.BYTES);
-
-        var result = Floats.Mutable.allocate(count);
-        for (var i = 0; i < result.length(); i++) {
-            result.set(i, readFloat());
-        }
-        return result;
-    }
-
-    public final Doubles readDoubles(int count) throws IOException {
-        if (Check.positiveOrZero(count, "count") == 0) {
-            return Doubles.empty();
-        }
-        ensureRemaining(count * (long) Double.BYTES);
-
-        var result = Doubles.Mutable.allocate(count);
-        for (var i = 0; i < result.length(); i++) {
-            result.set(i, readDouble());
         }
         return result;
     }

@@ -1,5 +1,6 @@
 package wtf.reversed.toolbox.collect;
 
+import wtf.reversed.toolbox.io.*;
 import wtf.reversed.toolbox.util.*;
 
 import javax.annotation.processing.*;
@@ -135,6 +136,11 @@ public sealed class Bytes extends Slice implements Comparable<Bytes> {
         return ByteBuffer.wrap(array, offset, length).slice().asReadOnlyBuffer();
     }
 
+    @Override
+    public Bytes asBytes() {
+        return this;
+    }
+
     public InputStream asInputStream() {
         return new ByteArrayInputStream(array, offset, length);
     }
@@ -237,8 +243,32 @@ public sealed class Bytes extends Slice implements Comparable<Bytes> {
             return new Mutable(array, this.offset + offset, length);
         }
 
+        public Mutable copyFrom(byte[] src) {
+            return copyFrom(src, 0, src.length);
+        }
+
+        public Mutable copyFrom(byte[] src, int offset, int length) {
+            Check.fromIndexSize(offset, length, src.length);
+            System.arraycopy(src, offset, array, this.offset, length);
+            return this;
+        }
+
+        public Mutable copyWithin(int srcIndex, int dstIndex, int length) {
+            Check.fromIndexSize(srcIndex, length, this.length);
+            Check.fromIndexSize(dstIndex, length, this.length);
+            System.arraycopy(array, this.offset + srcIndex, array, this.offset + dstIndex, length);
+            return this;
+        }
+
         public Mutable fill(byte value) {
             Arrays.fill(array, offset, offset + length, value);
+            return this;
+        }
+
+        public Mutable fillFrom(BinarySource source) throws IOException {
+            for (int i = 0; i < length; i++) {
+                array[offset + i] = source.readByte();
+            }
             return this;
         }
 

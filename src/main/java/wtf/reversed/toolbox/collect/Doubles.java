@@ -1,8 +1,10 @@
 package wtf.reversed.toolbox.collect;
 
+import wtf.reversed.toolbox.io.*;
 import wtf.reversed.toolbox.util.*;
 
 import javax.annotation.processing.*;
+import java.io.*;
 import java.nio.*;
 import java.util.*;
 import java.util.stream.*;
@@ -96,6 +98,13 @@ public sealed class Doubles extends Slice implements Comparable<Doubles> {
         return DoubleBuffer.wrap(array, offset, length).slice().asReadOnlyBuffer();
     }
 
+    @Override
+    public Bytes asBytes() {
+        var result = ByteBuffer.allocate(length * Double.BYTES).order(ByteOrder.LITTLE_ENDIAN);
+        result.asDoubleBuffer().put(array, offset, length);
+        return Bytes.wrap(result.array());
+    }
+
     public double[] toArray() {
         return Arrays.copyOfRange(array, offset, offset + length);
     }
@@ -156,8 +165,32 @@ public sealed class Doubles extends Slice implements Comparable<Doubles> {
             return new Mutable(array, this.offset + offset, length);
         }
 
+        public Mutable copyFrom(double[] src) {
+            return copyFrom(src, 0, src.length);
+        }
+
+        public Mutable copyFrom(double[] src, int offset, int length) {
+            Check.fromIndexSize(offset, length, src.length);
+            System.arraycopy(src, offset, array, this.offset, length);
+            return this;
+        }
+
+        public Mutable copyWithin(int srcIndex, int dstIndex, int length) {
+            Check.fromIndexSize(srcIndex, length, this.length);
+            Check.fromIndexSize(dstIndex, length, this.length);
+            System.arraycopy(array, this.offset + srcIndex, array, this.offset + dstIndex, length);
+            return this;
+        }
+
         public Mutable fill(double value) {
             Arrays.fill(array, offset, offset + length, value);
+            return this;
+        }
+
+        public Mutable fillFrom(BinarySource source) throws IOException {
+            for (int i = 0; i < length; i++) {
+                array[offset + i] = source.readDouble();
+            }
             return this;
         }
 
