@@ -3,62 +3,61 @@ package wtf.reversed.toolbox.util;
 import java.nio.*;
 
 enum SliceType {
-    Bytes("Bytes", byte.class, Byte.class, ByteBuffer.class, Byte.BYTES),
-    Shorts("Shorts", short.class, Short.class, ShortBuffer.class, Short.BYTES),
-    Ints("Ints", int.class, Integer.class, IntBuffer.class, Integer.BYTES),
-    Longs("Longs", long.class, Long.class, LongBuffer.class, Long.BYTES),
-    Floats("Floats", float.class, Float.class, FloatBuffer.class, Float.BYTES),
-    Doubles("Doubles", double.class, Double.class, DoubleBuffer.class, Double.BYTES),
+    Bytes(byte.class, Byte.class, ByteBuffer.class, 1),
+    Shorts(short.class, Short.class, ShortBuffer.class, 2),
+    Ints(int.class, Integer.class, IntBuffer.class, 4),
+    Longs(long.class, Long.class, LongBuffer.class, 8),
+    Floats(float.class, Float.class, FloatBuffer.class, 4),
+    Doubles(double.class, Double.class, DoubleBuffer.class, 8),
     ;
 
-    private final String typeName;
     private final Class<?> primitiveType;
     private final Class<?> boxedType;
     private final Class<?> bufferType;
     private final int primitiveSize;
 
-    SliceType(
-        String typeName,
-        Class<?> primitiveType,
-        Class<?> boxedType,
-        Class<?> bufferType,
-        int primitiveSize
-    ) {
-        this.typeName = typeName;
+    SliceType(Class<?> primitiveType, Class<?> boxedType, Class<?> bufferType, int primitiveSize) {
         this.primitiveType = primitiveType;
         this.boxedType = boxedType;
         this.bufferType = bufferType;
         this.primitiveSize = primitiveSize;
     }
 
-    public String typeName() {
-        return typeName;
+    String typeName() {
+        return name();
     }
 
-    public Class<?> primitiveType() {
+    Class<?> primitiveType() {
         return primitiveType;
     }
 
-    public Class<?> boxedType() {
+    Class<?> boxedType() {
         return boxedType;
     }
 
-    public Class<?> bufferType() {
+    Class<?> bufferType() {
         return bufferType;
     }
 
-    public int primitiveSize() {
+    int primitiveSize() {
         return primitiveSize;
     }
 
-    public boolean isByte() {
+    boolean isByte() {
         return this == Bytes;
     }
 
+    String capitalizedPrimitiveName() {
+        var s = primitiveType.getSimpleName();
+        return Character.toUpperCase(s.charAt(0)) + s.substring(1);
+    }
+
+    String varHandleName(ByteOrder order) {
+        return "VH_" + primitiveType.getSimpleName().toUpperCase()
+            + (order == ByteOrder.LITTLE_ENDIAN ? "" : "_BE");
+    }
+
     public boolean isIntegral() {
-        return this == SliceType.Bytes
-            || this == SliceType.Shorts
-            || this == SliceType.Ints
-            || this == SliceType.Longs;
+        return this != Floats && this != Doubles;
     }
 }

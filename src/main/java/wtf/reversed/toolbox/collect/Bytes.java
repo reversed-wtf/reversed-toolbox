@@ -176,7 +176,7 @@ public sealed class Bytes extends Slice implements Comparable<Bytes> {
     @Override
     public int hashCode() {
         int result = 1;
-        for (int i = 0, len = length(); i < len; i++) {
+        for (int i = 0, len = this.length; i < len; i++) {
             result = 31 * result + Byte.hashCode(getInternal(i));
         }
         return result;
