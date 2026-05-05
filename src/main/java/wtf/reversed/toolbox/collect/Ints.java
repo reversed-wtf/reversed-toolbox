@@ -1,25 +1,20 @@
 package wtf.reversed.toolbox.collect;
 
+import wtf.reversed.toolbox.io.*;
 import wtf.reversed.toolbox.util.*;
 
+import javax.annotation.processing.*;
+import java.io.*;
 import java.nio.*;
 import java.util.*;
 import java.util.stream.*;
 
-public class Ints implements Slice, Comparable<Ints> {
-    private static final Ints EMPTY = wrap(new int[0]);
+@Generated("wtf.reversed.toolbox.util.SliceGenerator")
+public sealed class Ints extends Slice implements Comparable<Ints> {
+    private static final Ints EMPTY = new Ints(EMPTY_ARRAY, 0, 0);
 
-    final int[] array;
-
-    final int offset;
-
-    final int length;
-
-    Ints(int[] array, int offset, int length) {
-        Check.fromIndexSize(offset, length, array.length);
-        this.array = array;
-        this.offset = offset;
-        this.length = length;
+    Ints(byte[] array, int offset, int length) {
+        super(array, offset, length);
     }
 
     public static Ints empty() {
@@ -27,25 +22,32 @@ public class Ints implements Slice, Comparable<Ints> {
     }
 
     public static Ints wrap(int[] array) {
-        return new Ints(array, 0, array.length);
+        return wrap(array, 0, array.length);
     }
 
     public static Ints wrap(int[] array, int offset, int length) {
-        return new Ints(array, offset, length);
+        byte[] buffer = new byte[Math.multiplyExact(length, Integer.BYTES)];
+        ByteBuffer.wrap(buffer).order(ByteOrder.LITTLE_ENDIAN).asIntBuffer().put(array, offset, length);
+        return new Ints(buffer, 0, buffer.length);
     }
 
     public static Mutable allocate(int length) {
-        return new Mutable(new int[length], 0, length);
+        int byteLength = Math.multiplyExact(length, Integer.BYTES);
+        return new Mutable(new byte[byteLength], 0, byteLength);
     }
 
     public static Ints from(IntBuffer buffer) {
         Check.argument(buffer.hasArray(), "buffer must be backed by an array");
-        return new Ints(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
+        return wrap(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
     }
 
     public int get(int index) {
-        Check.index(index, length);
-        return array[offset + index];
+        Check.index(index, length());
+        return getInternal(index);
+    }
+
+    int getInternal(int index) {
+        return (int) VH_INT.get(array, offset + Math.multiplyExact(index, Integer.BYTES));
     }
 
     public long getUnsigned(int offset) {
@@ -54,7 +56,7 @@ public class Ints implements Slice, Comparable<Ints> {
 
     @Override
     public int length() {
-        return length;
+        return length >>> 2;
     }
 
     public boolean contains(int value) {
@@ -62,109 +64,162 @@ public class Ints implements Slice, Comparable<Ints> {
     }
 
     public int indexOf(int value) {
-        for (int i = offset, limit = offset + length; i < limit; i++) {
-            if (array[i] == value) {
-                return i - offset;
+        for (int i = 0, limit = length(); i < limit; i++) {
+            if (getInternal(i) == value) {
+                return i;
             }
         }
         return -1;
     }
 
     public int lastIndexOf(int value) {
-        for (int i = offset + length - 1; i >= offset; i--) {
-            if (array[i] == value) {
-                return i - offset;
+        for (int i = length() - 1; i >= 0; i--) {
+            if (getInternal(i) == value) {
+                return i;
             }
         }
         return -1;
     }
 
     public Ints slice(int offset) {
-        return slice(offset, length - offset);
+        return slice(offset, length() - offset);
     }
 
     public Ints slice(int offset, int length) {
-        Check.fromIndexSize(offset, length, this.length);
-        return new Ints(array, this.offset + offset, length);
+        Check.fromIndexSize(offset, length, length());
+        return new Ints(array, this.offset + Math.multiplyExact(offset, Integer.BYTES), Math.multiplyExact(length, Integer.BYTES));
     }
 
     public void copyTo(Mutable target, int offset) {
-        Check.fromIndexSize(offset, length, target.length);
-        System.arraycopy(array, this.offset, target.array, target.offset + offset, length);
+        Check.fromIndexSize(offset, length(), target.length());
+        System.arraycopy(array, this.offset, target.array, target.offset + Math.multiplyExact(offset, Integer.BYTES), length);
     }
 
     @Override
     public IntBuffer asBuffer() {
-        return IntBuffer.wrap(array, offset, length).slice().asReadOnlyBuffer();
-    }
-
-    public int[] toArray() {
-        return Arrays.copyOfRange(array, offset, offset + length);
+        return asByteBuffer().asIntBuffer().slice().asReadOnlyBuffer();
     }
 
     public IntStream stream() {
-        return Arrays.stream(array, offset, offset + length);
+        return IntStream.range(0, length()).map(i -> getInternal(i));
+    }
+
+    public int[] toArray() {
+        int[] result = new int[length()];
+        asBuffer().get(result);
+        return result;
     }
 
     @Override
     public int compareTo(Ints o) {
-        return Arrays.compare(array, offset, offset + length, o.array, o.offset, o.offset + o.length);
+        int min = Math.min(length(), o.length());
+        for (int i = 0; i < min; i++) {
+            int c = Integer.compare(getInternal(i), o.getInternal(i));
+            if (c != 0) {
+                return c;
+            }
+        }
+        return Integer.compare(length(), o.length());
     }
 
     @Override
     public boolean equals(Object obj) {
-        return obj instanceof Ints o && Arrays.equals(array, offset, offset + length, o.array, o.offset, o.offset + o.length);
+        if (obj == this) {
+            return true;
+        }
+        if (!(obj instanceof Ints o)) {
+            return false;
+        }
+        return Arrays.equals(array, offset, offset + length, o.array, o.offset, o.offset + o.length);
     }
 
     @Override
     public int hashCode() {
         int result = 1;
-        for (int i = offset, limit = offset + length; i < limit; i++) {
-            result = 31 * result + Integer.hashCode(array[i]);
+        for (int i = 0, len = length(); i < len; i++) {
+            result = 31 * result + Integer.hashCode(getInternal(i));
         }
         return result;
     }
 
     @Override
     public String toString() {
-        return "[" + length + " ints]";
+        return "[" + length() + " ints]";
     }
 
     public static final class Mutable extends Ints {
-        private Mutable(int[] array, int offset, int length) {
+        Mutable(byte[] array, int offset, int length) {
             super(array, offset, length);
         }
 
         public static Mutable wrap(int[] array) {
-            return new Mutable(array, 0, array.length);
+            return wrap(array, 0, array.length);
         }
 
         public static Mutable wrap(int[] array, int offset, int length) {
-            return new Mutable(array, offset, length);
+            byte[] buffer = new byte[Math.multiplyExact(length, Integer.BYTES)];
+            ByteBuffer.wrap(buffer).order(ByteOrder.LITTLE_ENDIAN).asIntBuffer().put(array, offset, length);
+            return new Mutable(buffer, 0, buffer.length);
         }
 
         public Mutable set(int index, int value) {
-            Check.index(index, length);
-            array[offset + index] = value;
+            Check.index(index, length());
+            return setInternal(index, value);
+        }
+
+        private Mutable setInternal(int index, int value) {
+            VH_INT.set(array, offset + Math.multiplyExact(index, Integer.BYTES), value);
             return this;
         }
 
         public Mutable slice(int offset) {
-            return slice(offset, length - offset);
+            return slice(offset, length() - offset);
         }
 
         public Mutable slice(int offset, int length) {
-            Check.fromIndexSize(offset, length, this.length);
-            return new Mutable(array, this.offset + offset, length);
+            Check.fromIndexSize(offset, length, length());
+            return new Mutable(array, this.offset + Math.multiplyExact(offset, Integer.BYTES), Math.multiplyExact(length, Integer.BYTES));
+        }
+
+        public Mutable copyFrom(int[] src) {
+            return copyFrom(src, 0, src.length);
+        }
+
+        public Mutable copyFrom(int[] src, int offset, int length) {
+            Check.fromIndexSize(offset, length, src.length);
+            Check.fromIndexSize(0, length, length());
+            asByteBuffer().asIntBuffer().put(src, offset, length);
+            return this;
+        }
+
+        public Mutable copyWithin(int srcIndex, int dstIndex, int length) {
+            copyWithinBytes(Math.multiplyExact(srcIndex, Integer.BYTES), Math.multiplyExact(dstIndex, Integer.BYTES), Math.multiplyExact(length, Integer.BYTES));
+            return this;
         }
 
         public Mutable fill(int value) {
-            Arrays.fill(array, offset, offset + length, value);
+            if (value == (value & 0xFF) * 0x01010101) {
+                Arrays.fill(array, offset, offset + length, (byte) value);
+            } else {
+                for (int i = 0; i < length(); i++) {
+                    setInternal(i, value);
+                }
+            }
+            return this;
+        }
+
+        public Mutable fillFrom(BinarySource source) throws IOException {
+            source.readBytes(new Bytes.Mutable(array, offset, length));
+            if (source.order() == ByteOrder.BIG_ENDIAN) {
+                for (int i = 0, len = length(); i < len; i++) {
+                    setInternal(i, (int) VH_INT_BE.get(array, offset + Math.multiplyExact(i, Integer.BYTES)));
+                }
+            }
             return this;
         }
 
         public IntBuffer asMutableBuffer() {
-            return IntBuffer.wrap(array, offset, length).slice();
+            return asByteBuffer().asIntBuffer().slice();
         }
     }
 }
