@@ -6,11 +6,12 @@ import wtf.reversed.toolbox.util.*;
 import javax.annotation.processing.*;
 import java.io.*;
 import java.nio.*;
+import java.util.*;
 import java.util.stream.*;
 
 @Generated("wtf.reversed.toolbox.util.SliceGenerator")
 public sealed class Doubles extends Slice implements Comparable<Doubles> {
-    private static final Doubles EMPTY = new Doubles(new byte[0], 0, 0);
+    private static final Doubles EMPTY = new Doubles(EMPTY_ARRAY, 0, 0);
 
     Doubles(byte[] array, int offset, int length) {
         super(array, offset, length);
@@ -25,7 +26,7 @@ public sealed class Doubles extends Slice implements Comparable<Doubles> {
     }
 
     public static Doubles wrap(double[] array, int offset, int length) {
-        byte[] buffer = new byte[length * Double.BYTES];
+        byte[] buffer = new byte[Math.multiplyExact(length, Double.BYTES)];
         ByteBuffer.wrap(buffer).order(ByteOrder.LITTLE_ENDIAN).asDoubleBuffer().put(array, offset, length);
         return new Doubles(buffer, 0, buffer.length);
     }
@@ -41,12 +42,12 @@ public sealed class Doubles extends Slice implements Comparable<Doubles> {
     }
 
     public double get(int index) {
-        Check.index(index, length);
+        Check.index(index, length());
         return getInternal(index);
     }
 
     double getInternal(int index) {
-        return (double) VH_DOUBLE.get(array, offset + index * Double.BYTES);
+        return (double) VH_DOUBLE.get(array, offset + Math.multiplyExact(index, Double.BYTES));
     }
 
     @Override
@@ -60,7 +61,7 @@ public sealed class Doubles extends Slice implements Comparable<Doubles> {
 
     public int indexOf(double value) {
         for (int i = 0, limit = length(); i < limit; i++) {
-            if (java.lang.Double.compare(getInternal(i), value) == 0) {
+            if (Double.compare(getInternal(i), value) == 0) {
                 return i;
             }
         }
@@ -69,7 +70,7 @@ public sealed class Doubles extends Slice implements Comparable<Doubles> {
 
     public int lastIndexOf(double value) {
         for (int i = length() - 1; i >= 0; i--) {
-            if (java.lang.Double.compare(getInternal(i), value) == 0) {
+            if (Double.compare(getInternal(i), value) == 0) {
                 return i;
             }
         }
@@ -82,12 +83,12 @@ public sealed class Doubles extends Slice implements Comparable<Doubles> {
 
     public Doubles slice(int offset, int length) {
         Check.fromIndexSize(offset, length, length());
-        return new Doubles(array, this.offset + offset * Double.BYTES, length * Double.BYTES);
+        return new Doubles(array, this.offset + Math.multiplyExact(offset, Double.BYTES), Math.multiplyExact(length, Double.BYTES));
     }
 
     public void copyTo(Mutable target, int offset) {
-        Check.fromIndexSize(offset * Double.BYTES, length, target.length);
-        System.arraycopy(array, this.offset, target.array, target.offset + offset * Double.BYTES, length);
+        Check.fromIndexSize(offset, length(), target.length());
+        System.arraycopy(array, this.offset, target.array, target.offset + Math.multiplyExact(offset, Double.BYTES), length);
     }
 
     @Override
@@ -160,7 +161,7 @@ public sealed class Doubles extends Slice implements Comparable<Doubles> {
         }
 
         public static Mutable wrap(double[] array, int offset, int length) {
-            byte[] buffer = new byte[length * Double.BYTES];
+            byte[] buffer = new byte[Math.multiplyExact(length, Double.BYTES)];
             ByteBuffer.wrap(buffer).order(ByteOrder.LITTLE_ENDIAN).asDoubleBuffer().put(array, offset, length);
             return new Mutable(buffer, 0, buffer.length);
         }
@@ -170,8 +171,8 @@ public sealed class Doubles extends Slice implements Comparable<Doubles> {
             return setInternal(index, value);
         }
 
-        public Mutable setInternal(int index, double value) {
-            VH_DOUBLE.set(array, offset + index * Double.BYTES, value);
+        private Mutable setInternal(int index, double value) {
+            VH_DOUBLE.set(array, offset + Math.multiplyExact(index, Double.BYTES), value);
             return this;
         }
 
@@ -181,7 +182,7 @@ public sealed class Doubles extends Slice implements Comparable<Doubles> {
 
         public Mutable slice(int offset, int length) {
             Check.fromIndexSize(offset, length, length());
-            return new Mutable(array, this.offset + offset * Double.BYTES, length * Double.BYTES);
+            return new Mutable(array, this.offset + Math.multiplyExact(offset, Double.BYTES), Math.multiplyExact(length, Double.BYTES));
         }
 
         public Mutable copyFrom(double[] src) {
@@ -196,13 +197,17 @@ public sealed class Doubles extends Slice implements Comparable<Doubles> {
         }
 
         public Mutable copyWithin(int srcIndex, int dstIndex, int length) {
-            copyWithinBytes(srcIndex * Double.BYTES, dstIndex * Double.BYTES, length * Double.BYTES);
+            copyWithinBytes(Math.multiplyExact(srcIndex, Double.BYTES), Math.multiplyExact(dstIndex, Double.BYTES), Math.multiplyExact(length, Double.BYTES));
             return this;
         }
 
         public Mutable fill(double value) {
-            for (int i = 0; i < length(); i++) {
-                setInternal(i, value);
+            if (Double.doubleToRawLongBits(value) == 0L) {
+                Arrays.fill(array, offset, offset + length, (byte) 0);
+            } else {
+                for (int i = 0; i < length(); i++) {
+                    setInternal(i, value);
+                }
             }
             return this;
         }
@@ -211,7 +216,7 @@ public sealed class Doubles extends Slice implements Comparable<Doubles> {
             source.readBytes(new Bytes.Mutable(array, offset, length));
             if (source.order() == ByteOrder.BIG_ENDIAN) {
                 for (int i = 0, len = length(); i < len; i++) {
-                    setInternal(i, Double.longBitsToDouble(Long.reverseBytes(Double.doubleToRawLongBits(getInternal(i)))));
+                    setInternal(i, (double) VH_DOUBLE_BE.get(array, offset + Math.multiplyExact(i, Double.BYTES)));
                 }
             }
             return this;

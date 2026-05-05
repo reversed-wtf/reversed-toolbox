@@ -61,9 +61,4 @@ enum SliceType {
             || this == SliceType.Ints
             || this == SliceType.Longs;
     }
-
-    public boolean isFloating() {
-        return this == SliceType.Floats
-            || this == SliceType.Doubles;
-    }
 }

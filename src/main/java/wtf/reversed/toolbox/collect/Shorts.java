@@ -11,7 +11,7 @@ import java.util.stream.*;
 
 @Generated("wtf.reversed.toolbox.util.SliceGenerator")
 public sealed class Shorts extends Slice implements Comparable<Shorts> {
-    private static final Shorts EMPTY = new Shorts(new byte[0], 0, 0);
+    private static final Shorts EMPTY = new Shorts(EMPTY_ARRAY, 0, 0);
 
     Shorts(byte[] array, int offset, int length) {
         super(array, offset, length);
@@ -26,7 +26,7 @@ public sealed class Shorts extends Slice implements Comparable<Shorts> {
     }
 
     public static Shorts wrap(short[] array, int offset, int length) {
-        byte[] buffer = new byte[length * Short.BYTES];
+        byte[] buffer = new byte[Math.multiplyExact(length, Short.BYTES)];
         ByteBuffer.wrap(buffer).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().put(array, offset, length);
         return new Shorts(buffer, 0, buffer.length);
     }
@@ -42,12 +42,12 @@ public sealed class Shorts extends Slice implements Comparable<Shorts> {
     }
 
     public short get(int index) {
-        Check.index(index, length);
+        Check.index(index, length());
         return getInternal(index);
     }
 
     short getInternal(int index) {
-        return (short) VH_SHORT.get(array, offset + index * Short.BYTES);
+        return (short) VH_SHORT.get(array, offset + Math.multiplyExact(index, Short.BYTES));
     }
 
     public int getUnsigned(int offset) {
@@ -87,12 +87,12 @@ public sealed class Shorts extends Slice implements Comparable<Shorts> {
 
     public Shorts slice(int offset, int length) {
         Check.fromIndexSize(offset, length, length());
-        return new Shorts(array, this.offset + offset * Short.BYTES, length * Short.BYTES);
+        return new Shorts(array, this.offset + Math.multiplyExact(offset, Short.BYTES), Math.multiplyExact(length, Short.BYTES));
     }
 
     public void copyTo(Mutable target, int offset) {
-        Check.fromIndexSize(offset * Short.BYTES, length, target.length);
-        System.arraycopy(array, this.offset, target.array, target.offset + offset * Short.BYTES, length);
+        Check.fromIndexSize(offset, length(), target.length());
+        System.arraycopy(array, this.offset, target.array, target.offset + Math.multiplyExact(offset, Short.BYTES), length);
     }
 
     @Override
@@ -157,7 +157,7 @@ public sealed class Shorts extends Slice implements Comparable<Shorts> {
         }
 
         public static Mutable wrap(short[] array, int offset, int length) {
-            byte[] buffer = new byte[length * Short.BYTES];
+            byte[] buffer = new byte[Math.multiplyExact(length, Short.BYTES)];
             ByteBuffer.wrap(buffer).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().put(array, offset, length);
             return new Mutable(buffer, 0, buffer.length);
         }
@@ -167,8 +167,8 @@ public sealed class Shorts extends Slice implements Comparable<Shorts> {
             return setInternal(index, value);
         }
 
-        public Mutable setInternal(int index, short value) {
-            VH_SHORT.set(array, offset + index * Short.BYTES, value);
+        private Mutable setInternal(int index, short value) {
+            VH_SHORT.set(array, offset + Math.multiplyExact(index, Short.BYTES), value);
             return this;
         }
 
@@ -178,7 +178,7 @@ public sealed class Shorts extends Slice implements Comparable<Shorts> {
 
         public Mutable slice(int offset, int length) {
             Check.fromIndexSize(offset, length, length());
-            return new Mutable(array, this.offset + offset * Short.BYTES, length * Short.BYTES);
+            return new Mutable(array, this.offset + Math.multiplyExact(offset, Short.BYTES), Math.multiplyExact(length, Short.BYTES));
         }
 
         public Mutable copyFrom(short[] src) {
@@ -193,13 +193,17 @@ public sealed class Shorts extends Slice implements Comparable<Shorts> {
         }
 
         public Mutable copyWithin(int srcIndex, int dstIndex, int length) {
-            copyWithinBytes(srcIndex * Short.BYTES, dstIndex * Short.BYTES, length * Short.BYTES);
+            copyWithinBytes(Math.multiplyExact(srcIndex, Short.BYTES), Math.multiplyExact(dstIndex, Short.BYTES), Math.multiplyExact(length, Short.BYTES));
             return this;
         }
 
         public Mutable fill(short value) {
-            for (int i = 0; i < length(); i++) {
-                setInternal(i, value);
+            if (value == (value & 0xFF) * 0x0101) {
+                Arrays.fill(array, offset, offset + length, (byte) value);
+            } else {
+                for (int i = 0; i < length(); i++) {
+                    setInternal(i, value);
+                }
             }
             return this;
         }
@@ -208,7 +212,7 @@ public sealed class Shorts extends Slice implements Comparable<Shorts> {
             source.readBytes(new Bytes.Mutable(array, offset, length));
             if (source.order() == ByteOrder.BIG_ENDIAN) {
                 for (int i = 0, len = length(); i < len; i++) {
-                    setInternal(i, Short.reverseBytes(getInternal(i)));
+                    setInternal(i, (short) VH_SHORT_BE.get(array, offset + Math.multiplyExact(i, Short.BYTES)));
                 }
             }
             return this;

@@ -6,11 +6,12 @@ import wtf.reversed.toolbox.util.*;
 import javax.annotation.processing.*;
 import java.io.*;
 import java.nio.*;
+import java.util.*;
 import java.util.stream.*;
 
 @Generated("wtf.reversed.toolbox.util.SliceGenerator")
 public sealed class Floats extends Slice implements Comparable<Floats> {
-    private static final Floats EMPTY = new Floats(new byte[0], 0, 0);
+    private static final Floats EMPTY = new Floats(EMPTY_ARRAY, 0, 0);
 
     Floats(byte[] array, int offset, int length) {
         super(array, offset, length);
@@ -25,7 +26,7 @@ public sealed class Floats extends Slice implements Comparable<Floats> {
     }
 
     public static Floats wrap(float[] array, int offset, int length) {
-        byte[] buffer = new byte[length * Float.BYTES];
+        byte[] buffer = new byte[Math.multiplyExact(length, Float.BYTES)];
         ByteBuffer.wrap(buffer).order(ByteOrder.LITTLE_ENDIAN).asFloatBuffer().put(array, offset, length);
         return new Floats(buffer, 0, buffer.length);
     }
@@ -41,12 +42,12 @@ public sealed class Floats extends Slice implements Comparable<Floats> {
     }
 
     public float get(int index) {
-        Check.index(index, length);
+        Check.index(index, length());
         return getInternal(index);
     }
 
     float getInternal(int index) {
-        return (float) VH_FLOAT.get(array, offset + index * Float.BYTES);
+        return (float) VH_FLOAT.get(array, offset + Math.multiplyExact(index, Float.BYTES));
     }
 
     @Override
@@ -60,7 +61,7 @@ public sealed class Floats extends Slice implements Comparable<Floats> {
 
     public int indexOf(float value) {
         for (int i = 0, limit = length(); i < limit; i++) {
-            if (java.lang.Float.compare(getInternal(i), value) == 0) {
+            if (Float.compare(getInternal(i), value) == 0) {
                 return i;
             }
         }
@@ -69,7 +70,7 @@ public sealed class Floats extends Slice implements Comparable<Floats> {
 
     public int lastIndexOf(float value) {
         for (int i = length() - 1; i >= 0; i--) {
-            if (java.lang.Float.compare(getInternal(i), value) == 0) {
+            if (Float.compare(getInternal(i), value) == 0) {
                 return i;
             }
         }
@@ -82,12 +83,12 @@ public sealed class Floats extends Slice implements Comparable<Floats> {
 
     public Floats slice(int offset, int length) {
         Check.fromIndexSize(offset, length, length());
-        return new Floats(array, this.offset + offset * Float.BYTES, length * Float.BYTES);
+        return new Floats(array, this.offset + Math.multiplyExact(offset, Float.BYTES), Math.multiplyExact(length, Float.BYTES));
     }
 
     public void copyTo(Mutable target, int offset) {
-        Check.fromIndexSize(offset * Float.BYTES, length, target.length);
-        System.arraycopy(array, this.offset, target.array, target.offset + offset * Float.BYTES, length);
+        Check.fromIndexSize(offset, length(), target.length());
+        System.arraycopy(array, this.offset, target.array, target.offset + Math.multiplyExact(offset, Float.BYTES), length);
     }
 
     @Override
@@ -160,7 +161,7 @@ public sealed class Floats extends Slice implements Comparable<Floats> {
         }
 
         public static Mutable wrap(float[] array, int offset, int length) {
-            byte[] buffer = new byte[length * Float.BYTES];
+            byte[] buffer = new byte[Math.multiplyExact(length, Float.BYTES)];
             ByteBuffer.wrap(buffer).order(ByteOrder.LITTLE_ENDIAN).asFloatBuffer().put(array, offset, length);
             return new Mutable(buffer, 0, buffer.length);
         }
@@ -170,8 +171,8 @@ public sealed class Floats extends Slice implements Comparable<Floats> {
             return setInternal(index, value);
         }
 
-        public Mutable setInternal(int index, float value) {
-            VH_FLOAT.set(array, offset + index * Float.BYTES, value);
+        private Mutable setInternal(int index, float value) {
+            VH_FLOAT.set(array, offset + Math.multiplyExact(index, Float.BYTES), value);
             return this;
         }
 
@@ -181,7 +182,7 @@ public sealed class Floats extends Slice implements Comparable<Floats> {
 
         public Mutable slice(int offset, int length) {
             Check.fromIndexSize(offset, length, length());
-            return new Mutable(array, this.offset + offset * Float.BYTES, length * Float.BYTES);
+            return new Mutable(array, this.offset + Math.multiplyExact(offset, Float.BYTES), Math.multiplyExact(length, Float.BYTES));
         }
 
         public Mutable copyFrom(float[] src) {
@@ -196,13 +197,17 @@ public sealed class Floats extends Slice implements Comparable<Floats> {
         }
 
         public Mutable copyWithin(int srcIndex, int dstIndex, int length) {
-            copyWithinBytes(srcIndex * Float.BYTES, dstIndex * Float.BYTES, length * Float.BYTES);
+            copyWithinBytes(Math.multiplyExact(srcIndex, Float.BYTES), Math.multiplyExact(dstIndex, Float.BYTES), Math.multiplyExact(length, Float.BYTES));
             return this;
         }
 
         public Mutable fill(float value) {
-            for (int i = 0; i < length(); i++) {
-                setInternal(i, value);
+            if (Float.floatToRawIntBits(value) == 0) {
+                Arrays.fill(array, offset, offset + length, (byte) 0);
+            } else {
+                for (int i = 0; i < length(); i++) {
+                    setInternal(i, value);
+                }
             }
             return this;
         }
@@ -211,7 +216,7 @@ public sealed class Floats extends Slice implements Comparable<Floats> {
             source.readBytes(new Bytes.Mutable(array, offset, length));
             if (source.order() == ByteOrder.BIG_ENDIAN) {
                 for (int i = 0, len = length(); i < len; i++) {
-                    setInternal(i, Float.intBitsToFloat(Integer.reverseBytes(Float.floatToRawIntBits(getInternal(i)))));
+                    setInternal(i, (float) VH_FLOAT_BE.get(array, offset + Math.multiplyExact(i, Float.BYTES)));
                 }
             }
             return this;

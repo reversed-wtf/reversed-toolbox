@@ -12,7 +12,7 @@ import java.util.stream.*;
 
 @Generated("wtf.reversed.toolbox.util.SliceGenerator")
 public sealed class Bytes extends Slice implements Comparable<Bytes> {
-    private static final Bytes EMPTY = new Bytes(new byte[0], 0, 0);
+    private static final Bytes EMPTY = new Bytes(EMPTY_ARRAY, 0, 0);
 
     Bytes(byte[] array, int offset, int length) {
         super(array, offset, length);
@@ -31,7 +31,7 @@ public sealed class Bytes extends Slice implements Comparable<Bytes> {
     }
 
     public static Mutable allocate(int length) {
-        int byteLength = Math.multiplyExact(length, Byte.BYTES);
+        int byteLength = length;
         return new Mutable(new byte[byteLength], 0, byteLength);
     }
 
@@ -41,7 +41,7 @@ public sealed class Bytes extends Slice implements Comparable<Bytes> {
     }
 
     public byte get(int index) {
-        Check.index(index, length);
+        Check.index(index, this.length);
         return getInternal(index);
     }
 
@@ -123,7 +123,7 @@ public sealed class Bytes extends Slice implements Comparable<Bytes> {
     }
 
     public void copyTo(Mutable target, int offset) {
-        Check.fromIndexSize(offset, length, target.length);
+        Check.fromIndexSize(offset, length(), target.length());
         System.arraycopy(array, this.offset, target.array, target.offset + offset, length);
     }
 
@@ -132,16 +132,21 @@ public sealed class Bytes extends Slice implements Comparable<Bytes> {
         return asByteBuffer().slice().asReadOnlyBuffer();
     }
 
-    public InputStream asInputStream() {
-        return new ByteArrayInputStream(array, offset, length);
-    }
-
     public IntStream stream() {
         return IntStream.range(0, this.length).map(i -> getInternal(i));
     }
 
     public byte[] toArray() {
         return Arrays.copyOfRange(array, offset, offset + length);
+    }
+
+    @Override
+    public Bytes asBytes() {
+        return this;
+    }
+
+    public InputStream asInputStream() {
+        return new ByteArrayInputStream(array, offset, length);
     }
 
     public String toHexString(HexFormat format) {
@@ -200,7 +205,7 @@ public sealed class Bytes extends Slice implements Comparable<Bytes> {
             return setInternal(index, value);
         }
 
-        public Mutable setInternal(int index, byte value) {
+        private Mutable setInternal(int index, byte value) {
             array[offset + index] = value;
             return this;
         }
@@ -251,7 +256,7 @@ public sealed class Bytes extends Slice implements Comparable<Bytes> {
         public Mutable copyFrom(byte[] src, int offset, int length) {
             Check.fromIndexSize(offset, length, src.length);
             Check.fromIndexSize(0, length, this.length);
-            asByteBuffer().put(src, offset, length);
+            System.arraycopy(src, offset, array, this.offset, length);
             return this;
         }
 
@@ -266,7 +271,7 @@ public sealed class Bytes extends Slice implements Comparable<Bytes> {
         }
 
         public Mutable fillFrom(BinarySource source) throws IOException {
-            source.readBytes(new Bytes.Mutable(array, offset, length));
+            source.readBytes(this);
             return this;
         }
 
