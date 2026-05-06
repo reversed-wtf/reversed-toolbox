@@ -152,14 +152,14 @@ public sealed class Bytes extends Slice implements Comparable<Bytes> {
         System.arraycopy(array, this.offset, target.array, target.offset + offset, length);
     }
 
-    public void copyTo(byte[] dst) {
-        copyTo(dst, 0, this.length);
+    public void copyTo(byte[] target) {
+        copyTo(target, 0, this.length);
     }
 
-    public void copyTo(byte[] dst, int offset, int length) {
-        Check.fromIndexSize(offset, length, dst.length);
+    public void copyTo(byte[] target, int offset, int length) {
+        Check.fromIndexSize(offset, length, target.length);
         Check.fromIndexSize(0, length, this.length);
-        System.arraycopy(array, this.offset, dst, offset, length);
+        System.arraycopy(array, this.offset, target, offset, length);
     }
 
     public Bytes slice(int offset) {
@@ -260,14 +260,14 @@ public sealed class Bytes extends Slice implements Comparable<Bytes> {
             return new Mutable(array, this.offset + offset, length);
         }
 
-        public Mutable copyFrom(byte[] src) {
-            return copyFrom(src, 0, src.length);
+        public Mutable copyFrom(byte[] source) {
+            return copyFrom(source, 0, source.length);
         }
 
-        public Mutable copyFrom(byte[] src, int offset, int length) {
-            Check.fromIndexSize(offset, length, src.length);
+        public Mutable copyFrom(byte[] source, int offset, int length) {
+            Check.fromIndexSize(offset, length, source.length);
             Check.fromIndexSize(0, length, this.length);
-            System.arraycopy(src, offset, array, this.offset, length);
+            System.arraycopy(source, offset, array, this.offset, length);
             return this;
         }
 

@@ -456,26 +456,26 @@ final class SliceGenerator {
     private MethodSpec generateCopyToArray1() {
         return MethodSpec.methodBuilder("copyTo")
             .addModifiers(Modifier.PUBLIC)
-            .addParameter(arrayType, "dst")
+            .addParameter(arrayType, "target")
             .returns(void.class)
-            .addStatement("copyTo(dst, 0, $L)", elementCount())
+            .addStatement("copyTo(target, 0, $L)", elementCount())
             .build();
     }
 
     private MethodSpec generateCopyToArray3() {
         var builder = MethodSpec.methodBuilder("copyTo")
             .addModifiers(Modifier.PUBLIC)
-            .addParameter(arrayType, "dst")
+            .addParameter(arrayType, "target")
             .addParameter(int.class, "offset")
             .addParameter(int.class, "length")
             .returns(void.class)
-            .addStatement("$T.fromIndexSize(offset, length, dst.length)", CHECK_CLASS)
+            .addStatement("$T.fromIndexSize(offset, length, target.length)", CHECK_CLASS)
             .addStatement("$T.fromIndexSize(0, length, $L)", CHECK_CLASS, elementCount());
 
         if (type.isByte()) {
-            builder.addStatement("System.arraycopy(array, this.offset, dst, offset, length)");
+            builder.addStatement("System.arraycopy(array, this.offset, target, offset, length)");
         } else {
-            builder.addStatement("asTypedBuffer().get(dst, offset, length)");
+            builder.addStatement("asTypedBuffer().get(target, offset, length)");
         }
         return builder.build();
     }
@@ -605,26 +605,26 @@ final class SliceGenerator {
     private MethodSpec generateCopyFromArray1() {
         return MethodSpec.methodBuilder("copyFrom")
             .addModifiers(Modifier.PUBLIC)
-            .addParameter(arrayType, "src")
+            .addParameter(arrayType, "source")
             .returns(mutableType)
-            .addStatement("return copyFrom(src, 0, src.length)")
+            .addStatement("return copyFrom(source, 0, source.length)")
             .build();
     }
 
     private MethodSpec generateCopyFromArray3() {
         var builder = MethodSpec.methodBuilder("copyFrom")
             .addModifiers(Modifier.PUBLIC)
-            .addParameter(arrayType, "src")
+            .addParameter(arrayType, "source")
             .addParameter(int.class, "offset")
             .addParameter(int.class, "length")
             .returns(mutableType)
-            .addStatement("$T.fromIndexSize(offset, length, src.length)", CHECK_CLASS)
+            .addStatement("$T.fromIndexSize(offset, length, source.length)", CHECK_CLASS)
             .addStatement("$T.fromIndexSize(0, length, $L)", CHECK_CLASS, elementCount());
 
         if (type.isByte()) {
-            builder.addStatement("System.arraycopy(src, offset, array, this.offset, length)");
+            builder.addStatement("System.arraycopy(source, offset, array, this.offset, length)");
         } else {
-            builder.addStatement("asTypedBuffer().put(src, offset, length)");
+            builder.addStatement("asTypedBuffer().put(source, offset, length)");
         }
         return builder
             .addStatement("return this")

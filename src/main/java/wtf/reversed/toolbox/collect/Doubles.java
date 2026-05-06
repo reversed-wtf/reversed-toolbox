@@ -88,14 +88,14 @@ public sealed class Doubles extends Slice implements Comparable<Doubles> {
         System.arraycopy(array, this.offset, target.array, target.offset + Math.multiplyExact(offset, Double.BYTES), length);
     }
 
-    public void copyTo(double[] dst) {
-        copyTo(dst, 0, length());
+    public void copyTo(double[] target) {
+        copyTo(target, 0, length());
     }
 
-    public void copyTo(double[] dst, int offset, int length) {
-        Check.fromIndexSize(offset, length, dst.length);
+    public void copyTo(double[] target, int offset, int length) {
+        Check.fromIndexSize(offset, length, target.length);
         Check.fromIndexSize(0, length, length());
-        asTypedBuffer().get(dst, offset, length);
+        asTypedBuffer().get(target, offset, length);
     }
 
     public Doubles slice(int offset) {
@@ -170,14 +170,14 @@ public sealed class Doubles extends Slice implements Comparable<Doubles> {
             return new Mutable(array, this.offset + Math.multiplyExact(offset, Double.BYTES), Math.multiplyExact(length, Double.BYTES));
         }
 
-        public Mutable copyFrom(double[] src) {
-            return copyFrom(src, 0, src.length);
+        public Mutable copyFrom(double[] source) {
+            return copyFrom(source, 0, source.length);
         }
 
-        public Mutable copyFrom(double[] src, int offset, int length) {
-            Check.fromIndexSize(offset, length, src.length);
+        public Mutable copyFrom(double[] source, int offset, int length) {
+            Check.fromIndexSize(offset, length, source.length);
             Check.fromIndexSize(0, length, length());
-            asTypedBuffer().put(src, offset, length);
+            asTypedBuffer().put(source, offset, length);
             return this;
         }
 
