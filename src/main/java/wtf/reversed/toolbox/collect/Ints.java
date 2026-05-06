@@ -95,6 +95,16 @@ public sealed class Ints extends Slice implements Comparable<Ints> {
         System.arraycopy(array, this.offset, target.array, target.offset + Math.multiplyExact(offset, Integer.BYTES), length);
     }
 
+    public void copyTo(int[] dst) {
+        copyTo(dst, 0, length());
+    }
+
+    public void copyTo(int[] dst, int offset, int length) {
+        Check.fromIndexSize(offset, length, dst.length);
+        Check.fromIndexSize(0, length, length());
+        asByteBuffer().asIntBuffer().get(dst, offset, length);
+    }
+
     @Override
     public IntBuffer asBuffer() {
         return asByteBuffer().asIntBuffer().slice().asReadOnlyBuffer();
@@ -106,7 +116,7 @@ public sealed class Ints extends Slice implements Comparable<Ints> {
 
     public int[] toArray() {
         int[] result = new int[length()];
-        asBuffer().get(result);
+        copyTo(result);
         return result;
     }
 
@@ -192,13 +202,8 @@ public sealed class Ints extends Slice implements Comparable<Ints> {
             return this;
         }
 
-        public Mutable copyWithin(int srcIndex, int dstIndex, int length) {
-            copyWithinBytes(Math.multiplyExact(srcIndex, Integer.BYTES), Math.multiplyExact(dstIndex, Integer.BYTES), Math.multiplyExact(length, Integer.BYTES));
-            return this;
-        }
-
         public Mutable fill(int value) {
-            if (value == (value & 0xFF) * 0x01010101) {
+            if (value == (value & 0xFF) * 0x0101_0101) {
                 Arrays.fill(array, offset, offset + length, (byte) value);
             } else {
                 for (int i = 0; i < length(); i++) {

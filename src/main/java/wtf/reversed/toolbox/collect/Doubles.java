@@ -91,6 +91,16 @@ public sealed class Doubles extends Slice implements Comparable<Doubles> {
         System.arraycopy(array, this.offset, target.array, target.offset + Math.multiplyExact(offset, Double.BYTES), length);
     }
 
+    public void copyTo(double[] dst) {
+        copyTo(dst, 0, length());
+    }
+
+    public void copyTo(double[] dst, int offset, int length) {
+        Check.fromIndexSize(offset, length, dst.length);
+        Check.fromIndexSize(0, length, length());
+        asByteBuffer().asDoubleBuffer().get(dst, offset, length);
+    }
+
     @Override
     public DoubleBuffer asBuffer() {
         return asByteBuffer().asDoubleBuffer().slice().asReadOnlyBuffer();
@@ -102,7 +112,7 @@ public sealed class Doubles extends Slice implements Comparable<Doubles> {
 
     public double[] toArray() {
         double[] result = new double[length()];
-        asBuffer().get(result);
+        copyTo(result);
         return result;
     }
 
@@ -193,11 +203,6 @@ public sealed class Doubles extends Slice implements Comparable<Doubles> {
             Check.fromIndexSize(offset, length, src.length);
             Check.fromIndexSize(0, length, length());
             asByteBuffer().asDoubleBuffer().put(src, offset, length);
-            return this;
-        }
-
-        public Mutable copyWithin(int srcIndex, int dstIndex, int length) {
-            copyWithinBytes(Math.multiplyExact(srcIndex, Double.BYTES), Math.multiplyExact(dstIndex, Double.BYTES), Math.multiplyExact(length, Double.BYTES));
             return this;
         }
 

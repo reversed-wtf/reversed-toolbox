@@ -95,6 +95,16 @@ public sealed class Shorts extends Slice implements Comparable<Shorts> {
         System.arraycopy(array, this.offset, target.array, target.offset + Math.multiplyExact(offset, Short.BYTES), length);
     }
 
+    public void copyTo(short[] dst) {
+        copyTo(dst, 0, length());
+    }
+
+    public void copyTo(short[] dst, int offset, int length) {
+        Check.fromIndexSize(offset, length, dst.length);
+        Check.fromIndexSize(0, length, length());
+        asByteBuffer().asShortBuffer().get(dst, offset, length);
+    }
+
     @Override
     public ShortBuffer asBuffer() {
         return asByteBuffer().asShortBuffer().slice().asReadOnlyBuffer();
@@ -106,7 +116,7 @@ public sealed class Shorts extends Slice implements Comparable<Shorts> {
 
     public short[] toArray() {
         short[] result = new short[length()];
-        asBuffer().get(result);
+        copyTo(result);
         return result;
     }
 
@@ -189,11 +199,6 @@ public sealed class Shorts extends Slice implements Comparable<Shorts> {
             Check.fromIndexSize(offset, length, src.length);
             Check.fromIndexSize(0, length, length());
             asByteBuffer().asShortBuffer().put(src, offset, length);
-            return this;
-        }
-
-        public Mutable copyWithin(int srcIndex, int dstIndex, int length) {
-            copyWithinBytes(Math.multiplyExact(srcIndex, Short.BYTES), Math.multiplyExact(dstIndex, Short.BYTES), Math.multiplyExact(length, Short.BYTES));
             return this;
         }
 

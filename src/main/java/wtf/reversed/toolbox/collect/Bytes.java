@@ -127,6 +127,16 @@ public sealed class Bytes extends Slice implements Comparable<Bytes> {
         System.arraycopy(array, this.offset, target.array, target.offset + offset, length);
     }
 
+    public void copyTo(byte[] dst) {
+        copyTo(dst, 0, this.length);
+    }
+
+    public void copyTo(byte[] dst, int offset, int length) {
+        Check.fromIndexSize(offset, length, dst.length);
+        Check.fromIndexSize(0, length, this.length);
+        System.arraycopy(array, this.offset, dst, offset, length);
+    }
+
     @Override
     public ByteBuffer asBuffer() {
         return asByteBuffer().slice().asReadOnlyBuffer();
@@ -137,7 +147,9 @@ public sealed class Bytes extends Slice implements Comparable<Bytes> {
     }
 
     public byte[] toArray() {
-        return Arrays.copyOfRange(array, offset, offset + length);
+        byte[] result = new byte[length()];
+        copyTo(result);
+        return result;
     }
 
     @Override
@@ -257,11 +269,6 @@ public sealed class Bytes extends Slice implements Comparable<Bytes> {
             Check.fromIndexSize(offset, length, src.length);
             Check.fromIndexSize(0, length, this.length);
             System.arraycopy(src, offset, array, this.offset, length);
-            return this;
-        }
-
-        public Mutable copyWithin(int srcIndex, int dstIndex, int length) {
-            copyWithinBytes(srcIndex, dstIndex, length);
             return this;
         }
 

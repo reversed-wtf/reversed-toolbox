@@ -91,6 +91,16 @@ public sealed class Floats extends Slice implements Comparable<Floats> {
         System.arraycopy(array, this.offset, target.array, target.offset + Math.multiplyExact(offset, Float.BYTES), length);
     }
 
+    public void copyTo(float[] dst) {
+        copyTo(dst, 0, length());
+    }
+
+    public void copyTo(float[] dst, int offset, int length) {
+        Check.fromIndexSize(offset, length, dst.length);
+        Check.fromIndexSize(0, length, length());
+        asByteBuffer().asFloatBuffer().get(dst, offset, length);
+    }
+
     @Override
     public FloatBuffer asBuffer() {
         return asByteBuffer().asFloatBuffer().slice().asReadOnlyBuffer();
@@ -102,7 +112,7 @@ public sealed class Floats extends Slice implements Comparable<Floats> {
 
     public float[] toArray() {
         float[] result = new float[length()];
-        asBuffer().get(result);
+        copyTo(result);
         return result;
     }
 
@@ -193,11 +203,6 @@ public sealed class Floats extends Slice implements Comparable<Floats> {
             Check.fromIndexSize(offset, length, src.length);
             Check.fromIndexSize(0, length, length());
             asByteBuffer().asFloatBuffer().put(src, offset, length);
-            return this;
-        }
-
-        public Mutable copyWithin(int srcIndex, int dstIndex, int length) {
-            copyWithinBytes(Math.multiplyExact(srcIndex, Float.BYTES), Math.multiplyExact(dstIndex, Float.BYTES), Math.multiplyExact(length, Float.BYTES));
             return this;
         }
 

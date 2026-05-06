@@ -35,7 +35,7 @@ final class SliceGenerator {
         this.bufferType = ClassName.get(type.bufferType());
     }
 
-    static void main() throws Exception {
+    public static void main(String[] args) throws Exception {
         for (var t : SliceType.values()) {
             new SliceGenerator(t).generate();
         }
@@ -80,6 +80,8 @@ final class SliceGenerator {
         builder.addMethod(generateSlice1(thisType));
         builder.addMethod(generateSlice2(thisType));
         builder.addMethod(generateCopyTo());
+        builder.addMethod(generateCopyToArray1());
+        builder.addMethod(generateCopyToArray3());
         builder.addMethod(generateAsBuffer());
         builder.addMethod(generateStream());
         builder.addMethod(generateToArray());
@@ -116,9 +118,8 @@ final class SliceGenerator {
 
         builder.addMethod(generateSlice1(mutableType));
         builder.addMethod(generateSlice2(mutableType));
-        builder.addMethod(generateCopyFrom1());
-        builder.addMethod(generateCopyFrom3());
-        builder.addMethod(generateCopyWithin());
+        builder.addMethod(generateCopyFromArray1());
+        builder.addMethod(generateCopyFromArray3());
         builder.addMethod(generateFill());
         builder.addMethod(generateFillFrom());
         builder.addMethod(generateAsMutableBuffer());
@@ -412,7 +413,34 @@ final class SliceGenerator {
             .build();
     }
 
-    private MethodSpec generateCopyFrom1() {
+    private MethodSpec generateCopyToArray1() {
+        return MethodSpec.methodBuilder("copyTo")
+            .addModifiers(Modifier.PUBLIC)
+            .addParameter(arrayType, "dst")
+            .returns(void.class)
+            .addStatement("copyTo(dst, 0, $L)", elementCount())
+            .build();
+    }
+
+    private MethodSpec generateCopyToArray3() {
+        var builder = MethodSpec.methodBuilder("copyTo")
+            .addModifiers(Modifier.PUBLIC)
+            .addParameter(arrayType, "dst")
+            .addParameter(int.class, "offset")
+            .addParameter(int.class, "length")
+            .returns(void.class)
+            .addStatement("$T.fromIndexSize(offset, length, dst.length)", CHECK_CLASS)
+            .addStatement("$T.fromIndexSize(0, length, $L)", CHECK_CLASS, elementCount());
+
+        if (type.isByte()) {
+            builder.addStatement("System.arraycopy(array, this.offset, dst, offset, length)");
+        } else {
+            builder.addStatement("asByteBuffer().as$LBuffer().get(dst, offset, length)", type.capitalizedPrimitiveName());
+        }
+        return builder.build();
+    }
+
+    private MethodSpec generateCopyFromArray1() {
         return MethodSpec.methodBuilder("copyFrom")
             .addModifiers(Modifier.PUBLIC)
             .addParameter(arrayType, "src")
@@ -421,7 +449,7 @@ final class SliceGenerator {
             .build();
     }
 
-    private MethodSpec generateCopyFrom3() {
+    private MethodSpec generateCopyFromArray3() {
         var builder = MethodSpec.methodBuilder("copyFrom")
             .addModifiers(Modifier.PUBLIC)
             .addParameter(arrayType, "src")
@@ -441,18 +469,6 @@ final class SliceGenerator {
             .build();
     }
 
-    private MethodSpec generateCopyWithin() {
-        return MethodSpec.methodBuilder("copyWithin")
-            .addModifiers(Modifier.PUBLIC)
-            .addParameter(int.class, "srcIndex")
-            .addParameter(int.class, "dstIndex")
-            .addParameter(int.class, "length")
-            .returns(mutableType)
-            .addStatement("copyWithinBytes($L, $L, $L)",
-                toByteOffset("srcIndex"), toByteOffset("dstIndex"), toByteOffset("length"))
-            .addStatement("return this")
-            .build();
-    }
 
     // endregion
 
@@ -510,22 +526,17 @@ final class SliceGenerator {
     }
 
     private MethodSpec generateToArray() {
-        var builder = MethodSpec.methodBuilder("toArray")
-            .addModifiers(Modifier.PUBLIC)
-            .returns(arrayType);
-
-        if (type.isByte()) {
-            builder.addStatement("return $T.copyOfRange(array, offset, offset + length)", Arrays.class);
-        } else {
-            builder.addStatement("$T result = new $T[length()]", arrayType, primitiveType);
-            builder.addStatement("asBuffer().get(result)");
-            builder.addStatement("return result");
-        }
-        return builder.build();
+        return MethodSpec.methodBuilder("toArray")
+            .addModifiers(Modifier.PUBLIC).returns(arrayType)
+            .addStatement("$T result = new $T[length()]", arrayType, primitiveType)
+            .addStatement("copyTo(result)")
+            .addStatement("return result")
+            .build();
     }
 
     private MethodSpec generateToHexStringWithFormat() {
         return MethodSpec.methodBuilder("toHexString")
+
             .addModifiers(Modifier.PUBLIC)
             .addParameter(HexFormat.class, "format")
             .returns(String.class)
