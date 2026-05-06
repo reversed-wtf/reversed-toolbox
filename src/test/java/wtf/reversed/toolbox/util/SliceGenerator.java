@@ -60,42 +60,37 @@ final class SliceGenerator {
 
         builder.addMethod(generateConstructor());
         builder.addMethod(generateEmpty());
-        builder.addMethod(generateWrap1(thisType));
-        builder.addMethod(generateWrap3(thisType));
+        builder.addMethod(generateWrapCopyOfArray1(thisType));
+        builder.addMethod(generateWrapCopyOfArray3(thisType));
+        builder.addMethod(generateWrapCopyOfBuffer());
         builder.addMethod(generateAllocate());
-        builder.addMethod(generateFrom());
 
         builder.addMethod(generateGet());
+        if (type.isByte()) builder.addMethods(generateByteOnlyAccessors());
+        builder.addMethods(generateUnsignedGetters());
         builder.addMethod(generateGetInternal());
-        if (type.isByte()) {
-            addByteOnlyAccessors(builder);
-        }
-        addUnsignedGetters(builder);
 
         builder.addMethod(generateLength());
         builder.addMethod(generateContains());
         builder.addMethod(generateIndexOf());
         builder.addMethod(generateLastIndexOf());
 
-        builder.addMethod(generateSlice1(thisType));
-        builder.addMethod(generateSlice2(thisType));
+        builder.addMethod(generateAsBuffer());
+        if (type.isByte()) builder.addMethod(generateAsBytesOverride());
+        if (type.isByte()) builder.addMethod(generateAsInputStream());
         builder.addMethod(generateCopyTo());
         builder.addMethod(generateCopyToArray1());
         builder.addMethod(generateCopyToArray3());
-        builder.addMethod(generateAsBuffer());
+        builder.addMethod(generateSlice1(thisType));
+        builder.addMethod(generateSlice2(thisType));
         builder.addMethod(generateStream());
         builder.addMethod(generateToArray());
-        if (type.isByte()) {
-            builder.addMethod(generateAsBytesOverride());
-            builder.addMethod(generateAsInputStream());
-            builder.addMethod(generateToHexStringWithFormat());
-            builder.addMethod(generateToStringWithCharset());
-        }
+        if (type.isByte()) builder.addMethod(generateToHexStringWithFormat());
+        if (type.isByte()) builder.addMethod(generateToStringWithCharset());
+
+        if (!type.isByte()) builder.addMethod(generateAsTypedBuffer());
 
         builder.addMethod(generateCompareTo());
-        builder.addMethod(generateEquals());
-        builder.addMethod(generateHashCode());
-        builder.addMethod(generateToString());
 
         builder.addType(createMutableWrapperClass());
 
@@ -107,101 +102,28 @@ final class SliceGenerator {
             .addModifiers(Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
             .superclass(thisType);
 
-        builder.addMethod(generateMutableConstructor());
-        builder.addMethod(generateWrap1(mutableType));
-        builder.addMethod(generateWrap3(mutableType));
-        builder.addMethod(generateSet());
-        builder.addMethod(generateSetInternal());
-        if (type.isByte()) {
-            addByteOnlyMutators(builder);
-        }
+        builder.addMethod(generateConstructor());
+        builder.addMethod(generateWrapCopyOfArray1(mutableType));
+        builder.addMethod(generateWrapCopyOfArray3(mutableType));
 
+        builder.addMethod(generateSet());
+        if (type.isByte()) builder.addMethods(generateByteOnlyMutators());
+        builder.addMethod(generateSetInternal());
+
+        builder.addMethod(generateAsMutableBuffer());
         builder.addMethod(generateSlice1(mutableType));
         builder.addMethod(generateSlice2(mutableType));
         builder.addMethod(generateCopyFromArray1());
         builder.addMethod(generateCopyFromArray3());
         builder.addMethod(generateFill());
         builder.addMethod(generateFillFrom());
-        builder.addMethod(generateAsMutableBuffer());
 
         return builder.build();
     }
 
-    // region Byte-only methods
-
-    private void addByteOnlyAccessors(TypeSpec.Builder builder) {
-        for (var t : new SliceType[]{SliceType.Shorts, SliceType.Ints, SliceType.Longs, SliceType.Floats, SliceType.Doubles}) {
-            builder.addMethod(generateTypedGet(t));
-        }
-    }
-
-    private void addUnsignedGetters(TypeSpec.Builder builder) {
-        switch (type) {
-            case Bytes -> {
-                builder.addMethod(generateGetUnsigned(int.class, "getUnsigned", "get", Byte.class, "toUnsignedInt"));
-                builder.addMethod(generateGetUnsigned(int.class, "getUnsignedShort", "getShort", Short.class, "toUnsignedInt"));
-                builder.addMethod(generateGetUnsigned(long.class, "getUnsignedInt", "getInt", Integer.class, "toUnsignedLong"));
-            }
-            case Shorts ->
-                builder.addMethod(generateGetUnsigned(int.class, "getUnsigned", "get", Short.class, "toUnsignedInt"));
-            case Ints ->
-                builder.addMethod(generateGetUnsigned(long.class, "getUnsigned", "get", Integer.class, "toUnsignedLong"));
-            default -> {
-            }
-        }
-    }
-
-    private void addByteOnlyMutators(TypeSpec.Builder builder) {
-        for (var t : new SliceType[]{SliceType.Shorts, SliceType.Ints, SliceType.Longs, SliceType.Floats, SliceType.Doubles}) {
-            builder.addMethod(generateTypedSet(t));
-        }
-    }
-
-    private MethodSpec generateTypedGet(SliceType valueType) {
-        return MethodSpec.methodBuilder("get" + valueType.capitalizedPrimitiveName())
-            .addModifiers(Modifier.PUBLIC)
-            .addParameter(int.class, "offset")
-            .returns(valueType.primitiveType())
-            .addStatement("$T.fromIndexSize(offset, $T.BYTES, length)", CHECK_CLASS, valueType.boxedType())
-            .addStatement("return ($T) $L.get(array, this.offset + offset)", valueType.primitiveType(), valueType.varHandleName(ByteOrder.LITTLE_ENDIAN))
-            .build();
-    }
-
-    private MethodSpec generateTypedSet(SliceType valueType) {
-        return MethodSpec.methodBuilder("set" + valueType.capitalizedPrimitiveName())
-            .addModifiers(Modifier.PUBLIC)
-            .addParameter(int.class, "offset")
-            .addParameter(valueType.primitiveType(), "value")
-            .returns(mutableType)
-            .addStatement("$T.fromIndexSize(offset, $T.BYTES, this.length)", CHECK_CLASS, valueType.boxedType())
-            .addStatement("$L.set(array, this.offset + offset, value)", valueType.varHandleName(ByteOrder.LITTLE_ENDIAN))
-            .addStatement("return this")
-            .build();
-    }
-
-    private MethodSpec generateGetUnsigned(Class<?> returnType, String name, String accessor, Class<?> converterClass, String converterMethod) {
-        return MethodSpec.methodBuilder(name)
-            .addModifiers(Modifier.PUBLIC)
-            .addParameter(int.class, "offset")
-            .returns(returnType)
-            .addStatement("return $T.$L($L(offset))", converterClass, converterMethod, accessor)
-            .build();
-    }
-
-    // endregion
-
     // region Constructors and factories
 
     private MethodSpec generateConstructor() {
-        return MethodSpec.constructorBuilder()
-            .addParameter(byte[].class, "array")
-            .addParameter(int.class, "offset")
-            .addParameter(int.class, "length")
-            .addStatement("super(array, offset, length)")
-            .build();
-    }
-
-    private MethodSpec generateMutableConstructor() {
         return MethodSpec.constructorBuilder()
             .addParameter(byte[].class, "array")
             .addParameter(int.class, "offset")
@@ -218,17 +140,17 @@ final class SliceGenerator {
             .build();
     }
 
-    private MethodSpec generateWrap1(ClassName className) {
-        return MethodSpec.methodBuilder("wrap")
+    private MethodSpec generateWrapCopyOfArray1(ClassName className) {
+        return MethodSpec.methodBuilder(factoryName())
             .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
             .addParameter(arrayType, "array")
             .returns(className)
-            .addStatement("return wrap(array, 0, array.length)")
+            .addStatement("return $L(array, 0, array.length)", factoryName())
             .build();
     }
 
-    private MethodSpec generateWrap3(ClassName className) {
-        var builder = MethodSpec.methodBuilder("wrap")
+    private MethodSpec generateWrapCopyOfArray3(ClassName className) {
+        var builder = MethodSpec.methodBuilder(factoryName())
             .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
             .addParameter(arrayType, "array")
             .addParameter(int.class, "offset")
@@ -246,6 +168,17 @@ final class SliceGenerator {
         return builder.build();
     }
 
+    private MethodSpec generateWrapCopyOfBuffer() {
+        return MethodSpec.methodBuilder(factoryName())
+            .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
+            .addParameter(bufferType, "buffer")
+            .returns(thisType)
+            .addStatement("$T.argument(buffer.hasArray(), \"buffer must be backed by an array\")", CHECK_CLASS)
+            .addStatement("return $L(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining())",
+                factoryName())
+            .build();
+    }
+
     private MethodSpec generateAllocate() {
         return MethodSpec.methodBuilder("allocate")
             .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
@@ -256,14 +189,8 @@ final class SliceGenerator {
             .build();
     }
 
-    private MethodSpec generateFrom() {
-        return MethodSpec.methodBuilder("from")
-            .addModifiers(Modifier.PUBLIC, Modifier.STATIC)
-            .addParameter(bufferType, "buffer")
-            .returns(thisType)
-            .addStatement("$T.argument(buffer.hasArray(), \"buffer must be backed by an array\")", CHECK_CLASS)
-            .addStatement("return wrap(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining())")
-            .build();
+    private String factoryName() {
+        return type.isByte() ? "wrap" : "copyOf";
     }
 
     // endregion
@@ -280,8 +207,48 @@ final class SliceGenerator {
             .build();
     }
 
+    private List<MethodSpec> generateByteOnlyAccessors() {
+        return Arrays.stream(SliceType.values())
+            .filter(value -> !value.isByte())
+            .map(this::generateByteOnlyAccessor)
+            .toList();
+    }
+
+    private MethodSpec generateByteOnlyAccessor(SliceType valueType) {
+        return MethodSpec.methodBuilder("get" + valueType.capitalizedPrimitiveName())
+            .addModifiers(Modifier.PUBLIC)
+            .addParameter(int.class, "offset")
+            .returns(valueType.primitiveType())
+            .addStatement("$T.fromIndexSize(offset, $T.BYTES, length)", CHECK_CLASS, valueType.boxedType())
+            .addStatement("return ($T) $L.get(array, this.offset + offset)", valueType.primitiveType(), valueType.varHandleName(ByteOrder.LITTLE_ENDIAN))
+            .build();
+    }
+
+    private List<MethodSpec> generateUnsignedGetters() {
+        return switch (type) {
+            case Bytes -> List.of(
+                generateGetUnsigned(int.class, "getUnsigned", "get", Byte.class, "toUnsignedInt"),
+                generateGetUnsigned(int.class, "getUnsignedShort", "getShort", Short.class, "toUnsignedInt"),
+                generateGetUnsigned(long.class, "getUnsignedInt", "getInt", Integer.class, "toUnsignedLong")
+            );
+            case Shorts -> List.of(generateGetUnsigned(int.class, "getUnsigned", "get", Short.class, "toUnsignedInt"));
+            case Ints ->
+                List.of(generateGetUnsigned(long.class, "getUnsigned", "get", Integer.class, "toUnsignedLong"));
+            default -> List.of();
+        };
+    }
+
+    private MethodSpec generateGetUnsigned(Class<?> returnType, String name, String accessor, Class<?> converterClass, String converterMethod) {
+        return MethodSpec.methodBuilder(name)
+            .addModifiers(Modifier.PUBLIC)
+            .addParameter(int.class, "offset")
+            .returns(returnType)
+            .addStatement("return $T.$L($L(offset))", converterClass, converterMethod, accessor)
+            .build();
+    }
+
     private MethodSpec generateGetInternal() {
-        // Package-private rather than private because the Mutable subtype reads through it.
+        // Package-private rather than private because the Mutable subtype needs it.
         var builder = MethodSpec.methodBuilder("getInternal")
             .addParameter(int.class, "index")
             .returns(primitiveType);
@@ -290,10 +257,79 @@ final class SliceGenerator {
             builder.addStatement("return array[offset + index]");
         } else {
             builder.addStatement("return ($T) $L.get(array, offset + $L)",
-                primitiveType, type.varHandleName(ByteOrder.LITTLE_ENDIAN), toByteOffset("index"));
+                primitiveType, type.varHandleName(ByteOrder.LITTLE_ENDIAN), toByteOffsetUnchecked("index"));
         }
         return builder.build();
     }
+
+    // endregion
+
+    // region List-equivalent methods
+
+    private MethodSpec generateLength() {
+        var builder = override("length")
+            .returns(int.class);
+        if (type.isByte()) {
+            builder.addStatement("return length");
+        } else {
+            builder.addStatement("return length >>> $L", type.primitiveShift());
+        }
+        return builder.build();
+    }
+
+    private MethodSpec generateContains() {
+        return MethodSpec.methodBuilder("contains")
+            .addModifiers(Modifier.PUBLIC)
+            .addParameter(primitiveType, "value")
+            .returns(boolean.class)
+            .addStatement("return indexOf(value) >= 0")
+            .build();
+    }
+
+    private MethodSpec generateIndexOf() {
+        MethodSpec.Builder builder = MethodSpec.methodBuilder("indexOf")
+            .addModifiers(Modifier.PUBLIC)
+            .addParameter(primitiveType, "value")
+            .returns(int.class);
+
+        forEachElement(builder, CodeBlock.builder()
+            .beginControlFlow("if ($L)", generateEquals("getInternal(i)", "value", type))
+            .addStatement("return i")
+            .endControlFlow()
+            .build());
+
+        return builder
+            .addStatement("return -1")
+            .build();
+    }
+
+    private MethodSpec generateLastIndexOf() {
+        return MethodSpec.methodBuilder("lastIndexOf")
+            .addModifiers(Modifier.PUBLIC)
+            .addParameter(primitiveType, "value")
+            .returns(int.class)
+            .beginControlFlow("for (int i = $L - 1; i >= 0; i--)", elementCount())
+            .beginControlFlow("if ($L)", generateEquals("getInternal(i)", "value", type))
+            .addStatement("return i")
+            .endControlFlow()
+            .endControlFlow()
+            .addStatement("return -1")
+            .build();
+    }
+
+    public static CodeBlock generateEquals(String left, String right, SliceType type) {
+        return switch (type) {
+            case Bytes, Shorts, Ints, Longs -> CodeBlock.of("$L == $L", left, right);
+            case Floats ->
+                CodeBlock.of("$T.floatToRawIntBits($L) == $T.floatToRawIntBits($L)", Float.class, left, Float.class, right);
+            case Doubles ->
+                CodeBlock.of("$T.doubleToRawLongBits($L) == $T.doubleToRawLongBits($L)", Double.class, left, Double.class, right);
+        };
+    }
+
+    // endregion
+
+    // region Mutable Accessors
 
     private MethodSpec generateSet() {
         return MethodSpec.methodBuilder("set")
@@ -317,62 +353,10 @@ final class SliceGenerator {
             builder.addStatement("array[offset + index] = value");
         } else {
             builder.addStatement("$L.set(array, offset + $L, value)",
-                type.varHandleName(ByteOrder.LITTLE_ENDIAN), toByteOffset("index"));
+                type.varHandleName(ByteOrder.LITTLE_ENDIAN), toByteOffsetUnchecked("index"));
         }
         return builder
             .addStatement("return this")
-            .build();
-    }
-
-    // endregion
-
-    // region List-equivalent methods
-
-    private MethodSpec generateLength() {
-        var builder = JavaPoetUtils.override("length")
-            .returns(int.class);
-        if (type.isByte()) {
-            builder.addStatement("return length");
-        } else {
-            builder.addStatement("return length >>> $L", Integer.numberOfTrailingZeros(type.primitiveSize()));
-        }
-        return builder.build();
-    }
-
-    private MethodSpec generateContains() {
-        return MethodSpec.methodBuilder("contains")
-            .addModifiers(Modifier.PUBLIC)
-            .addParameter(primitiveType, "value")
-            .returns(boolean.class)
-            .addStatement("return indexOf(value) >= 0")
-            .build();
-    }
-
-    private MethodSpec generateIndexOf() {
-        return MethodSpec.methodBuilder("indexOf")
-            .addModifiers(Modifier.PUBLIC)
-            .addParameter(primitiveType, "value")
-            .returns(int.class)
-            .beginControlFlow("for (int i = 0, limit = $L; i < limit; i++)", elementCount())
-            .beginControlFlow("if ($L)", JavaPoetUtils.primitiveEquals("getInternal(i)", "value", primitiveType))
-            .addStatement("return i")
-            .endControlFlow()
-            .endControlFlow()
-            .addStatement("return -1")
-            .build();
-    }
-
-    private MethodSpec generateLastIndexOf() {
-        return MethodSpec.methodBuilder("lastIndexOf")
-            .addModifiers(Modifier.PUBLIC)
-            .addParameter(primitiveType, "value")
-            .returns(int.class)
-            .beginControlFlow("for (int i = $L - 1; i >= 0; i--)", elementCount())
-            .beginControlFlow("if ($L)", JavaPoetUtils.primitiveEquals("getInternal(i)", "value", primitiveType))
-            .addStatement("return i")
-            .endControlFlow()
-            .endControlFlow()
-            .addStatement("return -1")
             .build();
     }
 
@@ -401,6 +385,34 @@ final class SliceGenerator {
             .build();
     }
 
+    // endregion
+
+    // region Views, conversions, copies
+
+    private MethodSpec generateAsBuffer() {
+        var method = type.isByte() ? "asByteBuffer" : "asTypedBuffer";
+        return override("asBuffer")
+            .returns(bufferType)
+            .addStatement("return $L().slice().asReadOnlyBuffer()", method)
+            .build();
+    }
+
+    private MethodSpec generateAsBytesOverride() {
+        return override("asBytes")
+            .returns(thisType)
+            .addStatement("return this")
+            .build();
+    }
+
+    private MethodSpec generateAsInputStream() {
+        return MethodSpec.methodBuilder("asInputStream")
+            .addModifiers(Modifier.PUBLIC)
+            .returns(InputStream.class)
+            .addStatement("return new $T(array, offset, length)", ByteArrayInputStream.class)
+            .build();
+    }
+
+
     private MethodSpec generateCopyTo() {
         return MethodSpec.methodBuilder("copyTo")
             .addModifiers(Modifier.PUBLIC)
@@ -408,8 +420,7 @@ final class SliceGenerator {
             .addParameter(int.class, "offset")
             .returns(void.class)
             .addStatement("$T.fromIndexSize(offset, length(), target.length())", CHECK_CLASS)
-            .addStatement("System.arraycopy(array, this.offset, target.array, target.offset + $L, length)",
-                toByteOffset("offset"))
+            .addStatement("System.arraycopy(array, this.offset, target.array, target.offset + $L, length)", toByteOffset("offset"))
             .build();
     }
 
@@ -435,73 +446,9 @@ final class SliceGenerator {
         if (type.isByte()) {
             builder.addStatement("System.arraycopy(array, this.offset, dst, offset, length)");
         } else {
-            builder.addStatement("asByteBuffer().as$LBuffer().get(dst, offset, length)", type.capitalizedPrimitiveName());
+            builder.addStatement("asTypedBuffer().get(dst, offset, length)");
         }
         return builder.build();
-    }
-
-    private MethodSpec generateCopyFromArray1() {
-        return MethodSpec.methodBuilder("copyFrom")
-            .addModifiers(Modifier.PUBLIC)
-            .addParameter(arrayType, "src")
-            .returns(mutableType)
-            .addStatement("return copyFrom(src, 0, src.length)")
-            .build();
-    }
-
-    private MethodSpec generateCopyFromArray3() {
-        var builder = MethodSpec.methodBuilder("copyFrom")
-            .addModifiers(Modifier.PUBLIC)
-            .addParameter(arrayType, "src")
-            .addParameter(int.class, "offset")
-            .addParameter(int.class, "length")
-            .returns(mutableType)
-            .addStatement("$T.fromIndexSize(offset, length, src.length)", CHECK_CLASS)
-            .addStatement("$T.fromIndexSize(0, length, $L)", CHECK_CLASS, elementCount());
-
-        if (type.isByte()) {
-            builder.addStatement("System.arraycopy(src, offset, array, this.offset, length)");
-        } else {
-            builder.addStatement("asByteBuffer().as$LBuffer().put(src, offset, length)", type.capitalizedPrimitiveName());
-        }
-        return builder
-            .addStatement("return this")
-            .build();
-    }
-
-
-    // endregion
-
-    // region Buffers, streams, conversions
-
-    private MethodSpec generateAsBuffer() {
-        return JavaPoetUtils.override("asBuffer")
-            .returns(bufferType)
-            .addStatement("return asByteBuffer()$L.slice().asReadOnlyBuffer()", typedBufferConversion())
-            .build();
-    }
-
-    private MethodSpec generateAsMutableBuffer() {
-        return MethodSpec.methodBuilder("asMutableBuffer")
-            .addModifiers(Modifier.PUBLIC)
-            .returns(bufferType)
-            .addStatement("return asByteBuffer()$L.slice()", typedBufferConversion())
-            .build();
-    }
-
-    private MethodSpec generateAsBytesOverride() {
-        return JavaPoetUtils.override("asBytes")
-            .returns(thisType)
-            .addStatement("return this")
-            .build();
-    }
-
-    private MethodSpec generateAsInputStream() {
-        return MethodSpec.methodBuilder("asInputStream")
-            .addModifiers(Modifier.PUBLIC)
-            .returns(InputStream.class)
-            .addStatement("return new $T(array, offset, length)", ByteArrayInputStream.class)
-            .build();
     }
 
     private MethodSpec generateStream() {
@@ -536,7 +483,6 @@ final class SliceGenerator {
 
     private MethodSpec generateToHexStringWithFormat() {
         return MethodSpec.methodBuilder("toHexString")
-
             .addModifiers(Modifier.PUBLIC)
             .addParameter(HexFormat.class, "format")
             .returns(String.class)
@@ -555,73 +501,106 @@ final class SliceGenerator {
 
     // endregion
 
-    // region Object overrides
+    // region Generated Helpers
 
-    private MethodSpec generateCompareTo() {
-        var builder = JavaPoetUtils.override("compareTo")
-            .returns(int.class)
-            .addParameter(thisType, "o");
-
-        if (type.isByte()) {
-            builder.addStatement("return $T.compare(array, offset, offset + length, o.array, o.offset, o.offset + o.length)",
-                Arrays.class);
-        } else {
-            builder.addStatement("int min = Math.min(length(), o.length())");
-            builder.beginControlFlow("for (int i = 0; i < min; i++)");
-            builder.addStatement("int c = $T.compare(getInternal(i), o.getInternal(i))", boxedType);
-            builder.beginControlFlow("if (c != 0)");
-            builder.addStatement("return c");
-            builder.endControlFlow();
-            builder.endControlFlow();
-            builder.addStatement("return Integer.compare(length(), o.length())");
-        }
-        return builder.build();
-    }
-
-    private MethodSpec generateEquals() {
-        var builder = JavaPoetUtils.equalsBuilder("obj")
-            .beginControlFlow("if (obj == this)")
-            .addStatement("return true")
-            .endControlFlow()
-            .beginControlFlow("if (!(obj instanceof $L o))", thisType)
-            .addStatement("return false")
-            .endControlFlow();
-
-        if (type.isIntegral()) {
-            builder.addStatement(
-                "return $T.equals(array, offset, offset + length, o.array, o.offset, o.offset + o.length)",
-                Arrays.class);
-        } else {
-            builder.beginControlFlow("if (length() != o.length())")
-                .addStatement("return false")
-                .endControlFlow();
-            forEachElement(builder, CodeBlock.builder()
-                .beginControlFlow("if ($T.compare(getInternal(i), o.getInternal(i)) != 0)", boxedType)
-                .addStatement("return false")
-                .endControlFlow()
-                .build());
-            builder.addStatement("return true");
-        }
-        return builder.build();
-    }
-
-    private MethodSpec generateHashCode() {
-        var builder = JavaPoetUtils.hashCodeBuilder()
-            .addStatement("int result = 1");
-        forEachElement(builder, CodeBlock.of(
-            "result = 31 * result + $T.hashCode(getInternal(i));\n", boxedType));
-        return builder.addStatement("return result").build();
-    }
-
-    private MethodSpec generateToString() {
-        return JavaPoetUtils.toStringBuilder()
-            .addStatement("return $S + $L + $S", "[", elementCount(), " " + primitiveType.toString() + "s]")
+    private MethodSpec generateAsTypedBuffer() {
+        // Package-private (no modifier) rather than private: the nested static
+        // Mutable inherits this helper, and private members aren't inherited.
+        return MethodSpec.methodBuilder("asTypedBuffer")
+            .returns(bufferType)
+            .addStatement("return asByteBuffer().as$LBuffer()", type.capitalizedPrimitiveName())
             .build();
     }
 
     // endregion
 
-    // region Fill / FillFrom
+    // region Object overrides
+
+    private MethodSpec generateCompareTo() {
+        var builder = override("compareTo")
+            .returns(int.class)
+            .addParameter(thisType, "o");
+
+        if (type.isByte()) {
+            builder.addStatement("return $T.compare(array, offset, offset + length, o.array, o.offset, o.offset + o.length)", Arrays.class);
+        } else {
+            builder.addStatement("int prefix = Math.min(length, o.length)");
+            builder.addStatement("int mismatch = $T.mismatch(array, offset, offset + prefix, o.array, o.offset, o.offset + prefix)", Arrays.class);
+            builder.beginControlFlow("if (mismatch < 0)");
+            builder.addStatement("return Integer.compare(length(), o.length())");
+            builder.endControlFlow();
+            builder.addStatement("int idx = mismatch >>> $L", type.primitiveShift());
+            if (primitiveType == float.class) {
+                builder.addStatement("return Integer.compare($T.floatToRawIntBits(getInternal(idx)), $T.floatToRawIntBits(o.getInternal(idx)))", Float.class, Float.class);
+            } else if (primitiveType == double.class) {
+                builder.addStatement("return Long.compare($T.doubleToRawLongBits(getInternal(idx)), $T.doubleToRawLongBits(o.getInternal(idx)))", Double.class, Double.class);
+            } else {
+                builder.addStatement("return $T.compare(getInternal(idx), o.getInternal(idx))", boxedType);
+            }
+        }
+        return builder.build();
+    }
+
+    // endregion
+
+    // region Mutable methods
+
+    private List<MethodSpec> generateByteOnlyMutators() {
+        return Arrays.stream(SliceType.values())
+            .filter(t -> !t.isByte())
+            .map(this::generateTypedSet)
+            .toList();
+    }
+
+    private MethodSpec generateTypedSet(SliceType valueType) {
+        return MethodSpec.methodBuilder("set" + valueType.capitalizedPrimitiveName())
+            .addModifiers(Modifier.PUBLIC)
+            .addParameter(int.class, "offset")
+            .addParameter(valueType.primitiveType(), "value")
+            .returns(mutableType)
+            .addStatement("$T.fromIndexSize(offset, $T.BYTES, this.length)", CHECK_CLASS, valueType.boxedType())
+            .addStatement("$L.set(array, this.offset + offset, value)", valueType.varHandleName(ByteOrder.LITTLE_ENDIAN))
+            .addStatement("return this")
+            .build();
+    }
+
+    private MethodSpec generateAsMutableBuffer() {
+        var method = type.isByte() ? "asByteBuffer" : "asTypedBuffer";
+        return MethodSpec.methodBuilder("asMutableBuffer")
+            .addModifiers(Modifier.PUBLIC)
+            .returns(bufferType)
+            .addStatement("return $L().slice()", method)
+            .build();
+    }
+
+    private MethodSpec generateCopyFromArray1() {
+        return MethodSpec.methodBuilder("copyFrom")
+            .addModifiers(Modifier.PUBLIC)
+            .addParameter(arrayType, "src")
+            .returns(mutableType)
+            .addStatement("return copyFrom(src, 0, src.length)")
+            .build();
+    }
+
+    private MethodSpec generateCopyFromArray3() {
+        var builder = MethodSpec.methodBuilder("copyFrom")
+            .addModifiers(Modifier.PUBLIC)
+            .addParameter(arrayType, "src")
+            .addParameter(int.class, "offset")
+            .addParameter(int.class, "length")
+            .returns(mutableType)
+            .addStatement("$T.fromIndexSize(offset, length, src.length)", CHECK_CLASS)
+            .addStatement("$T.fromIndexSize(0, length, $L)", CHECK_CLASS, elementCount());
+
+        if (type.isByte()) {
+            builder.addStatement("System.arraycopy(src, offset, array, this.offset, length)");
+        } else {
+            builder.addStatement("asTypedBuffer().put(src, offset, length)");
+        }
+        return builder
+            .addStatement("return this")
+            .build();
+    }
 
     private MethodSpec generateFill() {
         var builder = MethodSpec.methodBuilder("fill")
@@ -650,9 +629,7 @@ final class SliceGenerator {
             builder.beginControlFlow("if ($L)", fastPathCheck);
             builder.addStatement("$T.fill(array, offset, offset + length, $L)", Arrays.class, fillValue);
             builder.nextControlFlow("else");
-            builder.beginControlFlow("for (int i = 0; i < length(); i++)");
-            builder.addStatement("setInternal(i, value)");
-            builder.endControlFlow();
+            forEachElement(builder, CodeBlock.of("setInternal(i, value);"));
             builder.endControlFlow();
         }
         return builder.addStatement("return this").build();
@@ -672,7 +649,7 @@ final class SliceGenerator {
                 .beginControlFlow("if (source.order() == $T.BIG_ENDIAN)", ByteOrder.class);
             forEachElement(builder, CodeBlock.of(
                 "setInternal(i, ($T) $L.get(array, offset + $L));\n",
-                primitiveType, type.varHandleName(ByteOrder.BIG_ENDIAN), toByteOffset("i")));
+                primitiveType, type.varHandleName(ByteOrder.BIG_ENDIAN), toByteOffsetUnchecked("i")));
             builder.endControlFlow();
         }
         return builder.addStatement("return this").build();
@@ -689,12 +666,15 @@ final class SliceGenerator {
         return CodeBlock.of("Math.multiplyExact($L, $T.BYTES)", elementExpr, boxedType);
     }
 
-    private CodeBlock elementCount() {
-        return CodeBlock.of(type.isByte() ? "this.length" : "length()");
+    private CodeBlock toByteOffsetUnchecked(String elementExpr) {
+        if (type.isByte()) {
+            return CodeBlock.of("$L", elementExpr);
+        }
+        return CodeBlock.of("$L * $T.BYTES", elementExpr, boxedType);
     }
 
-    private String typedBufferConversion() {
-        return type.isByte() ? "" : ".as" + type.capitalizedPrimitiveName() + "Buffer()";
+    private CodeBlock elementCount() {
+        return CodeBlock.of(type.isByte() ? "this.length" : "length()");
     }
 
     private void forEachElement(MethodSpec.Builder builder, CodeBlock body) {
@@ -702,6 +682,12 @@ final class SliceGenerator {
             .beginControlFlow("for (int i = 0, len = $L; i < len; i++)", elementCount())
             .addCode(body)
             .endControlFlow();
+    }
+
+    public MethodSpec.Builder override(String name) {
+        return MethodSpec.methodBuilder(name)
+            .addModifiers(Modifier.PUBLIC)
+            .addAnnotation(Override.class);
     }
 
     private void writeClass(TypeSpec typeSpec) throws IOException {

@@ -21,24 +21,24 @@ public sealed class Longs extends Slice implements Comparable<Longs> {
         return EMPTY;
     }
 
-    public static Longs wrap(long[] array) {
-        return wrap(array, 0, array.length);
+    public static Longs copyOf(long[] array) {
+        return copyOf(array, 0, array.length);
     }
 
-    public static Longs wrap(long[] array, int offset, int length) {
+    public static Longs copyOf(long[] array, int offset, int length) {
         byte[] buffer = new byte[Math.multiplyExact(length, Long.BYTES)];
         ByteBuffer.wrap(buffer).order(ByteOrder.LITTLE_ENDIAN).asLongBuffer().put(array, offset, length);
         return new Longs(buffer, 0, buffer.length);
     }
 
+    public static Longs copyOf(LongBuffer buffer) {
+        Check.argument(buffer.hasArray(), "buffer must be backed by an array");
+        return copyOf(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
+    }
+
     public static Mutable allocate(int length) {
         int byteLength = Math.multiplyExact(length, Long.BYTES);
         return new Mutable(new byte[byteLength], 0, byteLength);
-    }
-
-    public static Longs from(LongBuffer buffer) {
-        Check.argument(buffer.hasArray(), "buffer must be backed by an array");
-        return wrap(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
     }
 
     public long get(int index) {
@@ -47,7 +47,7 @@ public sealed class Longs extends Slice implements Comparable<Longs> {
     }
 
     long getInternal(int index) {
-        return (long) VH_LONG.get(array, offset + Math.multiplyExact(index, Long.BYTES));
+        return (long) VH_LONG_LE.get(array, offset + index * Long.BYTES);
     }
 
     @Override
@@ -60,7 +60,7 @@ public sealed class Longs extends Slice implements Comparable<Longs> {
     }
 
     public int indexOf(long value) {
-        for (int i = 0, limit = length(); i < limit; i++) {
+        for (int i = 0, len = length(); i < len; i++) {
             if (getInternal(i) == value) {
                 return i;
             }
@@ -77,13 +77,9 @@ public sealed class Longs extends Slice implements Comparable<Longs> {
         return -1;
     }
 
-    public Longs slice(int offset) {
-        return slice(offset, length() - offset);
-    }
-
-    public Longs slice(int offset, int length) {
-        Check.fromIndexSize(offset, length, length());
-        return new Longs(array, this.offset + Math.multiplyExact(offset, Long.BYTES), Math.multiplyExact(length, Long.BYTES));
+    @Override
+    public LongBuffer asBuffer() {
+        return asTypedBuffer().slice().asReadOnlyBuffer();
     }
 
     public void copyTo(Mutable target, int offset) {
@@ -98,12 +94,16 @@ public sealed class Longs extends Slice implements Comparable<Longs> {
     public void copyTo(long[] dst, int offset, int length) {
         Check.fromIndexSize(offset, length, dst.length);
         Check.fromIndexSize(0, length, length());
-        asByteBuffer().asLongBuffer().get(dst, offset, length);
+        asTypedBuffer().get(dst, offset, length);
     }
 
-    @Override
-    public LongBuffer asBuffer() {
-        return asByteBuffer().asLongBuffer().slice().asReadOnlyBuffer();
+    public Longs slice(int offset) {
+        return slice(offset, length() - offset);
+    }
+
+    public Longs slice(int offset, int length) {
+        Check.fromIndexSize(offset, length, length());
+        return new Longs(array, this.offset + Math.multiplyExact(offset, Long.BYTES), Math.multiplyExact(length, Long.BYTES));
     }
 
     public LongStream stream() {
@@ -116,41 +116,19 @@ public sealed class Longs extends Slice implements Comparable<Longs> {
         return result;
     }
 
+    LongBuffer asTypedBuffer() {
+        return asByteBuffer().asLongBuffer();
+    }
+
     @Override
     public int compareTo(Longs o) {
-        int min = Math.min(length(), o.length());
-        for (int i = 0; i < min; i++) {
-            int c = Long.compare(getInternal(i), o.getInternal(i));
-            if (c != 0) {
-                return c;
-            }
+        int prefix = Math.min(length, o.length);
+        int mismatch = Arrays.mismatch(array, offset, offset + prefix, o.array, o.offset, o.offset + prefix);
+        if (mismatch < 0) {
+            return Integer.compare(length(), o.length());
         }
-        return Integer.compare(length(), o.length());
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) {
-            return true;
-        }
-        if (!(obj instanceof Longs o)) {
-            return false;
-        }
-        return Arrays.equals(array, offset, offset + length, o.array, o.offset, o.offset + o.length);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = 1;
-        for (int i = 0, len = length(); i < len; i++) {
-            result = 31 * result + Long.hashCode(getInternal(i));
-        }
-        return result;
-    }
-
-    @Override
-    public String toString() {
-        return "[" + length() + " longs]";
+        int idx = mismatch >>> 3;
+        return Long.compare(getInternal(idx), o.getInternal(idx));
     }
 
     public static final class Mutable extends Longs {
@@ -158,11 +136,11 @@ public sealed class Longs extends Slice implements Comparable<Longs> {
             super(array, offset, length);
         }
 
-        public static Mutable wrap(long[] array) {
-            return wrap(array, 0, array.length);
+        public static Mutable copyOf(long[] array) {
+            return copyOf(array, 0, array.length);
         }
 
-        public static Mutable wrap(long[] array, int offset, int length) {
+        public static Mutable copyOf(long[] array, int offset, int length) {
             byte[] buffer = new byte[Math.multiplyExact(length, Long.BYTES)];
             ByteBuffer.wrap(buffer).order(ByteOrder.LITTLE_ENDIAN).asLongBuffer().put(array, offset, length);
             return new Mutable(buffer, 0, buffer.length);
@@ -174,8 +152,12 @@ public sealed class Longs extends Slice implements Comparable<Longs> {
         }
 
         private Mutable setInternal(int index, long value) {
-            VH_LONG.set(array, offset + Math.multiplyExact(index, Long.BYTES), value);
+            VH_LONG_LE.set(array, offset + index * Long.BYTES, value);
             return this;
+        }
+
+        public LongBuffer asMutableBuffer() {
+            return asTypedBuffer().slice();
         }
 
         public Mutable slice(int offset) {
@@ -194,7 +176,7 @@ public sealed class Longs extends Slice implements Comparable<Longs> {
         public Mutable copyFrom(long[] src, int offset, int length) {
             Check.fromIndexSize(offset, length, src.length);
             Check.fromIndexSize(0, length, length());
-            asByteBuffer().asLongBuffer().put(src, offset, length);
+            asTypedBuffer().put(src, offset, length);
             return this;
         }
 
@@ -202,7 +184,7 @@ public sealed class Longs extends Slice implements Comparable<Longs> {
             if (value == (value & 0xFF) * 0x0101_0101_0101_0101L) {
                 Arrays.fill(array, offset, offset + length, (byte) value);
             } else {
-                for (int i = 0; i < length(); i++) {
+                for (int i = 0, len = length(); i < len; i++) {
                     setInternal(i, value);
                 }
             }
@@ -213,14 +195,10 @@ public sealed class Longs extends Slice implements Comparable<Longs> {
             source.readBytes(new Bytes.Mutable(array, offset, length));
             if (source.order() == ByteOrder.BIG_ENDIAN) {
                 for (int i = 0, len = length(); i < len; i++) {
-                    setInternal(i, (long) VH_LONG_BE.get(array, offset + Math.multiplyExact(i, Long.BYTES)));
+                    setInternal(i, (long) VH_LONG_BE.get(array, offset + i * Long.BYTES));
                 }
             }
             return this;
-        }
-
-        public LongBuffer asMutableBuffer() {
-            return asByteBuffer().asLongBuffer().slice();
         }
     }
 }

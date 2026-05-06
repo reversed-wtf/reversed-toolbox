@@ -21,24 +21,24 @@ public sealed class Doubles extends Slice implements Comparable<Doubles> {
         return EMPTY;
     }
 
-    public static Doubles wrap(double[] array) {
-        return wrap(array, 0, array.length);
+    public static Doubles copyOf(double[] array) {
+        return copyOf(array, 0, array.length);
     }
 
-    public static Doubles wrap(double[] array, int offset, int length) {
+    public static Doubles copyOf(double[] array, int offset, int length) {
         byte[] buffer = new byte[Math.multiplyExact(length, Double.BYTES)];
         ByteBuffer.wrap(buffer).order(ByteOrder.LITTLE_ENDIAN).asDoubleBuffer().put(array, offset, length);
         return new Doubles(buffer, 0, buffer.length);
     }
 
+    public static Doubles copyOf(DoubleBuffer buffer) {
+        Check.argument(buffer.hasArray(), "buffer must be backed by an array");
+        return copyOf(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
+    }
+
     public static Mutable allocate(int length) {
         int byteLength = Math.multiplyExact(length, Double.BYTES);
         return new Mutable(new byte[byteLength], 0, byteLength);
-    }
-
-    public static Doubles from(DoubleBuffer buffer) {
-        Check.argument(buffer.hasArray(), "buffer must be backed by an array");
-        return wrap(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
     }
 
     public double get(int index) {
@@ -47,7 +47,7 @@ public sealed class Doubles extends Slice implements Comparable<Doubles> {
     }
 
     double getInternal(int index) {
-        return (double) VH_DOUBLE.get(array, offset + Math.multiplyExact(index, Double.BYTES));
+        return (double) VH_DOUBLE_LE.get(array, offset + index * Double.BYTES);
     }
 
     @Override
@@ -60,8 +60,8 @@ public sealed class Doubles extends Slice implements Comparable<Doubles> {
     }
 
     public int indexOf(double value) {
-        for (int i = 0, limit = length(); i < limit; i++) {
-            if (Double.compare(getInternal(i), value) == 0) {
+        for (int i = 0, len = length(); i < len; i++) {
+            if (Double.doubleToRawLongBits(getInternal(i)) == Double.doubleToRawLongBits(value)) {
                 return i;
             }
         }
@@ -70,20 +70,16 @@ public sealed class Doubles extends Slice implements Comparable<Doubles> {
 
     public int lastIndexOf(double value) {
         for (int i = length() - 1; i >= 0; i--) {
-            if (Double.compare(getInternal(i), value) == 0) {
+            if (Double.doubleToRawLongBits(getInternal(i)) == Double.doubleToRawLongBits(value)) {
                 return i;
             }
         }
         return -1;
     }
 
-    public Doubles slice(int offset) {
-        return slice(offset, length() - offset);
-    }
-
-    public Doubles slice(int offset, int length) {
-        Check.fromIndexSize(offset, length, length());
-        return new Doubles(array, this.offset + Math.multiplyExact(offset, Double.BYTES), Math.multiplyExact(length, Double.BYTES));
+    @Override
+    public DoubleBuffer asBuffer() {
+        return asTypedBuffer().slice().asReadOnlyBuffer();
     }
 
     public void copyTo(Mutable target, int offset) {
@@ -98,12 +94,16 @@ public sealed class Doubles extends Slice implements Comparable<Doubles> {
     public void copyTo(double[] dst, int offset, int length) {
         Check.fromIndexSize(offset, length, dst.length);
         Check.fromIndexSize(0, length, length());
-        asByteBuffer().asDoubleBuffer().get(dst, offset, length);
+        asTypedBuffer().get(dst, offset, length);
     }
 
-    @Override
-    public DoubleBuffer asBuffer() {
-        return asByteBuffer().asDoubleBuffer().slice().asReadOnlyBuffer();
+    public Doubles slice(int offset) {
+        return slice(offset, length() - offset);
+    }
+
+    public Doubles slice(int offset, int length) {
+        Check.fromIndexSize(offset, length, length());
+        return new Doubles(array, this.offset + Math.multiplyExact(offset, Double.BYTES), Math.multiplyExact(length, Double.BYTES));
     }
 
     public DoubleStream stream() {
@@ -116,49 +116,19 @@ public sealed class Doubles extends Slice implements Comparable<Doubles> {
         return result;
     }
 
+    DoubleBuffer asTypedBuffer() {
+        return asByteBuffer().asDoubleBuffer();
+    }
+
     @Override
     public int compareTo(Doubles o) {
-        int min = Math.min(length(), o.length());
-        for (int i = 0; i < min; i++) {
-            int c = Double.compare(getInternal(i), o.getInternal(i));
-            if (c != 0) {
-                return c;
-            }
+        int prefix = Math.min(length, o.length);
+        int mismatch = Arrays.mismatch(array, offset, offset + prefix, o.array, o.offset, o.offset + prefix);
+        if (mismatch < 0) {
+            return Integer.compare(length(), o.length());
         }
-        return Integer.compare(length(), o.length());
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) {
-            return true;
-        }
-        if (!(obj instanceof Doubles o)) {
-            return false;
-        }
-        if (length() != o.length()) {
-            return false;
-        }
-        for (int i = 0, len = length(); i < len; i++) {
-            if (Double.compare(getInternal(i), o.getInternal(i)) != 0) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    @Override
-    public int hashCode() {
-        int result = 1;
-        for (int i = 0, len = length(); i < len; i++) {
-            result = 31 * result + Double.hashCode(getInternal(i));
-        }
-        return result;
-    }
-
-    @Override
-    public String toString() {
-        return "[" + length() + " doubles]";
+        int idx = mismatch >>> 3;
+        return Long.compare(Double.doubleToRawLongBits(getInternal(idx)), Double.doubleToRawLongBits(o.getInternal(idx)));
     }
 
     public static final class Mutable extends Doubles {
@@ -166,11 +136,11 @@ public sealed class Doubles extends Slice implements Comparable<Doubles> {
             super(array, offset, length);
         }
 
-        public static Mutable wrap(double[] array) {
-            return wrap(array, 0, array.length);
+        public static Mutable copyOf(double[] array) {
+            return copyOf(array, 0, array.length);
         }
 
-        public static Mutable wrap(double[] array, int offset, int length) {
+        public static Mutable copyOf(double[] array, int offset, int length) {
             byte[] buffer = new byte[Math.multiplyExact(length, Double.BYTES)];
             ByteBuffer.wrap(buffer).order(ByteOrder.LITTLE_ENDIAN).asDoubleBuffer().put(array, offset, length);
             return new Mutable(buffer, 0, buffer.length);
@@ -182,8 +152,12 @@ public sealed class Doubles extends Slice implements Comparable<Doubles> {
         }
 
         private Mutable setInternal(int index, double value) {
-            VH_DOUBLE.set(array, offset + Math.multiplyExact(index, Double.BYTES), value);
+            VH_DOUBLE_LE.set(array, offset + index * Double.BYTES, value);
             return this;
+        }
+
+        public DoubleBuffer asMutableBuffer() {
+            return asTypedBuffer().slice();
         }
 
         public Mutable slice(int offset) {
@@ -202,7 +176,7 @@ public sealed class Doubles extends Slice implements Comparable<Doubles> {
         public Mutable copyFrom(double[] src, int offset, int length) {
             Check.fromIndexSize(offset, length, src.length);
             Check.fromIndexSize(0, length, length());
-            asByteBuffer().asDoubleBuffer().put(src, offset, length);
+            asTypedBuffer().put(src, offset, length);
             return this;
         }
 
@@ -210,7 +184,7 @@ public sealed class Doubles extends Slice implements Comparable<Doubles> {
             if (Double.doubleToRawLongBits(value) == 0L) {
                 Arrays.fill(array, offset, offset + length, (byte) 0);
             } else {
-                for (int i = 0; i < length(); i++) {
+                for (int i = 0, len = length(); i < len; i++) {
                     setInternal(i, value);
                 }
             }
@@ -221,14 +195,10 @@ public sealed class Doubles extends Slice implements Comparable<Doubles> {
             source.readBytes(new Bytes.Mutable(array, offset, length));
             if (source.order() == ByteOrder.BIG_ENDIAN) {
                 for (int i = 0, len = length(); i < len; i++) {
-                    setInternal(i, (double) VH_DOUBLE_BE.get(array, offset + Math.multiplyExact(i, Double.BYTES)));
+                    setInternal(i, (double) VH_DOUBLE_BE.get(array, offset + i * Double.BYTES));
                 }
             }
             return this;
-        }
-
-        public DoubleBuffer asMutableBuffer() {
-            return asByteBuffer().asDoubleBuffer().slice();
         }
     }
 }

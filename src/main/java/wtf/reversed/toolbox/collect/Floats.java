@@ -21,24 +21,24 @@ public sealed class Floats extends Slice implements Comparable<Floats> {
         return EMPTY;
     }
 
-    public static Floats wrap(float[] array) {
-        return wrap(array, 0, array.length);
+    public static Floats copyOf(float[] array) {
+        return copyOf(array, 0, array.length);
     }
 
-    public static Floats wrap(float[] array, int offset, int length) {
+    public static Floats copyOf(float[] array, int offset, int length) {
         byte[] buffer = new byte[Math.multiplyExact(length, Float.BYTES)];
         ByteBuffer.wrap(buffer).order(ByteOrder.LITTLE_ENDIAN).asFloatBuffer().put(array, offset, length);
         return new Floats(buffer, 0, buffer.length);
     }
 
+    public static Floats copyOf(FloatBuffer buffer) {
+        Check.argument(buffer.hasArray(), "buffer must be backed by an array");
+        return copyOf(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
+    }
+
     public static Mutable allocate(int length) {
         int byteLength = Math.multiplyExact(length, Float.BYTES);
         return new Mutable(new byte[byteLength], 0, byteLength);
-    }
-
-    public static Floats from(FloatBuffer buffer) {
-        Check.argument(buffer.hasArray(), "buffer must be backed by an array");
-        return wrap(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
     }
 
     public float get(int index) {
@@ -47,7 +47,7 @@ public sealed class Floats extends Slice implements Comparable<Floats> {
     }
 
     float getInternal(int index) {
-        return (float) VH_FLOAT.get(array, offset + Math.multiplyExact(index, Float.BYTES));
+        return (float) VH_FLOAT_LE.get(array, offset + index * Float.BYTES);
     }
 
     @Override
@@ -60,8 +60,8 @@ public sealed class Floats extends Slice implements Comparable<Floats> {
     }
 
     public int indexOf(float value) {
-        for (int i = 0, limit = length(); i < limit; i++) {
-            if (Float.compare(getInternal(i), value) == 0) {
+        for (int i = 0, len = length(); i < len; i++) {
+            if (Float.floatToRawIntBits(getInternal(i)) == Float.floatToRawIntBits(value)) {
                 return i;
             }
         }
@@ -70,20 +70,16 @@ public sealed class Floats extends Slice implements Comparable<Floats> {
 
     public int lastIndexOf(float value) {
         for (int i = length() - 1; i >= 0; i--) {
-            if (Float.compare(getInternal(i), value) == 0) {
+            if (Float.floatToRawIntBits(getInternal(i)) == Float.floatToRawIntBits(value)) {
                 return i;
             }
         }
         return -1;
     }
 
-    public Floats slice(int offset) {
-        return slice(offset, length() - offset);
-    }
-
-    public Floats slice(int offset, int length) {
-        Check.fromIndexSize(offset, length, length());
-        return new Floats(array, this.offset + Math.multiplyExact(offset, Float.BYTES), Math.multiplyExact(length, Float.BYTES));
+    @Override
+    public FloatBuffer asBuffer() {
+        return asTypedBuffer().slice().asReadOnlyBuffer();
     }
 
     public void copyTo(Mutable target, int offset) {
@@ -98,12 +94,16 @@ public sealed class Floats extends Slice implements Comparable<Floats> {
     public void copyTo(float[] dst, int offset, int length) {
         Check.fromIndexSize(offset, length, dst.length);
         Check.fromIndexSize(0, length, length());
-        asByteBuffer().asFloatBuffer().get(dst, offset, length);
+        asTypedBuffer().get(dst, offset, length);
     }
 
-    @Override
-    public FloatBuffer asBuffer() {
-        return asByteBuffer().asFloatBuffer().slice().asReadOnlyBuffer();
+    public Floats slice(int offset) {
+        return slice(offset, length() - offset);
+    }
+
+    public Floats slice(int offset, int length) {
+        Check.fromIndexSize(offset, length, length());
+        return new Floats(array, this.offset + Math.multiplyExact(offset, Float.BYTES), Math.multiplyExact(length, Float.BYTES));
     }
 
     public DoubleStream stream() {
@@ -116,49 +116,19 @@ public sealed class Floats extends Slice implements Comparable<Floats> {
         return result;
     }
 
+    FloatBuffer asTypedBuffer() {
+        return asByteBuffer().asFloatBuffer();
+    }
+
     @Override
     public int compareTo(Floats o) {
-        int min = Math.min(length(), o.length());
-        for (int i = 0; i < min; i++) {
-            int c = Float.compare(getInternal(i), o.getInternal(i));
-            if (c != 0) {
-                return c;
-            }
+        int prefix = Math.min(length, o.length);
+        int mismatch = Arrays.mismatch(array, offset, offset + prefix, o.array, o.offset, o.offset + prefix);
+        if (mismatch < 0) {
+            return Integer.compare(length(), o.length());
         }
-        return Integer.compare(length(), o.length());
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) {
-            return true;
-        }
-        if (!(obj instanceof Floats o)) {
-            return false;
-        }
-        if (length() != o.length()) {
-            return false;
-        }
-        for (int i = 0, len = length(); i < len; i++) {
-            if (Float.compare(getInternal(i), o.getInternal(i)) != 0) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    @Override
-    public int hashCode() {
-        int result = 1;
-        for (int i = 0, len = length(); i < len; i++) {
-            result = 31 * result + Float.hashCode(getInternal(i));
-        }
-        return result;
-    }
-
-    @Override
-    public String toString() {
-        return "[" + length() + " floats]";
+        int idx = mismatch >>> 2;
+        return Integer.compare(Float.floatToRawIntBits(getInternal(idx)), Float.floatToRawIntBits(o.getInternal(idx)));
     }
 
     public static final class Mutable extends Floats {
@@ -166,11 +136,11 @@ public sealed class Floats extends Slice implements Comparable<Floats> {
             super(array, offset, length);
         }
 
-        public static Mutable wrap(float[] array) {
-            return wrap(array, 0, array.length);
+        public static Mutable copyOf(float[] array) {
+            return copyOf(array, 0, array.length);
         }
 
-        public static Mutable wrap(float[] array, int offset, int length) {
+        public static Mutable copyOf(float[] array, int offset, int length) {
             byte[] buffer = new byte[Math.multiplyExact(length, Float.BYTES)];
             ByteBuffer.wrap(buffer).order(ByteOrder.LITTLE_ENDIAN).asFloatBuffer().put(array, offset, length);
             return new Mutable(buffer, 0, buffer.length);
@@ -182,8 +152,12 @@ public sealed class Floats extends Slice implements Comparable<Floats> {
         }
 
         private Mutable setInternal(int index, float value) {
-            VH_FLOAT.set(array, offset + Math.multiplyExact(index, Float.BYTES), value);
+            VH_FLOAT_LE.set(array, offset + index * Float.BYTES, value);
             return this;
+        }
+
+        public FloatBuffer asMutableBuffer() {
+            return asTypedBuffer().slice();
         }
 
         public Mutable slice(int offset) {
@@ -202,7 +176,7 @@ public sealed class Floats extends Slice implements Comparable<Floats> {
         public Mutable copyFrom(float[] src, int offset, int length) {
             Check.fromIndexSize(offset, length, src.length);
             Check.fromIndexSize(0, length, length());
-            asByteBuffer().asFloatBuffer().put(src, offset, length);
+            asTypedBuffer().put(src, offset, length);
             return this;
         }
 
@@ -210,7 +184,7 @@ public sealed class Floats extends Slice implements Comparable<Floats> {
             if (Float.floatToRawIntBits(value) == 0) {
                 Arrays.fill(array, offset, offset + length, (byte) 0);
             } else {
-                for (int i = 0; i < length(); i++) {
+                for (int i = 0, len = length(); i < len; i++) {
                     setInternal(i, value);
                 }
             }
@@ -221,14 +195,10 @@ public sealed class Floats extends Slice implements Comparable<Floats> {
             source.readBytes(new Bytes.Mutable(array, offset, length));
             if (source.order() == ByteOrder.BIG_ENDIAN) {
                 for (int i = 0, len = length(); i < len; i++) {
-                    setInternal(i, (float) VH_FLOAT_BE.get(array, offset + Math.multiplyExact(i, Float.BYTES)));
+                    setInternal(i, (float) VH_FLOAT_BE.get(array, offset + i * Float.BYTES));
                 }
             }
             return this;
-        }
-
-        public FloatBuffer asMutableBuffer() {
-            return asByteBuffer().asFloatBuffer().slice();
         }
     }
 }

@@ -21,14 +21,19 @@ public sealed class Shorts extends Slice implements Comparable<Shorts> {
         return EMPTY;
     }
 
-    public static Shorts wrap(short[] array) {
-        return wrap(array, 0, array.length);
+    public static Shorts copyOf(short[] array) {
+        return copyOf(array, 0, array.length);
     }
 
-    public static Shorts wrap(short[] array, int offset, int length) {
+    public static Shorts copyOf(short[] array, int offset, int length) {
         byte[] buffer = new byte[Math.multiplyExact(length, Short.BYTES)];
         ByteBuffer.wrap(buffer).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().put(array, offset, length);
         return new Shorts(buffer, 0, buffer.length);
+    }
+
+    public static Shorts copyOf(ShortBuffer buffer) {
+        Check.argument(buffer.hasArray(), "buffer must be backed by an array");
+        return copyOf(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
     }
 
     public static Mutable allocate(int length) {
@@ -36,22 +41,17 @@ public sealed class Shorts extends Slice implements Comparable<Shorts> {
         return new Mutable(new byte[byteLength], 0, byteLength);
     }
 
-    public static Shorts from(ShortBuffer buffer) {
-        Check.argument(buffer.hasArray(), "buffer must be backed by an array");
-        return wrap(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
-    }
-
     public short get(int index) {
         Check.index(index, length());
         return getInternal(index);
     }
 
-    short getInternal(int index) {
-        return (short) VH_SHORT.get(array, offset + Math.multiplyExact(index, Short.BYTES));
-    }
-
     public int getUnsigned(int offset) {
         return Short.toUnsignedInt(get(offset));
+    }
+
+    short getInternal(int index) {
+        return (short) VH_SHORT_LE.get(array, offset + index * Short.BYTES);
     }
 
     @Override
@@ -64,7 +64,7 @@ public sealed class Shorts extends Slice implements Comparable<Shorts> {
     }
 
     public int indexOf(short value) {
-        for (int i = 0, limit = length(); i < limit; i++) {
+        for (int i = 0, len = length(); i < len; i++) {
             if (getInternal(i) == value) {
                 return i;
             }
@@ -81,13 +81,9 @@ public sealed class Shorts extends Slice implements Comparable<Shorts> {
         return -1;
     }
 
-    public Shorts slice(int offset) {
-        return slice(offset, length() - offset);
-    }
-
-    public Shorts slice(int offset, int length) {
-        Check.fromIndexSize(offset, length, length());
-        return new Shorts(array, this.offset + Math.multiplyExact(offset, Short.BYTES), Math.multiplyExact(length, Short.BYTES));
+    @Override
+    public ShortBuffer asBuffer() {
+        return asTypedBuffer().slice().asReadOnlyBuffer();
     }
 
     public void copyTo(Mutable target, int offset) {
@@ -102,12 +98,16 @@ public sealed class Shorts extends Slice implements Comparable<Shorts> {
     public void copyTo(short[] dst, int offset, int length) {
         Check.fromIndexSize(offset, length, dst.length);
         Check.fromIndexSize(0, length, length());
-        asByteBuffer().asShortBuffer().get(dst, offset, length);
+        asTypedBuffer().get(dst, offset, length);
     }
 
-    @Override
-    public ShortBuffer asBuffer() {
-        return asByteBuffer().asShortBuffer().slice().asReadOnlyBuffer();
+    public Shorts slice(int offset) {
+        return slice(offset, length() - offset);
+    }
+
+    public Shorts slice(int offset, int length) {
+        Check.fromIndexSize(offset, length, length());
+        return new Shorts(array, this.offset + Math.multiplyExact(offset, Short.BYTES), Math.multiplyExact(length, Short.BYTES));
     }
 
     public IntStream stream() {
@@ -120,41 +120,19 @@ public sealed class Shorts extends Slice implements Comparable<Shorts> {
         return result;
     }
 
+    ShortBuffer asTypedBuffer() {
+        return asByteBuffer().asShortBuffer();
+    }
+
     @Override
     public int compareTo(Shorts o) {
-        int min = Math.min(length(), o.length());
-        for (int i = 0; i < min; i++) {
-            int c = Short.compare(getInternal(i), o.getInternal(i));
-            if (c != 0) {
-                return c;
-            }
+        int prefix = Math.min(length, o.length);
+        int mismatch = Arrays.mismatch(array, offset, offset + prefix, o.array, o.offset, o.offset + prefix);
+        if (mismatch < 0) {
+            return Integer.compare(length(), o.length());
         }
-        return Integer.compare(length(), o.length());
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) {
-            return true;
-        }
-        if (!(obj instanceof Shorts o)) {
-            return false;
-        }
-        return Arrays.equals(array, offset, offset + length, o.array, o.offset, o.offset + o.length);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = 1;
-        for (int i = 0, len = length(); i < len; i++) {
-            result = 31 * result + Short.hashCode(getInternal(i));
-        }
-        return result;
-    }
-
-    @Override
-    public String toString() {
-        return "[" + length() + " shorts]";
+        int idx = mismatch >>> 1;
+        return Short.compare(getInternal(idx), o.getInternal(idx));
     }
 
     public static final class Mutable extends Shorts {
@@ -162,11 +140,11 @@ public sealed class Shorts extends Slice implements Comparable<Shorts> {
             super(array, offset, length);
         }
 
-        public static Mutable wrap(short[] array) {
-            return wrap(array, 0, array.length);
+        public static Mutable copyOf(short[] array) {
+            return copyOf(array, 0, array.length);
         }
 
-        public static Mutable wrap(short[] array, int offset, int length) {
+        public static Mutable copyOf(short[] array, int offset, int length) {
             byte[] buffer = new byte[Math.multiplyExact(length, Short.BYTES)];
             ByteBuffer.wrap(buffer).order(ByteOrder.LITTLE_ENDIAN).asShortBuffer().put(array, offset, length);
             return new Mutable(buffer, 0, buffer.length);
@@ -178,8 +156,12 @@ public sealed class Shorts extends Slice implements Comparable<Shorts> {
         }
 
         private Mutable setInternal(int index, short value) {
-            VH_SHORT.set(array, offset + Math.multiplyExact(index, Short.BYTES), value);
+            VH_SHORT_LE.set(array, offset + index * Short.BYTES, value);
             return this;
+        }
+
+        public ShortBuffer asMutableBuffer() {
+            return asTypedBuffer().slice();
         }
 
         public Mutable slice(int offset) {
@@ -198,7 +180,7 @@ public sealed class Shorts extends Slice implements Comparable<Shorts> {
         public Mutable copyFrom(short[] src, int offset, int length) {
             Check.fromIndexSize(offset, length, src.length);
             Check.fromIndexSize(0, length, length());
-            asByteBuffer().asShortBuffer().put(src, offset, length);
+            asTypedBuffer().put(src, offset, length);
             return this;
         }
 
@@ -206,7 +188,7 @@ public sealed class Shorts extends Slice implements Comparable<Shorts> {
             if (value == (value & 0xFF) * 0x0101) {
                 Arrays.fill(array, offset, offset + length, (byte) value);
             } else {
-                for (int i = 0; i < length(); i++) {
+                for (int i = 0, len = length(); i < len; i++) {
                     setInternal(i, value);
                 }
             }
@@ -217,14 +199,10 @@ public sealed class Shorts extends Slice implements Comparable<Shorts> {
             source.readBytes(new Bytes.Mutable(array, offset, length));
             if (source.order() == ByteOrder.BIG_ENDIAN) {
                 for (int i = 0, len = length(); i < len; i++) {
-                    setInternal(i, (short) VH_SHORT_BE.get(array, offset + Math.multiplyExact(i, Short.BYTES)));
+                    setInternal(i, (short) VH_SHORT_BE.get(array, offset + i * Short.BYTES));
                 }
             }
             return this;
-        }
-
-        public ShortBuffer asMutableBuffer() {
-            return asByteBuffer().asShortBuffer().slice();
         }
     }
 }

@@ -21,14 +21,19 @@ public sealed class Ints extends Slice implements Comparable<Ints> {
         return EMPTY;
     }
 
-    public static Ints wrap(int[] array) {
-        return wrap(array, 0, array.length);
+    public static Ints copyOf(int[] array) {
+        return copyOf(array, 0, array.length);
     }
 
-    public static Ints wrap(int[] array, int offset, int length) {
+    public static Ints copyOf(int[] array, int offset, int length) {
         byte[] buffer = new byte[Math.multiplyExact(length, Integer.BYTES)];
         ByteBuffer.wrap(buffer).order(ByteOrder.LITTLE_ENDIAN).asIntBuffer().put(array, offset, length);
         return new Ints(buffer, 0, buffer.length);
+    }
+
+    public static Ints copyOf(IntBuffer buffer) {
+        Check.argument(buffer.hasArray(), "buffer must be backed by an array");
+        return copyOf(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
     }
 
     public static Mutable allocate(int length) {
@@ -36,22 +41,17 @@ public sealed class Ints extends Slice implements Comparable<Ints> {
         return new Mutable(new byte[byteLength], 0, byteLength);
     }
 
-    public static Ints from(IntBuffer buffer) {
-        Check.argument(buffer.hasArray(), "buffer must be backed by an array");
-        return wrap(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
-    }
-
     public int get(int index) {
         Check.index(index, length());
         return getInternal(index);
     }
 
-    int getInternal(int index) {
-        return (int) VH_INT.get(array, offset + Math.multiplyExact(index, Integer.BYTES));
-    }
-
     public long getUnsigned(int offset) {
         return Integer.toUnsignedLong(get(offset));
+    }
+
+    int getInternal(int index) {
+        return (int) VH_INT_LE.get(array, offset + index * Integer.BYTES);
     }
 
     @Override
@@ -64,7 +64,7 @@ public sealed class Ints extends Slice implements Comparable<Ints> {
     }
 
     public int indexOf(int value) {
-        for (int i = 0, limit = length(); i < limit; i++) {
+        for (int i = 0, len = length(); i < len; i++) {
             if (getInternal(i) == value) {
                 return i;
             }
@@ -81,13 +81,9 @@ public sealed class Ints extends Slice implements Comparable<Ints> {
         return -1;
     }
 
-    public Ints slice(int offset) {
-        return slice(offset, length() - offset);
-    }
-
-    public Ints slice(int offset, int length) {
-        Check.fromIndexSize(offset, length, length());
-        return new Ints(array, this.offset + Math.multiplyExact(offset, Integer.BYTES), Math.multiplyExact(length, Integer.BYTES));
+    @Override
+    public IntBuffer asBuffer() {
+        return asTypedBuffer().slice().asReadOnlyBuffer();
     }
 
     public void copyTo(Mutable target, int offset) {
@@ -102,12 +98,16 @@ public sealed class Ints extends Slice implements Comparable<Ints> {
     public void copyTo(int[] dst, int offset, int length) {
         Check.fromIndexSize(offset, length, dst.length);
         Check.fromIndexSize(0, length, length());
-        asByteBuffer().asIntBuffer().get(dst, offset, length);
+        asTypedBuffer().get(dst, offset, length);
     }
 
-    @Override
-    public IntBuffer asBuffer() {
-        return asByteBuffer().asIntBuffer().slice().asReadOnlyBuffer();
+    public Ints slice(int offset) {
+        return slice(offset, length() - offset);
+    }
+
+    public Ints slice(int offset, int length) {
+        Check.fromIndexSize(offset, length, length());
+        return new Ints(array, this.offset + Math.multiplyExact(offset, Integer.BYTES), Math.multiplyExact(length, Integer.BYTES));
     }
 
     public IntStream stream() {
@@ -120,41 +120,19 @@ public sealed class Ints extends Slice implements Comparable<Ints> {
         return result;
     }
 
+    IntBuffer asTypedBuffer() {
+        return asByteBuffer().asIntBuffer();
+    }
+
     @Override
     public int compareTo(Ints o) {
-        int min = Math.min(length(), o.length());
-        for (int i = 0; i < min; i++) {
-            int c = Integer.compare(getInternal(i), o.getInternal(i));
-            if (c != 0) {
-                return c;
-            }
+        int prefix = Math.min(length, o.length);
+        int mismatch = Arrays.mismatch(array, offset, offset + prefix, o.array, o.offset, o.offset + prefix);
+        if (mismatch < 0) {
+            return Integer.compare(length(), o.length());
         }
-        return Integer.compare(length(), o.length());
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) {
-            return true;
-        }
-        if (!(obj instanceof Ints o)) {
-            return false;
-        }
-        return Arrays.equals(array, offset, offset + length, o.array, o.offset, o.offset + o.length);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = 1;
-        for (int i = 0, len = length(); i < len; i++) {
-            result = 31 * result + Integer.hashCode(getInternal(i));
-        }
-        return result;
-    }
-
-    @Override
-    public String toString() {
-        return "[" + length() + " ints]";
+        int idx = mismatch >>> 2;
+        return Integer.compare(getInternal(idx), o.getInternal(idx));
     }
 
     public static final class Mutable extends Ints {
@@ -162,11 +140,11 @@ public sealed class Ints extends Slice implements Comparable<Ints> {
             super(array, offset, length);
         }
 
-        public static Mutable wrap(int[] array) {
-            return wrap(array, 0, array.length);
+        public static Mutable copyOf(int[] array) {
+            return copyOf(array, 0, array.length);
         }
 
-        public static Mutable wrap(int[] array, int offset, int length) {
+        public static Mutable copyOf(int[] array, int offset, int length) {
             byte[] buffer = new byte[Math.multiplyExact(length, Integer.BYTES)];
             ByteBuffer.wrap(buffer).order(ByteOrder.LITTLE_ENDIAN).asIntBuffer().put(array, offset, length);
             return new Mutable(buffer, 0, buffer.length);
@@ -178,8 +156,12 @@ public sealed class Ints extends Slice implements Comparable<Ints> {
         }
 
         private Mutable setInternal(int index, int value) {
-            VH_INT.set(array, offset + Math.multiplyExact(index, Integer.BYTES), value);
+            VH_INT_LE.set(array, offset + index * Integer.BYTES, value);
             return this;
+        }
+
+        public IntBuffer asMutableBuffer() {
+            return asTypedBuffer().slice();
         }
 
         public Mutable slice(int offset) {
@@ -198,7 +180,7 @@ public sealed class Ints extends Slice implements Comparable<Ints> {
         public Mutable copyFrom(int[] src, int offset, int length) {
             Check.fromIndexSize(offset, length, src.length);
             Check.fromIndexSize(0, length, length());
-            asByteBuffer().asIntBuffer().put(src, offset, length);
+            asTypedBuffer().put(src, offset, length);
             return this;
         }
 
@@ -206,7 +188,7 @@ public sealed class Ints extends Slice implements Comparable<Ints> {
             if (value == (value & 0xFF) * 0x0101_0101) {
                 Arrays.fill(array, offset, offset + length, (byte) value);
             } else {
-                for (int i = 0; i < length(); i++) {
+                for (int i = 0, len = length(); i < len; i++) {
                     setInternal(i, value);
                 }
             }
@@ -217,14 +199,10 @@ public sealed class Ints extends Slice implements Comparable<Ints> {
             source.readBytes(new Bytes.Mutable(array, offset, length));
             if (source.order() == ByteOrder.BIG_ENDIAN) {
                 for (int i = 0, len = length(); i < len; i++) {
-                    setInternal(i, (int) VH_INT_BE.get(array, offset + Math.multiplyExact(i, Integer.BYTES)));
+                    setInternal(i, (int) VH_INT_BE.get(array, offset + i * Integer.BYTES));
                 }
             }
             return this;
-        }
-
-        public IntBuffer asMutableBuffer() {
-            return asByteBuffer().asIntBuffer().slice();
         }
     }
 }

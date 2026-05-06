@@ -30,14 +30,14 @@ public sealed class Bytes extends Slice implements Comparable<Bytes> {
         return new Bytes(array, offset, length);
     }
 
+    public static Bytes wrap(ByteBuffer buffer) {
+        Check.argument(buffer.hasArray(), "buffer must be backed by an array");
+        return wrap(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
+    }
+
     public static Mutable allocate(int length) {
         int byteLength = length;
         return new Mutable(new byte[byteLength], 0, byteLength);
-    }
-
-    public static Bytes from(ByteBuffer buffer) {
-        Check.argument(buffer.hasArray(), "buffer must be backed by an array");
-        return wrap(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
     }
 
     public byte get(int index) {
@@ -45,33 +45,29 @@ public sealed class Bytes extends Slice implements Comparable<Bytes> {
         return getInternal(index);
     }
 
-    byte getInternal(int index) {
-        return array[offset + index];
-    }
-
     public short getShort(int offset) {
         Check.fromIndexSize(offset, Short.BYTES, length);
-        return (short) VH_SHORT.get(array, this.offset + offset);
+        return (short) VH_SHORT_LE.get(array, this.offset + offset);
     }
 
     public int getInt(int offset) {
         Check.fromIndexSize(offset, Integer.BYTES, length);
-        return (int) VH_INT.get(array, this.offset + offset);
+        return (int) VH_INT_LE.get(array, this.offset + offset);
     }
 
     public long getLong(int offset) {
         Check.fromIndexSize(offset, Long.BYTES, length);
-        return (long) VH_LONG.get(array, this.offset + offset);
+        return (long) VH_LONG_LE.get(array, this.offset + offset);
     }
 
     public float getFloat(int offset) {
         Check.fromIndexSize(offset, Float.BYTES, length);
-        return (float) VH_FLOAT.get(array, this.offset + offset);
+        return (float) VH_FLOAT_LE.get(array, this.offset + offset);
     }
 
     public double getDouble(int offset) {
         Check.fromIndexSize(offset, Double.BYTES, length);
-        return (double) VH_DOUBLE.get(array, this.offset + offset);
+        return (double) VH_DOUBLE_LE.get(array, this.offset + offset);
     }
 
     public int getUnsigned(int offset) {
@@ -86,6 +82,10 @@ public sealed class Bytes extends Slice implements Comparable<Bytes> {
         return Integer.toUnsignedLong(getInt(offset));
     }
 
+    byte getInternal(int index) {
+        return array[offset + index];
+    }
+
     @Override
     public int length() {
         return length;
@@ -96,7 +96,7 @@ public sealed class Bytes extends Slice implements Comparable<Bytes> {
     }
 
     public int indexOf(byte value) {
-        for (int i = 0, limit = this.length; i < limit; i++) {
+        for (int i = 0, len = this.length; i < len; i++) {
             if (getInternal(i) == value) {
                 return i;
             }
@@ -113,13 +113,18 @@ public sealed class Bytes extends Slice implements Comparable<Bytes> {
         return -1;
     }
 
-    public Bytes slice(int offset) {
-        return slice(offset, this.length - offset);
+    @Override
+    public ByteBuffer asBuffer() {
+        return asByteBuffer().slice().asReadOnlyBuffer();
     }
 
-    public Bytes slice(int offset, int length) {
-        Check.fromIndexSize(offset, length, this.length);
-        return new Bytes(array, this.offset + offset, length);
+    @Override
+    public Bytes asBytes() {
+        return this;
+    }
+
+    public InputStream asInputStream() {
+        return new ByteArrayInputStream(array, offset, length);
     }
 
     public void copyTo(Mutable target, int offset) {
@@ -137,9 +142,13 @@ public sealed class Bytes extends Slice implements Comparable<Bytes> {
         System.arraycopy(array, this.offset, dst, offset, length);
     }
 
-    @Override
-    public ByteBuffer asBuffer() {
-        return asByteBuffer().slice().asReadOnlyBuffer();
+    public Bytes slice(int offset) {
+        return slice(offset, this.length - offset);
+    }
+
+    public Bytes slice(int offset, int length) {
+        Check.fromIndexSize(offset, length, this.length);
+        return new Bytes(array, this.offset + offset, length);
     }
 
     public IntStream stream() {
@@ -150,15 +159,6 @@ public sealed class Bytes extends Slice implements Comparable<Bytes> {
         byte[] result = new byte[length()];
         copyTo(result);
         return result;
-    }
-
-    @Override
-    public Bytes asBytes() {
-        return this;
-    }
-
-    public InputStream asInputStream() {
-        return new ByteArrayInputStream(array, offset, length);
     }
 
     public String toHexString(HexFormat format) {
@@ -172,31 +172,6 @@ public sealed class Bytes extends Slice implements Comparable<Bytes> {
     @Override
     public int compareTo(Bytes o) {
         return Arrays.compare(array, offset, offset + length, o.array, o.offset, o.offset + o.length);
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) {
-            return true;
-        }
-        if (!(obj instanceof Bytes o)) {
-            return false;
-        }
-        return Arrays.equals(array, offset, offset + length, o.array, o.offset, o.offset + o.length);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = 1;
-        for (int i = 0, len = this.length; i < len; i++) {
-            result = 31 * result + Byte.hashCode(getInternal(i));
-        }
-        return result;
-    }
-
-    @Override
-    public String toString() {
-        return "[" + this.length + " bytes]";
     }
 
     public static final class Mutable extends Bytes {
@@ -217,39 +192,43 @@ public sealed class Bytes extends Slice implements Comparable<Bytes> {
             return setInternal(index, value);
         }
 
-        private Mutable setInternal(int index, byte value) {
-            array[offset + index] = value;
-            return this;
-        }
-
         public Mutable setShort(int offset, short value) {
             Check.fromIndexSize(offset, Short.BYTES, this.length);
-            VH_SHORT.set(array, this.offset + offset, value);
+            VH_SHORT_LE.set(array, this.offset + offset, value);
             return this;
         }
 
         public Mutable setInt(int offset, int value) {
             Check.fromIndexSize(offset, Integer.BYTES, this.length);
-            VH_INT.set(array, this.offset + offset, value);
+            VH_INT_LE.set(array, this.offset + offset, value);
             return this;
         }
 
         public Mutable setLong(int offset, long value) {
             Check.fromIndexSize(offset, Long.BYTES, this.length);
-            VH_LONG.set(array, this.offset + offset, value);
+            VH_LONG_LE.set(array, this.offset + offset, value);
             return this;
         }
 
         public Mutable setFloat(int offset, float value) {
             Check.fromIndexSize(offset, Float.BYTES, this.length);
-            VH_FLOAT.set(array, this.offset + offset, value);
+            VH_FLOAT_LE.set(array, this.offset + offset, value);
             return this;
         }
 
         public Mutable setDouble(int offset, double value) {
             Check.fromIndexSize(offset, Double.BYTES, this.length);
-            VH_DOUBLE.set(array, this.offset + offset, value);
+            VH_DOUBLE_LE.set(array, this.offset + offset, value);
             return this;
+        }
+
+        private Mutable setInternal(int index, byte value) {
+            array[offset + index] = value;
+            return this;
+        }
+
+        public ByteBuffer asMutableBuffer() {
+            return asByteBuffer().slice();
         }
 
         public Mutable slice(int offset) {
@@ -280,10 +259,6 @@ public sealed class Bytes extends Slice implements Comparable<Bytes> {
         public Mutable fillFrom(BinarySource source) throws IOException {
             source.readBytes(this);
             return this;
-        }
-
-        public ByteBuffer asMutableBuffer() {
-            return asByteBuffer().slice();
         }
     }
 }

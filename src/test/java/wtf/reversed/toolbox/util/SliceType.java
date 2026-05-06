@@ -43,6 +43,10 @@ enum SliceType {
         return primitiveSize;
     }
 
+    int primitiveShift() {
+        return Integer.numberOfTrailingZeros(primitiveSize);
+    }
+
     boolean isByte() {
         return this == Bytes;
     }
@@ -54,7 +58,7 @@ enum SliceType {
 
     String varHandleName(ByteOrder order) {
         return "VH_" + primitiveType.getSimpleName().toUpperCase()
-            + (order == ByteOrder.LITTLE_ENDIAN ? "" : "_BE");
+            + (order == ByteOrder.LITTLE_ENDIAN ? "_LE" : "_BE");
     }
 
     public boolean isIntegral() {
