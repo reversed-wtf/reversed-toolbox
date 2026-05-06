@@ -15,6 +15,7 @@ public sealed class Ints extends Slice implements Comparable<Ints> {
 
     Ints(byte[] array, int offset, int length) {
         super(array, offset, length);
+        Check.argument((length & (Integer.BYTES - 1)) == 0, "length must be a multiple of 4");
     }
 
     public static Ints empty() {

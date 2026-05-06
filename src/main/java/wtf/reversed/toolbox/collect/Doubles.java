@@ -15,6 +15,7 @@ public sealed class Doubles extends Slice implements Comparable<Doubles> {
 
     Doubles(byte[] array, int offset, int length) {
         super(array, offset, length);
+        Check.argument((length & (Double.BYTES - 1)) == 0, "length must be a multiple of 8");
     }
 
     public static Doubles empty() {

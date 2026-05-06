@@ -15,6 +15,7 @@ public sealed class Floats extends Slice implements Comparable<Floats> {
 
     Floats(byte[] array, int offset, int length) {
         super(array, offset, length);
+        Check.argument((length & (Float.BYTES - 1)) == 0, "length must be a multiple of 4");
     }
 
     public static Floats empty() {

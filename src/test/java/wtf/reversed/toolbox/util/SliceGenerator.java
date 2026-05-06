@@ -77,6 +77,7 @@ final class SliceGenerator {
 
         builder.addMethod(generateAsBuffer());
         if (type.isByte()) builder.addMethod(generateAsBytesOverride());
+        if (type.isByte()) builder.addMethods(generateAsTypes());
         if (type.isByte()) builder.addMethod(generateAsInputStream());
         builder.addMethod(generateCopyTo());
         builder.addMethod(generateCopyToArray1());
@@ -102,7 +103,7 @@ final class SliceGenerator {
             .addModifiers(Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
             .superclass(thisType);
 
-        builder.addMethod(generateConstructor());
+        builder.addMethod(generateMutableConstructor());
         builder.addMethod(generateWrapCopyOfArray1(mutableType));
         builder.addMethod(generateWrapCopyOfArray3(mutableType));
 
@@ -124,6 +125,19 @@ final class SliceGenerator {
     // region Constructors and factories
 
     private MethodSpec generateConstructor() {
+        var builder = MethodSpec.constructorBuilder()
+            .addParameter(byte[].class, "array")
+            .addParameter(int.class, "offset")
+            .addParameter(int.class, "length")
+            .addStatement("super(array, offset, length)");
+        if (!type.isByte()) {
+            builder.addStatement("$T.argument((length & ($T.BYTES - 1)) == 0, $S)",
+                CHECK_CLASS, boxedType, "length must be a multiple of " + (1 << type.primitiveShift()));
+        }
+        return builder.build();
+    }
+
+    private MethodSpec generateMutableConstructor() {
         return MethodSpec.constructorBuilder()
             .addParameter(byte[].class, "array")
             .addParameter(int.class, "offset")
@@ -389,18 +403,33 @@ final class SliceGenerator {
 
     // region Views, conversions, copies
 
+    private MethodSpec generateAsBytesOverride() {
+        return override("asBytes")
+            .returns(thisType)
+            .addStatement("return this")
+            .build();
+    }
+
+    private List<MethodSpec> generateAsTypes() {
+        return Arrays.stream(SliceType.values())
+            .filter(t -> !t.isByte())
+            .map(this::generateAsTypeOverride)
+            .toList();
+    }
+
+    private MethodSpec generateAsTypeOverride(SliceType type) {
+        return MethodSpec.methodBuilder("as" + type.name())
+            .addModifiers(Modifier.PUBLIC)
+            .returns(ClassName.get("", type.typeName()))
+            .addStatement("return new $L(array, offset, length)", type.typeName())
+            .build();
+    }
+
     private MethodSpec generateAsBuffer() {
         var method = type.isByte() ? "asByteBuffer" : "asTypedBuffer";
         return override("asBuffer")
             .returns(bufferType)
             .addStatement("return $L().slice().asReadOnlyBuffer()", method)
-            .build();
-    }
-
-    private MethodSpec generateAsBytesOverride() {
-        return override("asBytes")
-            .returns(thisType)
-            .addStatement("return this")
             .build();
     }
 

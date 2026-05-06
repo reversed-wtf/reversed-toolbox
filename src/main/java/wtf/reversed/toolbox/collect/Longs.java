@@ -15,6 +15,7 @@ public sealed class Longs extends Slice implements Comparable<Longs> {
 
     Longs(byte[] array, int offset, int length) {
         super(array, offset, length);
+        Check.argument((length & (Long.BYTES - 1)) == 0, "length must be a multiple of 8");
     }
 
     public static Longs empty() {

@@ -123,6 +123,26 @@ public sealed class Bytes extends Slice implements Comparable<Bytes> {
         return this;
     }
 
+    public Shorts asShorts() {
+        return new Shorts(array, offset, length);
+    }
+
+    public Ints asInts() {
+        return new Ints(array, offset, length);
+    }
+
+    public Longs asLongs() {
+        return new Longs(array, offset, length);
+    }
+
+    public Floats asFloats() {
+        return new Floats(array, offset, length);
+    }
+
+    public Doubles asDoubles() {
+        return new Doubles(array, offset, length);
+    }
+
     public InputStream asInputStream() {
         return new ByteArrayInputStream(array, offset, length);
     }
