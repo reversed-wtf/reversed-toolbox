@@ -2,8 +2,6 @@ package wtf.reversed.toolbox.compress;
 
 import wtf.reversed.toolbox.collect.*;
 
-import java.io.*;
-
 final class FastLZDecompressor implements Decompressor {
     static final FastLZDecompressor INSTANCE = new FastLZDecompressor();
 
@@ -11,7 +9,7 @@ final class FastLZDecompressor implements Decompressor {
     }
 
     @Override
-    public void decompress(Bytes src, Bytes.Mutable dst) throws IOException {
+    public void decompress(Bytes src, Bytes.Mutable dst) {
         Level level = Level.from(src.get(0));
 
         int srcOff = 0;
@@ -73,12 +71,12 @@ final class FastLZDecompressor implements Decompressor {
         One,
         Two;
 
-        public static Level from(byte b) throws IOException {
+        public static Level from(byte b) {
             int level = b >> 5;
             return switch (level) {
                 case 0 -> One;
                 case 1 -> Two;
-                default -> throw new IOException("Invalid level: " + level);
+                default -> throw new DecompressorException("Invalid level: " + level);
             };
         }
     }

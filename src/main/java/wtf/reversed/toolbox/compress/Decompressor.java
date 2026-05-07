@@ -2,7 +2,6 @@ package wtf.reversed.toolbox.compress;
 
 import wtf.reversed.toolbox.collect.*;
 
-import java.io.*;
 import java.nio.file.*;
 
 public sealed interface Decompressor
@@ -36,19 +35,19 @@ public sealed interface Decompressor
         return new OodleDecompressor(path);
     }
 
-    void decompress(Bytes src, Bytes.Mutable dst) throws IOException;
+    void decompress(Bytes src, Bytes.Mutable dst);
 
-    default Bytes decompress(Bytes src, int size) throws IOException {
+    default Bytes decompress(Bytes src, int size) {
         var dst = Bytes.allocate(size);
         decompress(src, dst);
         return dst;
     }
 
-    default void decompress(byte[] src, int srcLen, byte[] dst, int dstLen) throws IOException {
+    default void decompress(byte[] src, int srcLen, byte[] dst, int dstLen) {
         decompress(src, 0, srcLen, dst, 0, dstLen);
     }
 
-    default void decompress(byte[] src, int srcOff, int srcLen, byte[] dst, int dstOff, int dstLen) throws IOException {
+    default void decompress(byte[] src, int srcOff, int srcLen, byte[] dst, int dstOff, int dstLen) {
         decompress(Bytes.wrap(src, srcOff, srcLen), Bytes.Mutable.wrap(dst, dstOff, dstLen));
     }
 }
