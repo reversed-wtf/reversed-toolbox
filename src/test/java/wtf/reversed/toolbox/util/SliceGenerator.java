@@ -118,6 +118,7 @@ final class SliceGenerator {
         builder.addMethod(generateCopyFromArray3());
         builder.addMethod(generateFill());
         builder.addMethod(generateFillFrom());
+        if (type.isByte()) builder.addMethod(generateFillFromInputStream());
 
         return builder.build();
     }
@@ -682,6 +683,20 @@ final class SliceGenerator {
             builder.endControlFlow();
         }
         return builder.addStatement("return this").build();
+    }
+
+    private MethodSpec generateFillFromInputStream() {
+        return MethodSpec.methodBuilder("fillFrom")
+            .addModifiers(Modifier.PUBLIC)
+            .addParameter(InputStream.class, "in")
+            .addException(IOException.class)
+            .returns(mutableType)
+            .addStatement("int read = in.readNBytes(array, offset, length)")
+            .beginControlFlow("if (read != length)")
+            .addStatement("throw new $T(\"Expected \" + length + \" bytes, got \" + read)", IOException.class)
+            .endControlFlow()
+            .addStatement("return this")
+            .build();
     }
 
     // endregion

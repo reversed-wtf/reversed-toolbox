@@ -280,5 +280,13 @@ public sealed class Bytes extends Slice implements Comparable<Bytes> {
             source.readBytes(this);
             return this;
         }
+
+        public Mutable fillFrom(InputStream in) throws IOException {
+            int read = in.readNBytes(array, offset, length);
+            if (read != length) {
+                throw new IOException("Expected " + length + " bytes, got " + read);
+            }
+            return this;
+        }
     }
 }
