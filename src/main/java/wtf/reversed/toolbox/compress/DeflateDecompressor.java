@@ -2,7 +2,6 @@ package wtf.reversed.toolbox.compress;
 
 import wtf.reversed.toolbox.collect.*;
 
-import java.io.*;
 import java.util.zip.*;
 
 final class DeflateDecompressor implements Decompressor {
@@ -13,7 +12,7 @@ final class DeflateDecompressor implements Decompressor {
     }
 
     @Override
-    public void decompress(Bytes src, Bytes.Mutable dst) throws IOException {
+    public void decompress(Bytes src, Bytes.Mutable dst) {
         var srcBuffer = src.asBuffer();
         var dstBuffer = dst.asMutableBuffer();
 
@@ -27,7 +26,7 @@ final class DeflateDecompressor implements Decompressor {
                         break;
                     }
                 } catch (DataFormatException e) {
-                    throw new IOException("Invalid compressed data", e);
+                    throw new DecompressorException("Invalid compressed data", e);
                 }
             }
         }

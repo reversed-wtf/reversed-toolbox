@@ -2,8 +2,6 @@ package wtf.reversed.toolbox.compress;
 
 import wtf.reversed.toolbox.collect.*;
 
-import java.io.*;
-
 final class LZ4BlockDecompressor implements Decompressor {
     static LZ4BlockDecompressor INSTANCE = new LZ4BlockDecompressor();
 
@@ -11,15 +9,15 @@ final class LZ4BlockDecompressor implements Decompressor {
     }
 
     @Override
-    public void decompress(Bytes src, Bytes.Mutable dst) throws IOException {
+    public void decompress(Bytes src, Bytes.Mutable dst) {
         decompress(src, dst, 0);
     }
 
-    static int decompress(Bytes src, Bytes.Mutable dst, int dstOffset) throws IOException {
+    static int decompress(Bytes src, Bytes.Mutable dst, int dstOffset) {
         // Special case
         if (dst.length() == 0) {
             if (src.length() != 1 || src.get(0) != 0) {
-                throw new IOException("Invalid empty block");
+                throw new DecompressorException("Invalid empty block");
             }
             return 0;
         }

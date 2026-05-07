@@ -1,7 +1,6 @@
 package wtf.reversed.toolbox.compress;
 
 import wtf.reversed.toolbox.collect.*;
-import wtf.reversed.toolbox.util.*;
 
 final class LZUtils {
     private LZUtils() {
@@ -12,7 +11,9 @@ final class LZUtils {
     }
 
     static void copyReference(Bytes.Mutable dst, int dstOff, int offset, int length) {
-        Check.argument(offset > 0 && dstOff - offset >= 0, "Match before start");
+        if (offset <= 0 || dstOff - offset < 0) {
+            throw new DecompressorException("Match before start");
+        }
 
         int srcPos = dstOff - offset;
         if (offset == 1) {

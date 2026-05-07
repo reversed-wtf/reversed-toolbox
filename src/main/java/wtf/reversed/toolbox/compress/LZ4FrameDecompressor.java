@@ -4,7 +4,6 @@ import wtf.reversed.toolbox.collect.*;
 import wtf.reversed.toolbox.hash.*;
 import wtf.reversed.toolbox.util.*;
 
-import java.io.*;
 import java.util.*;
 
 final class LZ4FrameDecompressor implements Decompressor {
@@ -15,7 +14,7 @@ final class LZ4FrameDecompressor implements Decompressor {
     }
 
     @Override
-    public void decompress(Bytes src, Bytes.Mutable dst) throws IOException {
+    public void decompress(Bytes src, Bytes.Mutable dst) {
         int srcOffset = 0;
 
         var frameHeader = Lz4FrameHeader.read(src);
@@ -35,7 +34,7 @@ final class LZ4FrameDecompressor implements Decompressor {
             if (frameHeader.flags().contains(Lz4FrameFlag.BLOCK_CHECKSUM)) {
                 var blockChecksum = src.getInt(srcOffset);
                 if (HASH.hash(blockData).asInt() != blockChecksum) {
-                    throw new IOException("Invalid block checksum");
+                    throw new DecompressorException("Invalid block checksum");
                 }
                 srcOffset += 4;
             }
@@ -47,12 +46,12 @@ final class LZ4FrameDecompressor implements Decompressor {
             }
         }
         if (dstOffset != dst.length()) {
-            throw new IOException("Error while decompressing: expected " + dst.length() + " bytes, but only have " + dstOffset);
+            throw new DecompressorException("Error while decompressing: expected " + dst.length() + " bytes, but only have " + dstOffset);
         }
         if (frameHeader.flags().contains(Lz4FrameFlag.CONTENT_CHECKSUM)) {
             int contentChecksum = src.getInt(srcOffset);
             if (HASH.hash(dst).asInt() != contentChecksum) {
-                throw new IOException("Invalid content checksum");
+                throw new DecompressorException("Invalid content checksum");
             }
         }
     }
@@ -64,27 +63,27 @@ final class LZ4FrameDecompressor implements Decompressor {
         OptionalInt dictionaryId,
         byte headerChecksum
     ) {
-        public static Lz4FrameHeader read(Bytes reader) throws IOException {
+        public static Lz4FrameHeader read(Bytes reader) {
             if (reader.getInt(0) != 0x184D2204) {
-                throw new IOException("Invalid magic");
+                throw new DecompressorException("Invalid magic");
             }
 
             var flg = reader.get(4);
             if ((flg & 0xC2) != 0x40) {
-                throw new IOException("Invalid FLG byte");
+                throw new DecompressorException("Invalid FLG byte");
             }
             var flags = FlagEnum.fromValue(Lz4FrameFlag.class, flg & 0x3D);
 
             var bd = reader.get(5);
             if ((bd & 0x8F) != 0x00) {
-                throw new IOException("Invalid BD byte");
+                throw new DecompressorException("Invalid BD byte");
             }
             var blockMaximumSize = switch ((bd >>> 4) & 0x07) {
                 case 4 -> 1024 * 64;
                 case 5 -> 1024 * 256;
                 case 6 -> 1024 * 1024;
                 case 7 -> 1024 * 1024 * 4;
-                default -> throw new IOException("Invalid Block Maximum Size");
+                default -> throw new DecompressorException("Invalid Block Maximum Size");
             };
 
             int offset = 6;
@@ -115,7 +114,7 @@ final class LZ4FrameDecompressor implements Decompressor {
             // TODO: Validate this
             var headerChecksum = reader.get(offset);
             if (checkSum != headerChecksum) {
-                throw new IOException("Invalid checksum");
+                throw new DecompressorException("Invalid checksum");
             }
 
             return new Lz4FrameHeader(
@@ -156,12 +155,12 @@ final class LZ4FrameDecompressor implements Decompressor {
         int blockSize,
         boolean uncompressed
     ) {
-        public static Lz4BlockHeader read(Bytes reader, int blockMaximumSize) throws IOException {
+        public static Lz4BlockHeader read(Bytes reader, int blockMaximumSize) {
             var value = reader.getInt(0);
             var blockSize = value & 0x7FFF_FFFF;
             var uncompressed = value < 0;
             if (!uncompressed && blockSize > blockMaximumSize) {
-                throw new IOException("Compressed block size bigger than block maximum size");
+                throw new DecompressorException("Compressed block size bigger than block maximum size");
             }
             return new Lz4BlockHeader(blockSize, uncompressed);
         }

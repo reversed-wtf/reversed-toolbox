@@ -2,7 +2,6 @@ package wtf.reversed.toolbox.compress;
 
 import wtf.reversed.toolbox.collect.*;
 
-import java.io.*;
 import java.lang.foreign.*;
 import java.lang.invoke.*;
 import java.nio.file.*;
@@ -20,7 +19,7 @@ final class OodleDecompressor implements Decompressor {
     }
 
     @Override
-    public void decompress(Bytes src, Bytes.Mutable dst) throws IOException {
+    public void decompress(Bytes src, Bytes.Mutable dst) {
         try (var arena = Arena.ofConfined()) {
             var srcSegment = arena.allocate(src.length())
                 .copyFrom(MemorySegment.ofBuffer(src.asBuffer()));
@@ -38,8 +37,11 @@ final class OodleDecompressor implements Decompressor {
                 3 /* OodleLZ_Decode_ThreadPhaseAll */
             );
 
+            if (result == 0) {
+                throw new DecompressorException("Decompression failed");
+            }
             if (result != dst.length()) {
-                throw new IOException("Decompression failed, expected " + dst.length() + ", got " + result);
+                throw new DecompressorException("Decompression failed, expected " + dst.length() + ", got " + result);
             }
 
             MemorySegment.ofBuffer(dst.asMutableBuffer())

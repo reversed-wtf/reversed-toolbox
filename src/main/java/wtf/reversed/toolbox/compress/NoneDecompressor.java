@@ -2,8 +2,6 @@ package wtf.reversed.toolbox.compress;
 
 import wtf.reversed.toolbox.collect.*;
 
-import java.io.*;
-
 final class NoneDecompressor implements Decompressor {
     static final NoneDecompressor INSTANCE = new NoneDecompressor();
 
@@ -11,13 +9,13 @@ final class NoneDecompressor implements Decompressor {
     }
 
     @Override
-    public void decompress(Bytes src, Bytes.Mutable dst) throws IOException {
+    public void decompress(Bytes src, Bytes.Mutable dst) {
         if (src == dst) {
             return;
         }
 
         if (src.length() != dst.length()) {
-            throw new IOException("src.length() (" + src.length() + ") and dst.length() (" + dst.length() + ") do not match");
+            throw new DecompressorException("src.length() (" + src.length() + ") and dst.length() (" + dst.length() + ") do not match");
         }
 
         src.copyTo(dst, 0);
