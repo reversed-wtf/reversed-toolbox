@@ -23,11 +23,11 @@ final class LZUtils {
 
         try {
             int srcPos = dstOff - offset;
-            if (offset == 1) {
+            if (offset >= length) {
+                dst.slice(srcPos, length).copyTo(dst, dstOff);
+            } else if (offset == 1) {
                 byte b = dst.get(dstOff - 1);
                 dst.slice(dstOff, length).fill(b);
-            } else if (offset >= length) {
-                dst.slice(srcPos, length).copyTo(dst, dstOff);
             } else {
                 dst.slice(srcPos, offset).copyTo(dst, dstOff);
                 int copied = offset;

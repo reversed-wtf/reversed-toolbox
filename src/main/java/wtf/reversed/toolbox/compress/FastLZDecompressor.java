@@ -10,7 +10,7 @@ final class FastLZDecompressor implements Decompressor {
 
     @Override
     public void decompress(Bytes src, Bytes.Mutable dst) {
-        int level = src.get(0) >>> 5;
+        int level = (src.get(0) >> 5) & 0x07;
         if (level > 1) {
             throw new DecompressorException("Invalid level: " + level);
         }
