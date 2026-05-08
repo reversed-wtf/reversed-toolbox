@@ -1,8 +1,7 @@
 package wtf.reversed.toolbox.hash;
 
 import wtf.reversed.toolbox.collect.*;
-
-import java.util.*;
+import wtf.reversed.toolbox.util.*;
 
 /**
  * Calculates the CRC based on a description of an algorithm
@@ -10,16 +9,16 @@ import java.util.*;
 final class CRC implements HashFunction {
     private final CRCAlgorithm algorithm;
     private final long[] table;
-    private long crc;
+    private final long init;
 
     CRC(CRCAlgorithm algorithm) {
-        this.algorithm = Objects.requireNonNull(algorithm);
+        this.algorithm = Check.nonNull(algorithm, "algorithm");
         this.table = generateTable(algorithm.width(), algorithm.poly(), algorithm.refIn());
 
         if (algorithm.refIn()) {
-            this.crc = Long.reverse(algorithm.init()) >>> (Long.SIZE - algorithm.width());
+            this.init = Long.reverse(algorithm.init()) >>> (Long.SIZE - algorithm.width());
         } else {
-            this.crc = algorithm.init() << (Long.SIZE - algorithm.width());
+            this.init = algorithm.init() << (Long.SIZE - algorithm.width());
         }
     }
 
@@ -49,13 +48,14 @@ final class CRC implements HashFunction {
 
     @Override
     public HashCode hash(Bytes src) {
-        update(src);
+        long crc = finalize(update(src));
         return algorithm.width() <= 32
-            ? HashCode.ofInt((int) getCrc())
-            : HashCode.ofLong(getCrc());
+            ? HashCode.ofInt((int) crc)
+            : HashCode.ofLong(crc);
     }
 
-    private void update(Bytes bytes) {
+    private long update(Bytes bytes) {
+        long crc = init;
         if (algorithm.refIn()) {
             for (int i = 0; i < bytes.length(); i++) {
                 int table_index = ((int) (crc ^ bytes.getUnsigned(i)) & 0xFF);
@@ -67,10 +67,10 @@ final class CRC implements HashFunction {
                 crc = table[table_index] ^ (crc << 8);
             }
         }
+        return crc;
     }
 
-    private long getCrc() {
-        var crc = this.crc;
+    private long finalize(long crc) {
         if (algorithm.refIn() ^ algorithm.refOut()) {
             crc = Long.reverse(crc);
         }

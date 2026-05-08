@@ -102,33 +102,4 @@ public interface Decompressor {
         decompress(src, dst);
         return dst;
     }
-
-    /**
-     * Decompresses the first {@code srcLen} bytes of {@code src} into the first {@code dstLen} bytes of {@code dst}.
-     *
-     * @param src    The compressed input array.
-     * @param srcLen The number of compressed bytes to read from the start of {@code src}.
-     * @param dst    The destination array to write the uncompressed output into.
-     * @param dstLen The exact uncompressed length, in bytes.
-     * @throws DecompressorException If the input is malformed or its uncompressed size does not equal {@code dstLen}.
-     */
-    default void decompress(byte[] src, int srcLen, byte[] dst, int dstLen) {
-        decompress(src, 0, srcLen, dst, 0, dstLen);
-    }
-
-    /**
-     * Decompresses {@code srcLen} bytes starting at {@code srcOff} of {@code src} into {@code dstLen} bytes starting at
-     * {@code dstOff} of {@code dst}.
-     *
-     * @param src    The compressed input array.
-     * @param srcOff The offset into {@code src} of the first compressed byte.
-     * @param srcLen The number of compressed bytes to read.
-     * @param dst    The destination array to write the uncompressed output into.
-     * @param dstOff The offset into {@code dst} where the uncompressed output begins.
-     * @param dstLen The exact uncompressed length, in bytes.
-     * @throws DecompressorException If the input is malformed or its uncompressed size does not equal {@code dstLen}.
-     */
-    default void decompress(byte[] src, int srcOff, int srcLen, byte[] dst, int dstOff, int dstLen) {
-        decompress(Bytes.wrap(src, srcOff, srcLen), Bytes.Mutable.wrap(dst, dstOff, dstLen));
-    }
 }
