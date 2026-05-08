@@ -20,4 +20,12 @@ final class NoneDecompressor implements Decompressor {
 
         src.copyTo(dst, 0);
     }
+
+    @Override
+    public Bytes decompress(Bytes src, int size) {
+        if (src.length() != size) {
+            throw new DecompressorException("src.length() (" + src.length() + ") and size (" + size + ") do not match");
+        }
+        return src;
+    }
 }
