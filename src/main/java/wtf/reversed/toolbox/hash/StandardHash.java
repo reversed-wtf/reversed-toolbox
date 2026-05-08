@@ -4,10 +4,10 @@ import wtf.reversed.toolbox.collect.*;
 
 import java.security.*;
 
-final class MessageDigestHashFunction implements HashFunction {
+final class StandardHash implements HashFunction {
     private final MessageDigest digest;
 
-    MessageDigestHashFunction(String algorithm) {
+    StandardHash(String algorithm) {
         try {
             digest = MessageDigest.getInstance(algorithm);
         } catch (NoSuchAlgorithmException e) {

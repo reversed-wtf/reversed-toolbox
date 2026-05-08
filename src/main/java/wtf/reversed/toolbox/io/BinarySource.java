@@ -49,8 +49,8 @@ public abstract class BinarySource implements Closeable {
         return size - position();
     }
 
-    public final void skip(long count) throws IOException {
-        position(Math.addExact(position(), Check.positiveOrZero(count, "count")));
+    public final BinarySource skip(long count) {
+        return position(Math.addExact(position(), Check.positiveOrZero(count, "count")));
     }
 
     public abstract long position();
