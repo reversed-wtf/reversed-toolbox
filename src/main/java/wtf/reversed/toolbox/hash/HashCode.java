@@ -4,26 +4,50 @@ import wtf.reversed.toolbox.collect.*;
 
 import java.util.*;
 
+/**
+ * The fixed-size value produced by a {@link HashFunction}.
+ *
+ * <p>A hash code is always created from one of {@link #ofInt(int)}, {@link #ofLong(long)}, or {@link #ofBytes(Bytes)},
+ * and can be viewed as any of those forms via {@link #asInt()}, {@link #asLong()}, and {@link #asBytes()}.
+ */
 public abstract sealed class HashCode {
     private HashCode() {
     }
 
+    /**
+     * Returns a hash code backed by a 32-bit integer.
+     */
     public static HashCode ofInt(int hash) {
         return new OfInt(hash);
     }
 
+    /**
+     * Returns a hash code backed by a 64-bit integer.
+     */
     public static HashCode ofLong(long hash) {
         return new OfLong(hash);
     }
 
+    /**
+     * Returns a hash code backed by a byte sequence.
+     */
     public static HashCode ofBytes(Bytes bytes) {
         return new OfBytes(bytes);
     }
 
+    /**
+     * Returns this hash code as a 32-bit integer, truncating if necessary.
+     */
     public abstract int asInt();
 
+    /**
+     * Returns this hash code as a 64-bit integer, truncating or zero-extending if necessary.
+     */
     public abstract long asLong();
 
+    /**
+     * Returns this hash code as a byte sequence, little-endian if converting from an int or long.
+     */
     public abstract Bytes asBytes();
 
     @Override
