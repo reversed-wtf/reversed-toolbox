@@ -5,7 +5,6 @@ import org.junit.jupiter.params.*;
 import org.junit.jupiter.params.provider.*;
 import wtf.reversed.toolbox.collect.*;
 
-import java.io.*;
 import java.security.*;
 import java.util.*;
 
@@ -22,7 +21,7 @@ class FastLZDecompressorTest {
     }
 
     @Test
-    void testLiteral() throws IOException {
+    void testLiteral() {
         var source = new byte[]{0x02, 0x41, 0x42, 0x43};
         var expected = new byte[]{0x41, 0x42, 0x43};
         var target = new byte[expected.length];
@@ -33,7 +32,7 @@ class FastLZDecompressorTest {
     }
 
     @Test
-    void testShortMatch1() throws IOException {
+    void testShortMatch1() {
         var source = new byte[]{0x03, 0x41, 0x42, 0x43, 0x44, 0x20, 0x02};
         var expected = new byte[]{0x41, 0x42, 0x43, 0x44, 0x42, 0x43, 0x44};
         var target = new byte[expected.length];
@@ -44,7 +43,7 @@ class FastLZDecompressorTest {
     }
 
     @Test
-    void testShortMatch2() throws IOException {
+    void testShortMatch2() {
         var source = new byte[]{0x00, 0x61, 0x40, 0x00};
         var expected = new byte[]{0x61, 0x61, 0x61, 0x61, 0x61};
         var target = new byte[expected.length];
@@ -55,7 +54,7 @@ class FastLZDecompressorTest {
     }
 
     @Test
-    void testLongMatch() throws IOException {
+    void testLongMatch() {
         var source = new byte[]{0x01, 0x44, 0x45, (byte) 0xE0, 0x01, 0x01};
         var expected = new byte[]{0x44, 0x45, 0x44, 0x45, 0x44, 0x45, 0x44, 0x45, 0x44, 0x45, 0x44, 0x45};
         var target = new byte[expected.length];

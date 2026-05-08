@@ -2,8 +2,6 @@ package wtf.reversed.toolbox.compress;
 
 import wtf.reversed.toolbox.collect.*;
 
-import java.io.*;
-
 final class FastLZDecompressor implements Decompressor {
     static final FastLZDecompressor INSTANCE = new FastLZDecompressor();
 
@@ -11,8 +9,11 @@ final class FastLZDecompressor implements Decompressor {
     }
 
     @Override
-    public void decompress(Bytes src, Bytes.Mutable dst) throws IOException {
-        Level level = Level.from(src.get(0));
+    public void decompress(Bytes src, Bytes.Mutable dst) {
+        int level = src.get(0) >>> 5;
+        if (level > 1) {
+            throw new DecompressorException("Invalid level: " + level);
+        }
 
         int srcOff = 0;
         int dstOff = 0;
@@ -29,30 +30,28 @@ final class FastLZDecompressor implements Decompressor {
                 int matchLength = (opcode >> 5) + 2;
                 if ((opcode & 0xE0) == 0xE0) {
                     // If all upper bits are set, we have a long match
-                    switch (level) {
-                        case One -> matchLength += src.getUnsigned(srcOff++);
-                        case Two -> {
-                            int temp;
-                            do {
-                                temp = src.getUnsigned(srcOff++);
-                                matchLength += temp;
-                            } while (temp == 0xFF);
-                        }
+                    if (level == 0) {
+                        matchLength += src.getUnsigned(srcOff++);
+                    } else {
+                        int temp;
+                        do {
+                            temp = src.getUnsigned(srcOff++);
+                            matchLength += temp;
+                        } while (temp == 0xFF);
                     }
                 }
 
                 // Then we handle the offset
                 int offset = ((opcode & 0x1F) << 8) + 1;
-                switch (level) {
-                    case One -> offset += src.getUnsigned(srcOff++);
-                    case Two -> {
-                        int temp = src.getUnsigned(srcOff++);
-                        offset += temp;
+                if (level == 0) {
+                    offset += src.getUnsigned(srcOff++);
+                } else {
+                    int temp = src.getUnsigned(srcOff++);
+                    offset += temp;
 
-                        if (temp == 0xFF && (opcode & 0x1F) == 0x1F) {
-                            offset += src.getUnsigned(srcOff++) << 8;
-                            offset += src.getUnsigned(srcOff++);
-                        }
+                    if (temp == 0xFF && (opcode & 0x1F) == 0x1F) {
+                        offset += src.getUnsigned(srcOff++) << 8;
+                        offset += src.getUnsigned(srcOff++);
                     }
                 }
 
@@ -64,22 +63,6 @@ final class FastLZDecompressor implements Decompressor {
                 break;
             }
             opcode = src.getUnsigned(srcOff++);
-        }
-
-        // return dstPos - targetOffset;
-    }
-
-    private enum Level {
-        One,
-        Two;
-
-        public static Level from(byte b) throws IOException {
-            int level = b >> 5;
-            return switch (level) {
-                case 0 -> One;
-                case 1 -> Two;
-                default -> throw new IOException("Invalid level: " + level);
-            };
         }
     }
 }
