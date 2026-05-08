@@ -5,8 +5,8 @@ import wtf.reversed.toolbox.collect.*;
 import java.nio.file.*;
 
 /**
- * A sealed interface representing a one-shot block decompressor for a specific compression algorithm. Instances are
- * obtained through the static factory methods on this interface and may be reused across calls.
+ * An interface representing a one-shot block decompressor for a specific compression algorithm. Instances are obtained
+ * through the static factory methods on this interface and may be reused across calls.
  * <p>
  * Implementations decompress a complete compressed payload into a caller-supplied destination buffer. The destination
  * must be sized to the exact uncompressed length; any mismatch or malformed input raises a
