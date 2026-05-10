@@ -83,16 +83,17 @@ public abstract class BinarySource implements Closeable {
     }
 
     public final Bytes readBytes(int count) throws IOException {
-        if (Check.positiveOrZero(count, "count") == 0) {
+        Check.positiveOrZero(count, "count");
+        if (count == 0) {
             return Bytes.empty();
         }
         ensureRemaining(count * (long) Byte.BYTES);
-
         return Bytes.allocate(count).fillFrom(this);
     }
 
     public final Shorts readShorts(int count) throws IOException {
-        if (Check.positiveOrZero(count, "count") == 0) {
+        Check.positiveOrZero(count, "count");
+        if (count == 0) {
             return Shorts.empty();
         }
         ensureRemaining(count * (long) Short.BYTES);
@@ -100,7 +101,8 @@ public abstract class BinarySource implements Closeable {
     }
 
     public final Ints readInts(int count) throws IOException {
-        if (Check.positiveOrZero(count, "count") == 0) {
+        Check.positiveOrZero(count, "count");
+        if (count == 0) {
             return Ints.empty();
         }
         ensureRemaining(count * (long) Integer.BYTES);
@@ -108,7 +110,8 @@ public abstract class BinarySource implements Closeable {
     }
 
     public final Longs readLongs(int count) throws IOException {
-        if (Check.positiveOrZero(count, "count") == 0) {
+        Check.positiveOrZero(count, "count");
+        if (count == 0) {
             return Longs.empty();
         }
         ensureRemaining(count * (long) Long.BYTES);
@@ -116,7 +119,8 @@ public abstract class BinarySource implements Closeable {
     }
 
     public final Floats readFloats(int count) throws IOException {
-        if (Check.positiveOrZero(count, "count") == 0) {
+        Check.positiveOrZero(count, "count");
+        if (count == 0) {
             return Floats.empty();
         }
         ensureRemaining(count * (long) Float.BYTES);
@@ -124,15 +128,18 @@ public abstract class BinarySource implements Closeable {
     }
 
     public final Doubles readDoubles(int count) throws IOException {
-        if (Check.positiveOrZero(count, "count") == 0) {
+        Check.positiveOrZero(count, "count");
+        if (count == 0) {
             return Doubles.empty();
         }
         ensureRemaining(count * (long) Double.BYTES);
         return Doubles.allocate(count).fillFrom(this);
     }
 
+
     public final Ints readLongsAsInts(int count) throws IOException {
-        if (Check.positiveOrZero(count, "count") == 0) {
+        Check.positiveOrZero(count, "count");
+        if (count == 0) {
             return Ints.empty();
         }
         ensureRemaining(count * (long) Long.BYTES);
@@ -145,7 +152,8 @@ public abstract class BinarySource implements Closeable {
     }
 
     public final Floats readHalfs(int count) throws IOException {
-        if (Check.positiveOrZero(count, "count") == 0) {
+        Check.positiveOrZero(count, "count");
+        if (count == 0) {
             return Floats.empty();
         }
         ensureRemaining(count * (long) Short.BYTES);
@@ -190,8 +198,9 @@ public abstract class BinarySource implements Closeable {
     }
 
     public final String readString(int length, Charset charset) throws IOException {
+        Check.positiveOrZero(length, "length");
         Check.nonNull(charset, "charset");
-        if (Check.positiveOrZero(length, "length") == 0) {
+        if (length == 0) {
             return "";
         }
         return readBytes(length).toString(charset);
