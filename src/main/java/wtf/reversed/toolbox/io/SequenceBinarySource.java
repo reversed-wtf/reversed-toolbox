@@ -11,8 +11,10 @@ final class SequenceBinarySource extends BufferedBinarySource {
     private BinarySource source;
 
     SequenceBinarySource(List<? extends BinarySource> sources) {
-        super(sources.stream().mapToLong(BinarySource::size).sum());
+        Check.nonNull(sources, "sources");
         Check.argument(!sources.isEmpty(), "At least one reader must be provided");
+        super(sources.stream().mapToLong(BinarySource::size).sum()); // This is weird
+
         long offset = 0;
         for (BinarySource source : sources) {
             this.sources.put(offset, source);

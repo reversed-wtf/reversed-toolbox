@@ -1,7 +1,6 @@
 package wtf.reversed.toolbox.io;
 
 import wtf.reversed.toolbox.collect.*;
-import wtf.reversed.toolbox.util.*;
 
 import java.io.*;
 
@@ -11,8 +10,7 @@ final class SliceBinarySource extends BufferedBinarySource {
 
     SliceBinarySource(BufferedBinarySource source, long offset, long length) {
         super(length);
-        Check.fromIndexSize(offset, length, source.size());
-        this.source = Check.nonNull(source, "source");
+        this.source = source;
         this.offset = offset;
     }
 

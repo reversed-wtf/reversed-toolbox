@@ -27,6 +27,7 @@ final class BytesBinarySource extends BinarySource {
 
     @Override
     public BinarySource slice(long offset, long length) {
+        Check.fromIndexSize(offset, length, size);
         Bytes sliced = bytes.slice(Math.toIntExact(offset), Math.toIntExact(length));
         return new BytesBinarySource(sliced);
     }
