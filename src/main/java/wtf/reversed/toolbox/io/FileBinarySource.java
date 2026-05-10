@@ -1,6 +1,7 @@
 package wtf.reversed.toolbox.io;
 
 import wtf.reversed.toolbox.collect.*;
+import wtf.reversed.toolbox.util.*;
 
 import java.io.*;
 import java.nio.channels.*;
@@ -15,17 +16,18 @@ final class FileBinarySource extends BufferedBinarySource {
     }
 
     static FileBinarySource create(Path path) throws IOException {
+        Check.nonNull(path, "path");
         return new FileBinarySource(FileChannel.open(path, StandardOpenOption.READ));
     }
 
     @Override
     int readImpl(Bytes.Mutable target, long position) throws IOException {
-        return channel.read(target.asMutableBuffer(), position);
+        return Math.max(channel.read(target.asMutableBuffer(), position), 0);
     }
 
     @Override
     public void close() throws IOException {
-        super.close();
+        reset();
         channel.close();
     }
 }

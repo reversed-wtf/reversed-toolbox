@@ -26,9 +26,8 @@ public abstract class BinarySource implements Closeable {
         return new BytesBinarySource(bytes);
     }
 
-    public static BinarySource sequence(List<? extends BinarySource> readers) {
-        Check.argument(!readers.isEmpty(), "At least one reader must be provided");
-        return new SequenceBinarySource(readers);
+    public static BinarySource sequence(List<? extends BinarySource> sources) {
+        return new SequenceBinarySource(sources);
     }
 
 
@@ -177,6 +176,7 @@ public abstract class BinarySource implements Closeable {
     }
 
     public final String readString(StringFormat format, Charset charset) throws IOException {
+        Check.nonNull(charset, "charset");
         return switch (format) {
             case BYTE_LENGTH -> readString(Byte.toUnsignedInt(readByte()), charset);
             case SHORT_LENGTH -> readString(Short.toUnsignedInt(readShort()), charset);
@@ -190,6 +190,7 @@ public abstract class BinarySource implements Closeable {
     }
 
     public final String readString(int length, Charset charset) throws IOException {
+        Check.nonNull(charset, "charset");
         if (Check.positiveOrZero(length, "length") == 0) {
             return "";
         }
@@ -201,10 +202,12 @@ public abstract class BinarySource implements Closeable {
     }
 
     public final List<String> readStrings(int count, StringFormat format, Charset charset) throws IOException {
+        Check.nonNull(charset, "charset");
         return readObjects(count, reader -> reader.readString(format, charset));
     }
 
     public final <T> T readObject(Mapper<T> mapper) throws IOException {
+        Check.nonNull(mapper, "mapper");
         return mapper.read(this);
     }
 
@@ -267,9 +270,14 @@ public abstract class BinarySource implements Closeable {
     }
 
     public final void ensureRemaining(long expected) throws IOException {
+        Check.positiveOrZero(expected, "expected");
         if (remaining() < expected) {
-            throw new EOFException("Expected at least " + expected + " bytes remaining, but only " + remaining() + " are available");
+            throw eof(expected);
         }
+    }
+
+    final EOFException eof(long expected) {
+        return new EOFException("Expected at least " + expected + " bytes remaining, but only " + remaining() + " are available");
     }
 
     private String readNullTerminatedString(Charset charset) throws IOException {
