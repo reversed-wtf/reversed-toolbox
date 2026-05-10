@@ -26,6 +26,12 @@ final class BytesBinarySource extends BinarySource {
     }
 
     @Override
+    public BinarySource slice(long offset, long length) {
+        Bytes sliced = bytes.slice(Math.toIntExact(offset), Math.toIntExact(length));
+        return new BytesBinarySource(sliced);
+    }
+
+    @Override
     public void readBytes(Bytes.Mutable target) throws IOException {
         ensureRemaining(target.length());
         bytes.slice(position, target.length()).copyTo(target, 0);

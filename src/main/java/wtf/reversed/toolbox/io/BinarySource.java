@@ -118,6 +118,15 @@ public abstract class BinarySource implements Closeable {
     public abstract BinarySource position(long position);
 
     /**
+     * Returns a view over a sub-range of this source. The returned source is independent of this one.
+     *
+     * @param offset start offset, in {@code [0, size()]}
+     * @param length length of the slice, with {@code offset + length <= size()}
+     * @return a slice over the requested range
+     */
+    public abstract BinarySource slice(long offset, long length);
+
+    /**
      * Fills the given mutable byte buffer from the current position.
      *
      * @param target buffer to fill

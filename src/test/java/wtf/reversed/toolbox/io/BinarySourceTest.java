@@ -506,7 +506,7 @@ class BinarySourceTest {
     }
 
     @Test
-    void testBufferedRefillReturnsPartialAtEof() throws IOException {
+    void testBufferedRefillReturnsPartialAtEof() {
         try (var source = new TestBufferedSource(new byte[]{1, 2, 3, 4})) {
             assertThatExceptionOfType(EOFException.class).isThrownBy(source::readLong);
             assertThatExceptionOfType(EOFException.class).isThrownBy(source::readLong);
@@ -548,6 +548,134 @@ class BinarySourceTest {
             seq.readByte();
             seq.readByte();
             assertThatExceptionOfType(EOFException.class).isThrownBy(seq::readByte);
+        }
+    }
+
+
+    @Test
+    void testSliceOnBytesSource() throws IOException {
+        try (var source = bytes(0x00, 0x11, 0x22, 0x33, 0x44, 0x55)) {
+            var slice = source.slice(2, 3);
+            assertThat(slice.size()).isEqualTo(3);
+            assertThat(slice.position()).isZero();
+            assertThat(slice.readByte()).isEqualTo((byte) 0x22);
+            assertThat(slice.readByte()).isEqualTo((byte) 0x33);
+            assertThat(slice.readByte()).isEqualTo((byte) 0x44);
+            assertThatExceptionOfType(EOFException.class).isThrownBy(slice::readByte);
+        }
+    }
+
+    @Test
+    void testSliceDoesNotAffectParentPosition() throws IOException {
+        try (var source = bytes(0x00, 0x11, 0x22, 0x33, 0x44, 0x55)) {
+            source.readByte();
+            var slice = source.slice(2, 3);
+            slice.readByte();
+            slice.readByte();
+            assertThat(source.position()).isEqualTo(1);
+            assertThat(source.readByte()).isEqualTo((byte) 0x11);
+        }
+    }
+
+    @Test
+    void testSliceFullRange() throws IOException {
+        try (var source = bytes(0x01, 0x02, 0x03)) {
+            var slice = source.slice(0, 3);
+            assertThat(slice.size()).isEqualTo(3);
+            assertThat(slice.readByte()).isEqualTo((byte) 0x01);
+            assertThat(slice.readByte()).isEqualTo((byte) 0x02);
+            assertThat(slice.readByte()).isEqualTo((byte) 0x03);
+        }
+    }
+
+    @Test
+    void testSliceEmpty() throws IOException {
+        try (var source = bytes(0x01, 0x02, 0x03)) {
+            var slice = source.slice(1, 0);
+            assertThat(slice.size()).isZero();
+            assertThat(slice.remaining()).isZero();
+            assertThatExceptionOfType(EOFException.class).isThrownBy(slice::readByte);
+        }
+    }
+
+    @Test
+    void testSliceRejectsNegativeOffset() throws IOException {
+        try (var source = bytes(0x01, 0x02)) {
+            assertThatExceptionOfType(IndexOutOfBoundsException.class)
+                .isThrownBy(() -> source.slice(-1, 1));
+        }
+    }
+
+    @Test
+    void testSliceRejectsRangeBeyondSource() throws IOException {
+        try (var source = bytes(0x01, 0x02)) {
+            assertThatExceptionOfType(IndexOutOfBoundsException.class)
+                .isThrownBy(() -> source.slice(1, 5));
+        }
+    }
+
+    @Test
+    void testSliceOfSlice() throws IOException {
+        try (var source = bytes(0x00, 0x11, 0x22, 0x33, 0x44, 0x55)) {
+            var slice1 = source.slice(1, 4);
+            var slice2 = slice1.slice(1, 2);
+            assertThat(slice2.readByte()).isEqualTo((byte) 0x22);
+            assertThat(slice2.readByte()).isEqualTo((byte) 0x33);
+            assertThatExceptionOfType(EOFException.class).isThrownBy(slice2::readByte);
+        }
+    }
+
+    @Test
+    void testSliceOnFileSource(@TempDir Path tempDir) throws IOException {
+        var path = tempDir.resolve("slice.bin");
+        Files.write(path, new byte[]{0x10, 0x20, 0x30, 0x40, 0x50, 0x60});
+        try (var source = BinarySource.open(path)) {
+            var slice = source.slice(2, 3);
+            assertThat(slice.size()).isEqualTo(3);
+            assertThat(slice.readByte()).isEqualTo((byte) 0x30);
+            assertThat(slice.readByte()).isEqualTo((byte) 0x40);
+            assertThat(slice.readByte()).isEqualTo((byte) 0x50);
+            assertThat(source.position()).isZero();
+            assertThat(source.readByte()).isEqualTo((byte) 0x10);
+        }
+    }
+
+    @Test
+    void testSliceOnSequenceSpansSubSources() throws IOException {
+        try (var seq = BinarySource.sequence(java.util.List.of(
+            bytes(0x10, 0x20, 0x30),
+            bytes(0x40, 0x50, 0x60)))) {
+            var slice = seq.slice(2, 3);
+            assertThat(slice.readByte()).isEqualTo((byte) 0x30);
+            assertThat(slice.readByte()).isEqualTo((byte) 0x40);
+            assertThat(slice.readByte()).isEqualTo((byte) 0x50);
+        }
+    }
+
+    @Test
+    void testInterleavedSlicesOnFileSourceDontInterfere(@TempDir Path tempDir) throws IOException {
+        var path = tempDir.resolve("interleave.bin");
+        Files.write(path, new byte[]{0x10, 0x20, 0x30, 0x40, 0x50, 0x60});
+        try (var source = BinarySource.open(path)) {
+            var sliceA = source.slice(0, 3);
+            var sliceB = source.slice(3, 3);
+            assertThat(sliceA.readByte()).isEqualTo((byte) 0x10);
+            assertThat(sliceB.readByte()).isEqualTo((byte) 0x40);
+            assertThat(sliceA.readByte()).isEqualTo((byte) 0x20);
+            assertThat(sliceB.readByte()).isEqualTo((byte) 0x50);
+            assertThat(sliceA.readByte()).isEqualTo((byte) 0x30);
+            assertThat(sliceB.readByte()).isEqualTo((byte) 0x60);
+        }
+    }
+
+    @Test
+    void testCloseSliceDoesNotClosePartFileSource(@TempDir Path tempDir) throws IOException {
+        var path = tempDir.resolve("slice-close.bin");
+        Files.write(path, new byte[]{0x10, 0x20, 0x30, 0x40});
+        try (var source = BinarySource.open(path)) {
+            var slice = source.slice(0, 2);
+            slice.close();
+            assertThat(source.readByte()).isEqualTo((byte) 0x10);
         }
     }
 

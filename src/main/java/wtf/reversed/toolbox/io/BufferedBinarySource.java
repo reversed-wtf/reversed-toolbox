@@ -40,6 +40,12 @@ abstract class BufferedBinarySource extends BinarySource {
     }
 
     @Override
+    public final BinarySource slice(long offset, long length) {
+        Check.fromIndexSize(offset, length, this.size);
+        return new SliceBinarySource(this, offset, length);
+    }
+
+    @Override
     public final void readBytes(Bytes.Mutable target) throws IOException {
         // If the buffer has enough data, just copy the data and return
         if (bufferRemaining() >= target.length()) {
