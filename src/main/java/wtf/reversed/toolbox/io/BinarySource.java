@@ -22,7 +22,7 @@ public abstract class BinarySource implements Closeable {
         return FileBinarySource.create(path);
     }
 
-    public static BinarySource wrap(Bytes bytes) throws IOException {
+    public static BinarySource wrap(Bytes bytes) {
         return new BytesBinarySource(bytes);
     }
 
@@ -138,8 +138,8 @@ public abstract class BinarySource implements Closeable {
         }
         ensureRemaining(count * (long) Long.BYTES);
 
-        var result = Ints.Mutable.allocate(count);
-        for (var i = 0; i < result.length(); i++) {
+        Ints.Mutable result = Ints.Mutable.allocate(count);
+        for (int i = 0; i < result.length(); i++) {
             result.set(i, readLongAsInt());
         }
         return result;
@@ -151,8 +151,8 @@ public abstract class BinarySource implements Closeable {
         }
         ensureRemaining(count * (long) Short.BYTES);
 
-        var result = Floats.Mutable.allocate(count);
-        for (var i = 0; i < result.length(); i++) {
+        Floats.Mutable result = Floats.Mutable.allocate(count);
+        for (int i = 0; i < result.length(); i++) {
             result.set(i, readHalf());
         }
         return result;
@@ -160,7 +160,7 @@ public abstract class BinarySource implements Closeable {
 
 
     public final boolean readBool(BoolFormat format) throws IOException {
-        var value = switch (format) {
+        int value = switch (format) {
             case BYTE -> readByte();
             case SHORT -> readShort();
             case INT -> readInt();
@@ -211,7 +211,7 @@ public abstract class BinarySource implements Closeable {
     public final <T> List<T> readObjects(int count, Mapper<T> mapper) throws IOException {
         Check.nonNull(mapper, "mapper");
         List<T> result = new ArrayList<>(Check.positiveOrZero(count, "count"));
-        for (var i = 0; i < count; i++) {
+        for (int i = 0; i < count; i++) {
             result.add(mapper.read(this));
         }
         return List.copyOf(result);
@@ -219,42 +219,42 @@ public abstract class BinarySource implements Closeable {
 
 
     public final void expectByte(byte expected) throws IOException {
-        var actual = readByte();
+        byte actual = readByte();
         if (actual != expected) {
             throw new IOException("Expected byte " + expected + ", but got " + actual);
         }
     }
 
     public final void expectShort(short expected) throws IOException {
-        var actual = readShort();
+        short actual = readShort();
         if (actual != expected) {
             throw new IOException("Expected short " + expected + ", but got " + actual);
         }
     }
 
     public final void expectInt(int expected) throws IOException {
-        var actual = readInt();
+        int actual = readInt();
         if (actual != expected) {
             throw new IOException("Expected int " + expected + ", but got " + actual);
         }
     }
 
     public final void expectLong(long expected) throws IOException {
-        var actual = readLong();
+        long actual = readLong();
         if (actual != expected) {
             throw new IOException("Expected long " + expected + ", but got " + actual);
         }
     }
 
     public final void expectFloat(float expected) throws IOException {
-        var actual = readFloat();
+        float actual = readFloat();
         if (Float.compare(actual, expected) != 0) {
             throw new IOException("Expected float " + expected + ", but got " + actual);
         }
     }
 
     public final void expectDouble(double expected) throws IOException {
-        var actual = readDouble();
+        double actual = readDouble();
         if (Double.compare(actual, expected) != 0) {
             throw new IOException("Expected double " + expected + ", but got " + actual);
         }
@@ -268,7 +268,7 @@ public abstract class BinarySource implements Closeable {
 
     public final void ensureRemaining(long expected) throws IOException {
         if (remaining() < expected) {
-            throw new IOException("Expected at least " + expected + " bytes remaining, but only " + remaining() + " are available");
+            throw new EOFException("Expected at least " + expected + " bytes remaining, but only " + remaining() + " are available");
         }
     }
 
@@ -281,9 +281,9 @@ public abstract class BinarySource implements Closeable {
     }
 
     private ByteArrayOutputStream readNullTerminatedString1() throws IOException {
-        var result = new ByteArrayOutputStream();
+        ByteArrayOutputStream result = new ByteArrayOutputStream();
         while (true) {
-            var b0 = readByte();
+            byte b0 = readByte();
             if (b0 == 0) {
                 break;
             }
@@ -293,10 +293,10 @@ public abstract class BinarySource implements Closeable {
     }
 
     private ByteArrayOutputStream readNullTerminatedString2() throws IOException {
-        var result = new ByteArrayOutputStream();
+        ByteArrayOutputStream result = new ByteArrayOutputStream();
         while (true) {
-            var b0 = readByte();
-            var b1 = readByte();
+            byte b0 = readByte();
+            byte b1 = readByte();
             if (b0 == 0 && b1 == 0) {
                 break;
             }
@@ -307,12 +307,12 @@ public abstract class BinarySource implements Closeable {
     }
 
     private ByteArrayOutputStream readNullTerminatedString4() throws IOException {
-        var result = new ByteArrayOutputStream();
+        ByteArrayOutputStream result = new ByteArrayOutputStream();
         while (true) {
-            var b0 = readByte();
-            var b1 = readByte();
-            var b2 = readByte();
-            var b3 = readByte();
+            byte b0 = readByte();
+            byte b1 = readByte();
+            byte b2 = readByte();
+            byte b3 = readByte();
             if (b0 == 0 && b1 == 0 && b2 == 0 && b3 == 0) {
                 break;
             }
