@@ -5,7 +5,7 @@ import org.junit.jupiter.api.*;
 
 import static org.assertj.core.api.Assertions.*;
 
-public class Matrix2Test {
+class Matrix2Test {
     @Test
     void testEqualsAndHashCode() {
         EqualsVerifier.forClass(Matrix2.class).verify();
