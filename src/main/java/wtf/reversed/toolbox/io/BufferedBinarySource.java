@@ -40,6 +40,12 @@ abstract class BufferedBinarySource extends BinarySource {
     }
 
     @Override
+    public final BinarySource slice(long offset, long length) {
+        Check.fromIndexSize(offset, length, this.size);
+        return new SliceBinarySource(this, offset, length);
+    }
+
+    @Override
     public final void readBytes(Bytes.Mutable target) throws IOException {
         // If the buffer has enough data, just copy the data and return
         if (bufferRemaining() >= target.length()) {
@@ -73,7 +79,7 @@ abstract class BufferedBinarySource extends BinarySource {
         // If not, do a straight read, buffer is emptied
         int read = readImpl(target.slice(targetPosition, targetRemaining), sourcePosition);
         if (read != targetRemaining) {
-            throw new EOFException("Unexpected end of stream, expected " + targetRemaining + " bytes, got " + read);
+            throw eof(target.length());
         }
         sourcePosition += read;
     }
@@ -124,12 +130,11 @@ abstract class BufferedBinarySource extends BinarySource {
 
         // Then we can copy in new data from the channel
         Bytes.Mutable target = buffer.slice(remaining, BUFFER_SIZE - remaining);
-        int read = readImpl(target, sourcePosition + remaining);
-        bufferLength += read;
+        bufferLength += readImpl(target, sourcePosition + remaining);
 
         // Final check if we read enough data
         if (bufferRemaining() < length) {
-            throw new EOFException("Expected at least " + length + " bytes, but only " + bufferRemaining() + " available");
+            throw eof(length);
         }
     }
 
@@ -137,8 +142,7 @@ abstract class BufferedBinarySource extends BinarySource {
         return bufferLength - bufferPosition;
     }
 
-    @Override
-    public void close() throws IOException {
+    void reset() {
         sourcePosition = 0;
         bufferPosition = 0;
         bufferLength = 0;
