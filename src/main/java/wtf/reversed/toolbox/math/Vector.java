@@ -36,6 +36,16 @@ public interface Vector<T extends Vector<T>> extends Linear<T> {
     float dot(T other);
 
     /**
+     * Calculates the distance between this vector and another.
+     *
+     * @param other The other vector.
+     * @return The distance.
+     */
+    default float distance(T other) {
+        return subtract(other).length();
+    }
+
+    /**
      * Computes the squared length (squared norm) of this vector.
      *
      * @return the squared length

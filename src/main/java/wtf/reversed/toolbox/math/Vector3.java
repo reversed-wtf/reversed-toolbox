@@ -145,19 +145,6 @@ public record Vector3(
     }
 
     /**
-     * Calculates the distance between this vector and another.
-     *
-     * @param other The other vector.
-     * @return The distance.
-     */
-    public float distance(Vector3 other) {
-        float dx = x - other.x;
-        float dy = y - other.y;
-        float dz = z - other.z;
-        return FloatMath.sqrt(Math.fma(dx, dx, Math.fma(dy, dy, dz * dz)));
-    }
-
-    /**
      * Performs a fused multiply-add operation on this vector.
      *
      * @param mul The multiplier.

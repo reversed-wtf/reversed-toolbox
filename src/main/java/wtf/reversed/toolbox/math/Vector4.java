@@ -153,20 +153,6 @@ public record Vector4(
 
 
     /**
-     * Calculates the distance between this vector and another.
-     *
-     * @param other The other vector.
-     * @return The distance.
-     */
-    public float distance(Vector4 other) {
-        float dx = x - other.x;
-        float dy = y - other.y;
-        float dz = z - other.z;
-        float dw = w - other.w;
-        return FloatMath.sqrt(Math.fma(dx, dx, Math.fma(dy, dy, Math.fma(dz, dz, dw * dw))));
-    }
-
-    /**
      * Performs a fused multiply-add operation on this vector.
      *
      * @param mul The multiplier.
