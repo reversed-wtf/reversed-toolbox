@@ -77,4 +77,33 @@ class Vector4Test {
         var result = v.transform(translation);
         assertThat(result).isEqualTo(new Vector4(5, 7, 9, 1));
     }
+
+    @Test
+    void testDistance() {
+        var v1 = new Vector4(1, 2, 3, 4);
+        var v2 = new Vector4(5, 6, 7, 8);
+        assertThat(v1.distance(v2)).isEqualTo(FloatMath.sqrt(64));
+    }
+
+    @Test
+    void testFma() {
+        var v1 = new Vector4(1, 2, 3, 4);
+        var v2 = new Vector4(5, 6, 7, 8);
+        assertThat(v1.fma(7, v2)).isEqualTo(new Vector4(12, 20, 28, 36));
+    }
+
+    @Test
+    void testFmaVector() {
+        var v1 = new Vector4(1, +2, +3, +4);
+        var v2 = new Vector4(5, +6, +7, +8);
+        var v3 = new Vector4(9, 10, 11, 12);
+        assertThat(v1.fma(v2, v3)).isEqualTo(new Vector4(14, 22, 32, 44));
+    }
+
+    @Test
+    void testMultiply() {
+        var v1 = new Vector4(1, 2, 3, 4);
+        var v2 = new Vector4(5, 6, 7, 8);
+        assertThat(v1.multiply(v2)).isEqualTo(new Vector4(5, 12, 21, 32));
+    }
 }

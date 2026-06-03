@@ -72,4 +72,33 @@ class Vector2Test {
         var result = v.transform(translation);
         assertThat(result).isEqualTo(new Vector2(4, 10));
     }
+
+    @Test
+    void testDistance() {
+        var v1 = new Vector2(1, 2);
+        var v2 = new Vector2(3, 4);
+        assertThat(v1.distance(v2)).isEqualTo(FloatMath.sqrt(8));
+    }
+
+    @Test
+    void testFma() {
+        var v1 = new Vector2(1, 2);
+        var v2 = new Vector2(3, 4);
+        assertThat(v1.fma(7, v2)).isEqualTo(new Vector2(10, 18));
+    }
+
+    @Test
+    void testFmaVector() {
+        var v1 = new Vector2(1, 2);
+        var v2 = new Vector2(3, 4);
+        var v3 = new Vector2(5, 6);
+        assertThat(v1.fma(v2, v3)).isEqualTo(new Vector2(8, 14));
+    }
+
+    @Test
+    void testMultiply() {
+        var v1 = new Vector2(1, 2);
+        var v2 = new Vector2(3, 4);
+        assertThat(v1.multiply(v2)).isEqualTo(new Vector2(3, 8));
+    }
 }
