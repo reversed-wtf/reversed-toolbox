@@ -110,6 +110,56 @@ public record Vector2(
 
 
     /**
+     * Calculates the distance between this vector and another.
+     *
+     * @param other The other vector.
+     * @return The distance.
+     */
+    public float distance(Vector2 other) {
+        float dx = x - other.x;
+        float dy = y - other.y;
+        return FloatMath.sqrt(Math.fma(dx, dx, dy * dy));
+    }
+
+    /**
+     * Performs a fused multiply-add operation on this vector.
+     *
+     * @param mul The multiplier.
+     * @param add The addend vector.
+     * @return The result of the fused multiply-add operation.
+     */
+    public Vector2 fma(float mul, Vector2 add) {
+        return new Vector2(
+            Math.fma(x, mul, add.x),
+            Math.fma(y, mul, add.y)
+        );
+    }
+
+    /**
+     * Performs a fused multiply-add operation on this vector.
+     *
+     * @param mul The multiplier.
+     * @param add The addend vector.
+     * @return The result of the fused multiply-add operation.
+     */
+    public Vector2 fma(Vector2 mul, Vector2 add) {
+        return new Vector2(
+            Math.fma(x, mul.x, add.x),
+            Math.fma(y, mul.y, add.y)
+        );
+    }
+
+    /**
+     * Does an elementwise multiply between this and other.
+     *
+     * @param other The other vector
+     * @return The new multiplied vector
+     */
+    public Vector2 multiply(Vector2 other) {
+        return new Vector2(x * other.x, y * other.y);
+    }
+
+    /**
      * Transforms this vector by the given matrix.
      *
      * @param matrix The matrix to transform by.

@@ -173,6 +173,31 @@ public record Vector3(
     }
 
     /**
+     * Performs a fused multiply-add operation on this vector.
+     *
+     * @param mul The multiplier.
+     * @param add The addend vector.
+     * @return The result of the fused multiply-add operation.
+     */
+    public Vector3 fma(Vector3 mul, Vector3 add) {
+        return new Vector3(
+            Math.fma(x, mul.x, add.x),
+            Math.fma(y, mul.y, add.y),
+            Math.fma(z, mul.z, add.z)
+        );
+    }
+
+    /**
+     * Does an elementwise multiply between this and other.
+     *
+     * @param other The other vector
+     * @return The new multiplied vector
+     */
+    public Vector3 multiply(Vector3 other) {
+        return new Vector3(x * other.x, y * other.y, z * other.z);
+    }
+
+    /**
      * Transforms this vector by the given matrix.
      *
      * @param matrix The matrix to transform by.

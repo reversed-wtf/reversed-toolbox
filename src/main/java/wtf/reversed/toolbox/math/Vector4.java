@@ -153,6 +153,62 @@ public record Vector4(
 
 
     /**
+     * Calculates the distance between this vector and another.
+     *
+     * @param other The other vector.
+     * @return The distance.
+     */
+    public float distance(Vector4 other) {
+        float dx = x - other.x;
+        float dy = y - other.y;
+        float dz = z - other.z;
+        float dw = w - other.w;
+        return FloatMath.sqrt(Math.fma(dx, dx, Math.fma(dy, dy, Math.fma(dz, dz, dw * dw))));
+    }
+
+    /**
+     * Performs a fused multiply-add operation on this vector.
+     *
+     * @param mul The multiplier.
+     * @param add The addend vector.
+     * @return The result of the fused multiply-add operation.
+     */
+    public Vector4 fma(float mul, Vector4 add) {
+        return new Vector4(
+            Math.fma(x, mul, add.x),
+            Math.fma(y, mul, add.y),
+            Math.fma(z, mul, add.z),
+            Math.fma(w, mul, add.w)
+        );
+    }
+
+    /**
+     * Performs a fused multiply-add operation on this vector.
+     *
+     * @param mul The multiplier.
+     * @param add The addend vector.
+     * @return The result of the fused multiply-add operation.
+     */
+    public Vector4 fma(Vector4 mul, Vector4 add) {
+        return new Vector4(
+            Math.fma(x, mul.x, add.x),
+            Math.fma(y, mul.y, add.y),
+            Math.fma(z, mul.z, add.z),
+            Math.fma(w, mul.w, add.w)
+        );
+    }
+
+    /**
+     * Does an elementwise multiply between this and other.
+     *
+     * @param other The other vector
+     * @return The new multiplied vector
+     */
+    public Vector4 multiply(Vector4 other) {
+        return new Vector4(x * other.x, y * other.y, z * other.z, w * other.w);
+    }
+
+    /**
      * Transforms this vector by the given matrix.
      *
      * @param matrix The matrix to transform by.
