@@ -96,4 +96,19 @@ class Vector3Test {
         var v2 = new Vector3(4, 5, 6);
         assertThat(v1.fma(7, v2)).isEqualTo(new Vector3(11, 19, 27));
     }
+
+    @Test
+    void testFmaVector() {
+        var v1 = new Vector3(1, 2, 3);
+        var v2 = new Vector3(4, 5, 6);
+        var v3 = new Vector3(7, 8, 9);
+        assertThat(v1.fma(v2, v3)).isEqualTo(new Vector3(11, 18, 27));
+    }
+
+    @Test
+    void testMultiply() {
+        var v1 = new Vector3(1, 2, 3);
+        var v2 = new Vector3(4, 5, 6);
+        assertThat(v1.multiply(v2)).isEqualTo(new Vector3(4, 10, 18));
+    }
 }
