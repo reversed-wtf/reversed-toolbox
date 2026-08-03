@@ -4,6 +4,9 @@ package wtf.reversed.toolbox.math;
  * Utility class for floating-point math operations.
  */
 public final class FloatMath {
+    private static final float DEGREES_TO_RADIANS = (float) (Math.PI / 180.0);
+    private static final float RADIANS_TO_DEGREES = (float) (180.0 / Math.PI);
+
     /**
      * The value of {@code PI}.
      */
@@ -87,6 +90,26 @@ public final class FloatMath {
      */
     public static float atan(float a) {
         return (float) Math.atan(a);
+    }
+
+    /**
+     * Converts an angle measured in degrees to an equivalent angle in radians.
+     *
+     * @param angdeg the angle in degrees to be converted
+     * @return the converted angle in radians
+     */
+    public static float toRadians(float angdeg) {
+        return angdeg * DEGREES_TO_RADIANS;
+    }
+
+    /**
+     * Converts an angle measured in radians to an equivalent angle in degrees.
+     *
+     * @param angrad the angle in radians to be converted
+     * @return the converted angle in degrees
+     */
+    public static float toDegrees(float angrad) {
+        return angrad * RADIANS_TO_DEGREES;
     }
 
     /**
