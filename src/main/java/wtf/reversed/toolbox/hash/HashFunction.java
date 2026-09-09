@@ -25,17 +25,17 @@ public interface HashFunction {
     }
 
     /**
-     * Returns a hash function implementing the 64-bit FNV-1a algorithm.
+     * Returns a hash function implementing the 32-bit FNV-1 algorithm.
      */
-    static HashFunction fnv1a64() {
-        return FNV1a64.INSTANCE;
+    static HashFunction fnv1_32() {
+        return FNV1_32.INSTANCE;
     }
 
     /**
-     * Returns a hash function implementing the 62-bit FNV-1 algorithm.
+     * Returns a hash function implementing the 64-bit FNV-1a algorithm.
      */
-    static HashFunction fnv1x32() {
-        return FNV1x32.INSTANCE;
+    static HashFunction fnv1a_64() {
+        return FNV1A_64.INSTANCE;
     }
 
     /**
