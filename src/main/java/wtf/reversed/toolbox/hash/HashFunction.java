@@ -32,6 +32,13 @@ public interface HashFunction {
     }
 
     /**
+     * Returns a hash function implementing the 62-bit FNV-1 algorithm.
+     */
+    static HashFunction fnv1x32() {
+        return FNV1x32.INSTANCE;
+    }
+
+    /**
      * Returns a hash function implementing the 64-bit "B" variant of MurmurHash 2.
      *
      * @param seed the seed value mixed into the initial state
