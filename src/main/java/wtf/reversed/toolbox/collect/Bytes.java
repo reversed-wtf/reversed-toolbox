@@ -251,6 +251,26 @@ public sealed class Bytes extends Slice implements Comparable<Bytes> {
             return asByteBuffer().slice();
         }
 
+        public Shorts.Mutable asShorts() {
+            return new Shorts.Mutable(array, offset, length);
+        }
+
+        public Ints.Mutable asInts() {
+            return new Ints.Mutable(array, offset, length);
+        }
+
+        public Longs.Mutable asLongs() {
+            return new Longs.Mutable(array, offset, length);
+        }
+
+        public Floats.Mutable asFloats() {
+            return new Floats.Mutable(array, offset, length);
+        }
+
+        public Doubles.Mutable asDoubles() {
+            return new Doubles.Mutable(array, offset, length);
+        }
+
         public Mutable slice(int offset) {
             return slice(offset, this.length - offset);
         }

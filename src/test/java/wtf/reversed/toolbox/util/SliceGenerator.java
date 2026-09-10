@@ -77,7 +77,7 @@ final class SliceGenerator {
 
         builder.addMethod(generateAsBuffer());
         if (type.isByte()) builder.addMethod(generateAsBytesOverride());
-        if (type.isByte()) builder.addMethods(generateAsTypes());
+        if (type.isByte()) builder.addMethods(generateAsTypes(false));
         if (type.isByte()) builder.addMethod(generateAsInputStream());
         builder.addMethod(generateCopyTo());
         builder.addMethod(generateCopyToArray1());
@@ -112,6 +112,7 @@ final class SliceGenerator {
         builder.addMethod(generateSetInternal());
 
         builder.addMethod(generateAsMutableBuffer());
+        if (type.isByte()) builder.addMethods(generateAsTypes(true));
         builder.addMethod(generateSlice1(mutableType));
         builder.addMethod(generateSlice2(mutableType));
         builder.addMethod(generateCopyFromArray1());
@@ -411,18 +412,19 @@ final class SliceGenerator {
             .build();
     }
 
-    private List<MethodSpec> generateAsTypes() {
+    private List<MethodSpec> generateAsTypes(boolean mutable) {
         return Arrays.stream(SliceType.values())
             .filter(t -> !t.isByte())
-            .map(this::generateAsTypeOverride)
+            .map(t -> generateAsTypeOverride(t, mutable))
             .toList();
     }
 
-    private MethodSpec generateAsTypeOverride(SliceType type) {
+    private MethodSpec generateAsTypeOverride(SliceType type, boolean mutable) {
+        String suffix = mutable ? ".Mutable" : "";
         return MethodSpec.methodBuilder("as" + type.name())
             .addModifiers(Modifier.PUBLIC)
-            .returns(ClassName.get("", type.typeName()))
-            .addStatement("return new $L(array, offset, length)", type.typeName())
+            .returns(ClassName.get("", type.typeName() + suffix))
+            .addStatement("return new $L$L(array, offset, length)", type.typeName(), suffix)
             .build();
     }
 
@@ -739,7 +741,7 @@ final class SliceGenerator {
             .builder(PACKAGE_NAME, typeSpec)
             .indent("    ")
             .build()
-            .writeTo(Path.of("src/main/java"));
+            .writeTo(Path.of("lib/reversed-toolbox/src/main/java"));
     }
 
     // endregion
