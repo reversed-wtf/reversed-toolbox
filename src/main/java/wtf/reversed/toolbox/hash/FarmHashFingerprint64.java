@@ -6,9 +6,9 @@ final class FarmHashFingerprint64 implements HashFunction {
     static final FarmHashFingerprint64 INSTANCE = new FarmHashFingerprint64();
 
     // Some primes between 2^63 and 2^64 for various uses.
-    private static final long K0 = 0xc3a5c85c97cb3127L;
-    private static final long K1 = 0xb492b66fbe98f273L;
-    private static final long K2 = 0x9ae16a3b2f90404fL;
+    private static final long K0 = 0xC3A5_C85C_97CB_3127L;
+    private static final long K1 = 0xB492_B66F_BE98_F273L;
+    private static final long K2 = 0x9AE1_6A3B_2F90_404FL;
     private static final long SEED = 81;
 
     private FarmHashFingerprint64() {
@@ -47,19 +47,24 @@ final class FarmHashFingerprint64 implements HashFunction {
         return b;
     }
 
-    private static UInt128 weakHashLength32WithSeeds(Bytes s, int offset, long a, long b) {
+    private static long weakHashLength32WithSeedsLo(Bytes s, int offset, long a) {
+        long w = s.getLong(offset);
+        long x = s.getLong(offset + 8);
+        long y = s.getLong(offset + 16);
+        long z = s.getLong(offset + 24);
+        return a + w + x + y + z;
+    }
+
+    private static long weakHashLength32WithSeedsHi(Bytes s, int offset, long a, long b) {
         long w = s.getLong(offset);
         long x = s.getLong(offset + 8);
         long y = s.getLong(offset + 16);
         long z = s.getLong(offset + 24);
 
-        a += w;
-        b = Long.rotateRight(b + a + z, 21);
-        long c = a;
-        a += x;
-        a += y;
-        b += Long.rotateRight(a, 44);
-        return new UInt128(a + z, b + c);
+        long aw = a + w;
+        return Long.rotateRight(b + aw + z, 21)
+            + Long.rotateRight(aw + x + y, 44)
+            + aw;
     }
 
     private static long hashLength0to16(Bytes s) {
@@ -127,20 +132,22 @@ final class FarmHashFingerprint64 implements HashFunction {
         @SuppressWarnings("NumericOverflow")
         long y = SEED * K1 + 113;
         long z = shiftMix(y * K2 + 113) * K2;
-        UInt128 v = new UInt128(0, 0);
-        UInt128 w = new UInt128(0, 0);
+        long vLo = 0, vHi = 0;
+        long wLo = 0, wHi = 0;
         x = x * K2 + s.getLong(0);
 
         int offset = 0;
         do {
-            x = Long.rotateRight(x + y + v.first + s.getLong(offset + 8), 37) * K1;
-            y = Long.rotateRight(y + v.second + s.getLong(offset + 48), 42) * K1;
-            x ^= w.second;
-            y += v.first + s.getLong(offset + 40);
-            z = Long.rotateRight(z + w.first, 33) * K1;
+            x = Long.rotateRight(x + y + vLo + s.getLong(offset + 8), 37) * K1;
+            y = Long.rotateRight(y + vHi + s.getLong(offset + 48), 42) * K1;
+            x ^= wHi;
+            y += vLo + s.getLong(offset + 40);
+            z = Long.rotateRight(z + wLo, 33) * K1;
             long t = s.getLong(offset + 16);
-            v = weakHashLength32WithSeeds(s, offset, v.second * K1, x + w.first);
-            w = weakHashLength32WithSeeds(s, offset + 32, z + w.second, y + t);
+            vLo = weakHashLength32WithSeedsLo(s, offset, vHi * K1);
+            vHi = weakHashLength32WithSeedsHi(s, offset, vHi * K1, x + wLo);
+            wLo = weakHashLength32WithSeedsLo(s, offset + 32, z + wHi);
+            wHi = weakHashLength32WithSeedsHi(s, offset + 32, z + wHi, y + t);
             t = x;
             x = z;
             z = t;
@@ -150,27 +157,19 @@ final class FarmHashFingerprint64 implements HashFunction {
         long mul = K1 + ((z & 0xff) << 1);
         // Make offset point to the last 64 bytes of input.
         offset = s.length() - 64;
-        w.first += ((length - 1) & 63);
-        v.first += w.first;
-        w.first += v.first;
-        x = Long.rotateRight(x + y + v.first + s.getLong(offset + 8), 37) * mul;
-        y = Long.rotateRight(y + v.second + s.getLong(offset + 48), 42) * mul;
-        x ^= w.second * 9;
-        y += v.first * 9 + s.getLong(offset + 40);
-        z = Long.rotateRight(z + w.first, 33) * mul;
+        wLo += ((length - 1) & 63);
+        vLo += wLo;
+        wLo += vLo;
+        x = Long.rotateRight(x + y + vLo + s.getLong(offset + 8), 37) * mul;
+        y = Long.rotateRight(y + vHi + s.getLong(offset + 48), 42) * mul;
+        x ^= wHi * 9;
+        y += vLo * 9 + s.getLong(offset + 40);
+        z = Long.rotateRight(z + wLo, 33) * mul;
         long t = s.getLong(offset + 16);
-        v = weakHashLength32WithSeeds(s, offset, v.second * mul, x + w.first);
-        w = weakHashLength32WithSeeds(s, offset + 32, z + w.second, y + t);
-        return hashLength16(hashLength16(v.first, w.first, mul) + shiftMix(y) * K0 + x, hashLength16(v.second, w.second, mul) + z, mul);
-    }
-
-    private static final class UInt128 {
-        private long first;
-        private long second;
-
-        private UInt128(long first, long second) {
-            this.first = first;
-            this.second = second;
-        }
+        vLo = weakHashLength32WithSeedsLo(s, offset, vHi * mul);
+        vHi = weakHashLength32WithSeedsHi(s, offset, vHi * mul, x + wLo);
+        wLo = weakHashLength32WithSeedsLo(s, offset + 32, z + wHi);
+        wHi = weakHashLength32WithSeedsHi(s, offset + 32, z + wHi, y + t);
+        return hashLength16(hashLength16(vLo, wLo, mul) + shiftMix(y) * K0 + x, hashLength16(vHi, wHi, mul) + z, mul);
     }
 }
