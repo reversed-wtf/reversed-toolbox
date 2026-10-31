@@ -16,7 +16,11 @@ final class SliceBinarySource extends BufferedBinarySource {
 
     @Override
     int readImpl(Bytes.Mutable target, long position) throws IOException {
-        return source.readImpl(target, offset + position);
+        int length = (int) Math.min(target.length(), size - position);
+        if (length <= 0) {
+            return 0;
+        }
+        return source.readImpl(target.slice(0, length), offset + position);
     }
 
     @Override

@@ -47,6 +47,8 @@ abstract class BufferedBinarySource extends BinarySource {
 
     @Override
     public final void readBytes(Bytes.Mutable target) throws IOException {
+        ensureRemaining(target.length());
+
         // If the buffer has enough data, just copy the data and return
         if (bufferRemaining() >= target.length()) {
             buffer.slice(bufferPosition, target.length()).copyTo(target, 0);
@@ -60,12 +62,12 @@ abstract class BufferedBinarySource extends BinarySource {
             int remaining = bufferRemaining();
             buffer.slice(bufferPosition, remaining).copyTo(target, targetPosition);
             targetPosition += remaining;
-
-            // We drained the buffer, so update our channelPosition, and mark it empty
-            sourcePosition += bufferLength;
-            bufferPosition = 0;
-            bufferLength = 0;
         }
+
+        // Advance even when the buffer was already exhausted before this read
+        sourcePosition += bufferLength;
+        bufferPosition = 0;
+        bufferLength = 0;
 
         // If the data we want to read fits in a single buffer, do a refill and copy
         int targetRemaining = target.length() - targetPosition;
@@ -77,11 +79,14 @@ abstract class BufferedBinarySource extends BinarySource {
         }
 
         // If not, do a straight read, buffer is emptied
-        int read = readImpl(target.slice(targetPosition, targetRemaining), sourcePosition);
-        if (read != targetRemaining) {
-            throw eof(target.length());
+        while (targetPosition < target.length()) {
+            int read = readImpl(target.slice(targetPosition, target.length() - targetPosition), sourcePosition);
+            if (read <= 0) {
+                throw eof(target.length() - targetPosition);
+            }
+            sourcePosition += read;
+            targetPosition += read;
         }
-        sourcePosition += read;
     }
 
     @Override
@@ -117,6 +122,7 @@ abstract class BufferedBinarySource extends BinarySource {
     }
 
     private void refill(int length) throws IOException {
+        ensureRemaining(length);
         int remaining = bufferRemaining();
         if (remaining >= length) {
             return;
@@ -129,12 +135,14 @@ abstract class BufferedBinarySource extends BinarySource {
         bufferLength = remaining;
 
         // Then we can copy in new data from the channel
-        Bytes.Mutable target = buffer.slice(remaining, BUFFER_SIZE - remaining);
-        bufferLength += readImpl(target, sourcePosition + remaining);
-
-        // Final check if we read enough data
-        if (bufferRemaining() < length) {
-            throw eof(length);
+        while (bufferLength < length) {
+            int available = (int) Math.min(BUFFER_SIZE - bufferLength, size - sourcePosition - bufferLength);
+            Bytes.Mutable target = buffer.slice(bufferLength, available);
+            int read = readImpl(target, sourcePosition + bufferLength);
+            if (read <= 0) {
+                throw eof(length);
+            }
+            bufferLength += read;
         }
     }
 
