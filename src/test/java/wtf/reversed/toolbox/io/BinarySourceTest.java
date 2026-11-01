@@ -679,6 +679,42 @@ class BinarySourceTest {
         }
     }
 
+    @Test
+    void testSliceInheritsByteOrder() throws IOException {
+        try (var source = bytes(0x00, 0x00, 0x00, 0x01)) {
+            source.order(ByteOrder.BIG_ENDIAN);
+            var slice = source.slice(0, 4);
+            assertThat(slice.order()).isEqualTo(ByteOrder.BIG_ENDIAN);
+            assertThat(slice.readInt()).isEqualTo(1);
+        }
+    }
+
+    @Test
+    void testSliceOnFileSourceInheritsByteOrder(@TempDir Path tempDir) throws IOException {
+        var path = tempDir.resolve("slice-order.bin");
+        Files.write(path, new byte[]{0x00, 0x00, 0x00, 0x00, 0x01});
+        try (var source = BinarySource.open(path)) {
+            source.order(ByteOrder.BIG_ENDIAN);
+            var slice = source.slice(1, 4);
+            assertThat(slice.order()).isEqualTo(ByteOrder.BIG_ENDIAN);
+            assertThat(slice.readInt()).isEqualTo(1);
+        }
+    }
+
+    @Test
+    void testSliceByteOrderIsIndependentAfterCreation() throws IOException {
+        try (var source = bytes(0x00, 0x01)) {
+            source.order(ByteOrder.BIG_ENDIAN);
+            var slice = source.slice(0, 2);
+            source.order(ByteOrder.LITTLE_ENDIAN);
+            assertThat(slice.order()).isEqualTo(ByteOrder.BIG_ENDIAN);
+            slice.order(ByteOrder.LITTLE_ENDIAN);
+            assertThat(slice.readShort()).isEqualTo((short) 0x0100);
+            source.order(ByteOrder.BIG_ENDIAN);
+            assertThat(source.readShort()).isEqualTo((short) 0x0001);
+        }
+    }
+
     private static BinarySource bytes(int... values) {
         var data = Bytes.Mutable.allocate(values.length);
         for (var i = 0; i < values.length; i++) {

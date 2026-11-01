@@ -42,7 +42,7 @@ abstract class BufferedBinarySource extends BinarySource {
     @Override
     public final BinarySource slice(long offset, long length) {
         Check.fromIndexSize(offset, length, this.size);
-        return new SliceBinarySource(this, offset, length);
+        return new SliceBinarySource(this, offset, length).order(order());
     }
 
     @Override
