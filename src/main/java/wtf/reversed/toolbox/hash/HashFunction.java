@@ -6,6 +6,8 @@ import java.nio.charset.*;
 
 /**
  * A function that maps an arbitrary sequence of bytes to a fixed-size {@link HashCode}.
+ * <p>
+ * All implementations are immutable and thread-safe.
  */
 public interface HashFunction {
     /**
@@ -58,10 +60,6 @@ public interface HashFunction {
 
     /**
      * Returns a hash function backed by a {@link java.security.MessageDigest}.
-     * <p>
-     * <b>Warning</b>: the returned hash function is not thread-safe.
-     * If you need to use it concurrently, wrap it in a {@link ThreadLocal}
-     * or synchronize access to it.
      *
      * @param algorithm the standard digest algorithm name (see {@link StandardHashes})
      */
