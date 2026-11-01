@@ -418,10 +418,41 @@ public abstract class BinarySource implements Closeable {
     public final String readString(int length, Charset charset) throws IOException {
         Check.positiveOrZero(length, "length");
         Check.nonNull(charset, "charset");
-        if (length == 0) {
-            return "";
-        }
         return readBytes(length).toString(charset);
+    }
+
+    /**
+     * Reads a null-terminated UTF-8 string from a fixed-size buffer, consuming all {@code size} bytes.
+     *
+     * @param size non-negative size of the buffer in bytes
+     * @return the decoded string, up to the first null terminator
+     * @throws IOException if the read fails or insufficient bytes remain
+     */
+    public final String readCString(int size) throws IOException {
+        return readCString(size, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Reads a null-terminated string in the given charset from a fixed-size buffer, consuming all {@code size} bytes.
+     * Bytes after the terminator are ignored; without a terminator the whole buffer is decoded.
+     *
+     * @param size    non-negative size of the buffer in bytes
+     * @param charset charset to decode with
+     * @return the decoded string, up to the first null terminator
+     * @throws IOException if the read fails or insufficient bytes remain
+     */
+    public final String readCString(int size, Charset charset) throws IOException {
+        Check.positiveOrZero(size, "size");
+        Check.nonNull(charset, "charset");
+
+        Bytes bytes = readBytes(size);
+        int length = switch (terminatorWidth(charset)) {
+            case 1 -> bytes.indexOf((byte) 0);
+            case 2 -> indexOfZero(bytes, Short.BYTES);
+            case 4 -> indexOfZero(bytes, Integer.BYTES);
+            default -> throw new AssertionError();
+        };
+        return bytes.slice(0, length < 0 ? size : length).toString(charset);
     }
 
     /**
@@ -590,55 +621,38 @@ public abstract class BinarySource implements Closeable {
     }
 
     private String readNullTerminatedString(Charset charset) throws IOException {
+        int width = terminatorWidth(charset);
+        ByteArrayOutputStream result = new ByteArrayOutputStream();
+        byte[] unit = new byte[width];
+        while (true) {
+            boolean zero = true;
+            for (int i = 0; i < width; i++) {
+                unit[i] = readByte();
+                zero &= unit[i] == 0;
+            }
+            if (zero) {
+                return result.toString(charset);
+            }
+            result.write(unit);
+        }
+    }
+
+    private int terminatorWidth(Charset charset) {
         return (switch (charset.name()) {
-            case "UTF-16", "UTF-16BE", "UTF-16LE" -> readNullTerminatedString2();
-            case "UTF-32", "UTF-32BE", "UTF-32LE" -> readNullTerminatedString4();
-            default -> readNullTerminatedString1();
-        }).toString(charset);
+            case "UTF-16", "UTF-16BE", "UTF-16LE" -> 2;
+            case "UTF-32", "UTF-32BE", "UTF-32LE" -> 4;
+            default -> 1;
+        });
     }
 
-    private ByteArrayOutputStream readNullTerminatedString1() throws IOException {
-        ByteArrayOutputStream result = new ByteArrayOutputStream();
-        while (true) {
-            byte b0 = readByte();
-            if (b0 == 0) {
-                break;
+    private int indexOfZero(Bytes bytes, int width) {
+        for (int i = 0; i + width <= bytes.length(); i += width) {
+            boolean zero = width == Short.BYTES ? bytes.getShort(i) == 0 : bytes.getInt(i) == 0;
+            if (zero) {
+                return i;
             }
-            result.write(b0);
         }
-        return result;
-    }
-
-    private ByteArrayOutputStream readNullTerminatedString2() throws IOException {
-        ByteArrayOutputStream result = new ByteArrayOutputStream();
-        while (true) {
-            byte b0 = readByte();
-            byte b1 = readByte();
-            if (b0 == 0 && b1 == 0) {
-                break;
-            }
-            result.write(b0);
-            result.write(b1);
-        }
-        return result;
-    }
-
-    private ByteArrayOutputStream readNullTerminatedString4() throws IOException {
-        ByteArrayOutputStream result = new ByteArrayOutputStream();
-        while (true) {
-            byte b0 = readByte();
-            byte b1 = readByte();
-            byte b2 = readByte();
-            byte b3 = readByte();
-            if (b0 == 0 && b1 == 0 && b2 == 0 && b3 == 0) {
-                break;
-            }
-            result.write(b0);
-            result.write(b1);
-            result.write(b2);
-            result.write(b3);
-        }
-        return result;
+        return -1;
     }
 
     /**

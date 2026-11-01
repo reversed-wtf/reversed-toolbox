@@ -2,6 +2,8 @@ package wtf.reversed.toolbox.io;
 
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.*;
+import org.junit.jupiter.params.*;
+import org.junit.jupiter.params.provider.*;
 import wtf.reversed.toolbox.collect.*;
 
 import java.io.*;
@@ -309,6 +311,69 @@ class BinarySourceTest {
     void testReadStringFixedLengthZeroIsEmpty() throws IOException {
         try (var source = bytes('a', 'b')) {
             assertThat(source.readString(0)).isEmpty();
+            assertThat(source.position()).isZero();
+        }
+    }
+
+    @Test
+    void testReadCStringDefaultsToUtf8AndIgnoresGarbageAfterNull() throws IOException {
+        try (var source = bytes('c', 'a', 'f', 0xC3, 0xA9, 0x00, 0xCD, 0xCD, 0x01, 0x00, 0x00, 0x00)) {
+            assertThat(source.readCString(8)).isEqualTo("café");
+            assertThat(source.position()).isEqualTo(8);
+            assertThat(source.readInt()).isEqualTo(1);
+        }
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("cStringNullPositions")
+    void testReadCStringNullPosition(String name, byte[] data, String expected) throws IOException {
+        try (var source = BinarySource.wrap(Bytes.wrap(data))) {
+            assertThat(source.readCString(data.length)).isEqualTo(expected);
+            assertThat(source.position()).isEqualTo(data.length);
+        }
+    }
+
+    static List<Arguments> cStringNullPositions() {
+        return List.of(
+            Arguments.of("no null uses whole buffer", new byte[]{'a', 'b', 'c'}, "abc"),
+            Arguments.of("leading null is empty", new byte[]{0x00, 'a', 'b', 'c'}, ""),
+            Arguments.of("zero size is empty", new byte[0], "")
+        );
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"UTF-8", "UTF-16LE", "UTF-16BE", "UTF-32LE"})
+    void testReadCStringTerminatorWidth(String charsetName) throws IOException {
+        var charset = Charset.forName(charsetName);
+        var data = "AB\0Z".getBytes(charset);
+        try (var source = BinarySource.wrap(Bytes.wrap(data))) {
+            assertThat(source.readCString(data.length, charset)).isEqualTo("AB");
+            assertThat(source.position()).isEqualTo(data.length);
+        }
+    }
+
+    @Test
+    void testReadCStringUtf16IgnoresMisalignedZeroPair() throws IOException {
+        // 'A' (41 00) followed by U+0100 (00 01): bytes 1..2 are 00 00 but straddle two code units
+        try (var source = bytes(0x41, 0x00, 0x00, 0x01, 0x00, 0x00)) {
+            assertThat(source.readCString(6, StandardCharsets.UTF_16LE)).isEqualTo("AĀ");
+        }
+    }
+
+    @Test
+    void testReadCStringUtf16WithOddSizeDoesNotReadPastBuffer() throws IOException {
+        try (var source = bytes('A', 0x00, 'B', 0x2A)) {
+            assertThat(source.readCString(3, StandardCharsets.UTF_16LE)).startsWith("A");
+            assertThat(source.position()).isEqualTo(3);
+            assertThat(source.readByte()).isEqualTo((byte) 0x2A);
+        }
+    }
+
+    @Test
+    void testReadCStringBeyondEndThrowsWithoutConsuming() throws IOException {
+        try (var source = bytes('a', 'b')) {
+            assertThatExceptionOfType(EOFException.class)
+                .isThrownBy(() -> source.readCString(3));
             assertThat(source.position()).isZero();
         }
     }
