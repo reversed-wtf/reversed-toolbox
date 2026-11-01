@@ -212,6 +212,36 @@ public abstract class BinarySource implements Closeable {
     }
 
     /**
+     * Reads a single unsigned byte.
+     *
+     * @return the value read, in {@code [0, 255]}
+     * @throws IOException if the read fails or no bytes remain
+     */
+    public final int readUnsignedByte() throws IOException {
+        return Byte.toUnsignedInt(readByte());
+    }
+
+    /**
+     * Reads a 16-bit unsigned integer.
+     *
+     * @return the value read, in {@code [0, 65535]}
+     * @throws IOException if the read fails or fewer than two bytes remain
+     */
+    public final int readUnsignedShort() throws IOException {
+        return Short.toUnsignedInt(readShort());
+    }
+
+    /**
+     * Reads a 32-bit unsigned integer.
+     *
+     * @return the value read, in {@code [0, 4294967295]}
+     * @throws IOException if the read fails or fewer than four bytes remain
+     */
+    public final long readUnsignedInt() throws IOException {
+        return Integer.toUnsignedLong(readInt());
+    }
+
+    /**
      * Reads {@code count} bytes into a new {@link Bytes}.
      *
      * @param count non-negative number of bytes to read

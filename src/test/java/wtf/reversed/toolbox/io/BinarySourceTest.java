@@ -121,6 +121,41 @@ class BinarySourceTest {
     }
 
     @Test
+    void testReadUnsignedByte() throws IOException {
+        try (var source = bytes(0x7F, 0x80, 0xFF)) {
+            assertThat(source.readUnsignedByte()).isEqualTo(0x7F);
+            assertThat(source.readUnsignedByte()).isEqualTo(0x80);
+            assertThat(source.readUnsignedByte()).isEqualTo(0xFF);
+            assertThat(source.position()).isEqualTo(3);
+        }
+    }
+
+    @Test
+    void testReadUnsignedShortBothEndians() throws IOException {
+        try (var source = bytes(0xFE, 0xFF, 0x80, 0x01)) {
+            assertThat(source.readUnsignedShort()).isEqualTo(0xFFFE);
+            source.order(ByteOrder.BIG_ENDIAN);
+            assertThat(source.readUnsignedShort()).isEqualTo(0x8001);
+        }
+    }
+
+    @Test
+    void testReadUnsignedIntBothEndians() throws IOException {
+        try (var source = bytes(0xFE, 0xFF, 0xFF, 0xFF, 0x80, 0x00, 0x00, 0x01)) {
+            assertThat(source.readUnsignedInt()).isEqualTo(0xFFFF_FFFEL);
+            source.order(ByteOrder.BIG_ENDIAN);
+            assertThat(source.readUnsignedInt()).isEqualTo(0x8000_0001L);
+        }
+    }
+
+    @Test
+    void testReadUnsignedIntBeyondRemainingThrows() throws IOException {
+        try (var source = bytes(0x01, 0x02, 0x03)) {
+            assertThatExceptionOfType(EOFException.class).isThrownBy(source::readUnsignedInt);
+        }
+    }
+
+    @Test
     void testReadFloat() throws IOException {
         var bits = Float.floatToRawIntBits(1.5f);
         try (var source = bytes(bits & 0xFF, (bits >>> 8) & 0xFF, (bits >>> 16) & 0xFF, (bits >>> 24) & 0xFF)) {
