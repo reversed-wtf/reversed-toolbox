@@ -12,6 +12,10 @@ import java.util.*;
 /**
  * Random-access source of binary data with a configurable byte order. Supports reading primitives, bulk reads into
  * typed buffers, strings, and arbitrary user objects via a {@link Mapper}.
+ * <p>
+ * Methods that read data, such as {@code readInt} or {@code expectInt}, start at the current
+ * {@link #position() position} and advance it by the number of bytes consumed. Multibyte values are decoded using the
+ * current {@link #order() byte order}, which defaults to {@link ByteOrder#LITTLE_ENDIAN little-endian}.
  */
 public abstract class BinarySource implements Closeable {
     final long size;
@@ -135,7 +139,7 @@ public abstract class BinarySource implements Closeable {
     public abstract void readBytes(Bytes.Mutable target) throws IOException;
 
     /**
-     * Reads a single signed byte and advances the cursor by one byte.
+     * Reads a single signed byte.
      *
      * @return the byte read
      * @throws IOException if the read fails or no bytes remain
@@ -143,7 +147,7 @@ public abstract class BinarySource implements Closeable {
     public abstract byte readByte() throws IOException;
 
     /**
-     * Reads a 16-bit signed integer using the current byte order and advances the cursor by two bytes.
+     * Reads a 16-bit signed integer.
      *
      * @return the value read
      * @throws IOException if the read fails or fewer than two bytes remain
@@ -151,7 +155,7 @@ public abstract class BinarySource implements Closeable {
     public abstract short readShort() throws IOException;
 
     /**
-     * Reads a 32-bit signed integer using the current byte order and advances the cursor by four bytes.
+     * Reads a 32-bit signed integer.
      *
      * @return the value read
      * @throws IOException if the read fails or fewer than four bytes remain
@@ -159,7 +163,7 @@ public abstract class BinarySource implements Closeable {
     public abstract int readInt() throws IOException;
 
     /**
-     * Reads a 64-bit signed integer using the current byte order and advances the cursor by eight bytes.
+     * Reads a 64-bit signed integer.
      *
      * @return the value read
      * @throws IOException if the read fails or fewer than eight bytes remain
@@ -224,7 +228,7 @@ public abstract class BinarySource implements Closeable {
     }
 
     /**
-     * Reads {@code count} 16-bit signed integers using the current byte order.
+     * Reads {@code count} 16-bit signed integers.
      *
      * @param count non-negative number of values to read
      * @return the values read
@@ -240,7 +244,7 @@ public abstract class BinarySource implements Closeable {
     }
 
     /**
-     * Reads {@code count} 32-bit signed integers using the current byte order.
+     * Reads {@code count} 32-bit signed integers.
      *
      * @param count non-negative number of values to read
      * @return the values read
@@ -256,7 +260,7 @@ public abstract class BinarySource implements Closeable {
     }
 
     /**
-     * Reads {@code count} 64-bit signed integers using the current byte order.
+     * Reads {@code count} 64-bit signed integers.
      *
      * @param count non-negative number of values to read
      * @return the values read
@@ -272,7 +276,7 @@ public abstract class BinarySource implements Closeable {
     }
 
     /**
-     * Reads {@code count} 32-bit single-precision floats using the current byte order.
+     * Reads {@code count} 32-bit single-precision floats.
      *
      * @param count non-negative number of values to read
      * @return the values read
@@ -288,7 +292,7 @@ public abstract class BinarySource implements Closeable {
     }
 
     /**
-     * Reads {@code count} 64-bit double-precision floats using the current byte order.
+     * Reads {@code count} 64-bit double-precision floats.
      *
      * @param count non-negative number of values to read
      * @return the values read
@@ -663,7 +667,7 @@ public abstract class BinarySource implements Closeable {
     @FunctionalInterface
     public interface Mapper<T> {
         /**
-         * Reads one object from {@code source}, advancing its cursor by however many bytes the encoding occupies.
+         * Reads one object from {@code source}.
          *
          * @param source source to read from
          * @return the decoded object
