@@ -2,6 +2,8 @@ package wtf.reversed.toolbox.io;
 
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.*;
+import org.junit.jupiter.params.*;
+import org.junit.jupiter.params.provider.*;
 import wtf.reversed.toolbox.collect.*;
 
 import java.io.*;
@@ -119,6 +121,41 @@ class BinarySourceTest {
     }
 
     @Test
+    void testReadUnsignedByte() throws IOException {
+        try (var source = bytes(0x7F, 0x80, 0xFF)) {
+            assertThat(source.readUnsignedByte()).isEqualTo(0x7F);
+            assertThat(source.readUnsignedByte()).isEqualTo(0x80);
+            assertThat(source.readUnsignedByte()).isEqualTo(0xFF);
+            assertThat(source.position()).isEqualTo(3);
+        }
+    }
+
+    @Test
+    void testReadUnsignedShortBothEndians() throws IOException {
+        try (var source = bytes(0xFE, 0xFF, 0x80, 0x01)) {
+            assertThat(source.readUnsignedShort()).isEqualTo(0xFFFE);
+            source.order(ByteOrder.BIG_ENDIAN);
+            assertThat(source.readUnsignedShort()).isEqualTo(0x8001);
+        }
+    }
+
+    @Test
+    void testReadUnsignedIntBothEndians() throws IOException {
+        try (var source = bytes(0xFE, 0xFF, 0xFF, 0xFF, 0x80, 0x00, 0x00, 0x01)) {
+            assertThat(source.readUnsignedInt()).isEqualTo(0xFFFF_FFFEL);
+            source.order(ByteOrder.BIG_ENDIAN);
+            assertThat(source.readUnsignedInt()).isEqualTo(0x8000_0001L);
+        }
+    }
+
+    @Test
+    void testReadUnsignedIntBeyondRemainingThrows() throws IOException {
+        try (var source = bytes(0x01, 0x02, 0x03)) {
+            assertThatExceptionOfType(EOFException.class).isThrownBy(source::readUnsignedInt);
+        }
+    }
+
+    @Test
     void testReadFloat() throws IOException {
         var bits = Float.floatToRawIntBits(1.5f);
         try (var source = bytes(bits & 0xFF, (bits >>> 8) & 0xFF, (bits >>> 16) & 0xFF, (bits >>> 24) & 0xFF)) {
@@ -176,6 +213,19 @@ class BinarySourceTest {
     void testReadBytesBeyondRemainingThrows() throws IOException {
         try (var source = bytes(0x01, 0x02)) {
             assertThatIOException().isThrownBy(() -> source.readBytes(5));
+        }
+    }
+
+    @Test
+    void testReadRemaining() throws IOException {
+        try (var source = bytes(0x01, 0x02, 0x03, 0x04)) {
+            source.readByte();
+            var read = source.readRemaining();
+            assertThat(read.length()).isEqualTo(3);
+            assertThat(read.get(0)).isEqualTo((byte) 0x02);
+            assertThat(read.get(2)).isEqualTo((byte) 0x04);
+            assertThat(source.remaining()).isZero();
+            assertThat(source.readRemaining().length()).isZero();
         }
     }
 
@@ -314,6 +364,69 @@ class BinarySourceTest {
     }
 
     @Test
+    void testReadCStringDefaultsToUtf8AndIgnoresGarbageAfterNull() throws IOException {
+        try (var source = bytes('c', 'a', 'f', 0xC3, 0xA9, 0x00, 0xCD, 0xCD, 0x01, 0x00, 0x00, 0x00)) {
+            assertThat(source.readCString(8)).isEqualTo("café");
+            assertThat(source.position()).isEqualTo(8);
+            assertThat(source.readInt()).isEqualTo(1);
+        }
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("cStringNullPositions")
+    void testReadCStringNullPosition(String name, byte[] data, String expected) throws IOException {
+        try (var source = BinarySource.wrap(Bytes.wrap(data))) {
+            assertThat(source.readCString(data.length)).isEqualTo(expected);
+            assertThat(source.position()).isEqualTo(data.length);
+        }
+    }
+
+    static List<Arguments> cStringNullPositions() {
+        return List.of(
+            Arguments.of("no null uses whole buffer", new byte[]{'a', 'b', 'c'}, "abc"),
+            Arguments.of("leading null is empty", new byte[]{0x00, 'a', 'b', 'c'}, ""),
+            Arguments.of("zero size is empty", new byte[0], "")
+        );
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"UTF-8", "UTF-16LE", "UTF-16BE", "UTF-32LE"})
+    void testReadCStringTerminatorWidth(String charsetName) throws IOException {
+        var charset = Charset.forName(charsetName);
+        var data = "AB\0Z".getBytes(charset);
+        try (var source = BinarySource.wrap(Bytes.wrap(data))) {
+            assertThat(source.readCString(data.length, charset)).isEqualTo("AB");
+            assertThat(source.position()).isEqualTo(data.length);
+        }
+    }
+
+    @Test
+    void testReadCStringUtf16IgnoresMisalignedZeroPair() throws IOException {
+        // 'A' (41 00) followed by U+0100 (00 01): bytes 1..2 are 00 00 but straddle two code units
+        try (var source = bytes(0x41, 0x00, 0x00, 0x01, 0x00, 0x00)) {
+            assertThat(source.readCString(6, StandardCharsets.UTF_16LE)).isEqualTo("AĀ");
+        }
+    }
+
+    @Test
+    void testReadCStringUtf16WithOddSizeDoesNotReadPastBuffer() throws IOException {
+        try (var source = bytes('A', 0x00, 'B', 0x2A)) {
+            assertThat(source.readCString(3, StandardCharsets.UTF_16LE)).startsWith("A");
+            assertThat(source.position()).isEqualTo(3);
+            assertThat(source.readByte()).isEqualTo((byte) 0x2A);
+        }
+    }
+
+    @Test
+    void testReadCStringBeyondEndThrowsWithoutConsuming() throws IOException {
+        try (var source = bytes('a', 'b')) {
+            assertThatExceptionOfType(EOFException.class)
+                .isThrownBy(() -> source.readCString(3));
+            assertThat(source.position()).isZero();
+        }
+    }
+
+    @Test
     void testReadStringIntLengthWithNegativeFromStreamThrows() throws IOException {
         try (var source = bytes(0xFF, 0xFF, 0xFF, 0xFF)) {
             assertThatIllegalArgumentException()
@@ -419,6 +532,49 @@ class BinarySourceTest {
         try (var source = bytes(0x01, 0x02)) {
             source.readByte();
             assertThatIOException().isThrownBy(source::expectEnd);
+        }
+    }
+
+    @Test
+    void testExpectZerosConsumesZeros() throws IOException {
+        try (var source = bytes(0x00, 0x00, 0x00, 0x05)) {
+            source.expectZeros(0);
+            source.expectZeros(3);
+            assertThat(source.position()).isEqualTo(3);
+        }
+    }
+
+    @Test
+    void testExpectZerosReportsPositionOfNonZeroByte() throws IOException {
+        try (var source = bytes(0x00, 0x00, 0x07, 0x00)) {
+            assertThatIOException()
+                .isThrownBy(() -> source.expectZeros(4))
+                .withMessageContaining("position 2");
+        }
+    }
+
+    @Test
+    void testExpectZerosBeyondRemainingThrowsWithoutConsuming() throws IOException {
+        try (var source = bytes(0x00, 0x00)) {
+            assertThatExceptionOfType(EOFException.class).isThrownBy(() -> source.expectZeros(3));
+            assertThat(source.position()).isZero();
+        }
+    }
+
+    @Test
+    void testExpectZerosRejectsNegative() throws IOException {
+        try (var source = bytes(0x00)) {
+            assertThatIllegalArgumentException().isThrownBy(() -> source.expectZeros(-1));
+        }
+    }
+
+    @Test
+    void testExpectPosition() throws IOException {
+        try (var source = bytes(0x01, 0x02, 0x03)) {
+            source.readByte();
+            assertThatNoException().isThrownBy(() -> source.expectPosition(1));
+            assertThatIOException().isThrownBy(() -> source.expectPosition(2));
+            assertThat(source.position()).isEqualTo(1);
         }
     }
 
@@ -676,6 +832,77 @@ class BinarySourceTest {
             var slice = source.slice(0, 2);
             slice.close();
             assertThat(source.readByte()).isEqualTo((byte) 0x10);
+        }
+    }
+
+    @Test
+    void testSliceInheritsByteOrder() throws IOException {
+        try (var source = bytes(0x00, 0x00, 0x00, 0x01)) {
+            source.order(ByteOrder.BIG_ENDIAN);
+            var slice = source.slice(0, 4);
+            assertThat(slice.order()).isEqualTo(ByteOrder.BIG_ENDIAN);
+            assertThat(slice.readInt()).isEqualTo(1);
+        }
+    }
+
+    @Test
+    void testSliceOnFileSourceInheritsByteOrder(@TempDir Path tempDir) throws IOException {
+        var path = tempDir.resolve("slice-order.bin");
+        Files.write(path, new byte[]{0x00, 0x00, 0x00, 0x00, 0x01});
+        try (var source = BinarySource.open(path)) {
+            source.order(ByteOrder.BIG_ENDIAN);
+            var slice = source.slice(1, 4);
+            assertThat(slice.order()).isEqualTo(ByteOrder.BIG_ENDIAN);
+            assertThat(slice.readInt()).isEqualTo(1);
+        }
+    }
+
+    @Test
+    void testSliceByteOrderIsIndependentAfterCreation() throws IOException {
+        try (var source = bytes(0x00, 0x01)) {
+            source.order(ByteOrder.BIG_ENDIAN);
+            var slice = source.slice(0, 2);
+            source.order(ByteOrder.LITTLE_ENDIAN);
+            assertThat(slice.order()).isEqualTo(ByteOrder.BIG_ENDIAN);
+            slice.order(ByteOrder.LITTLE_ENDIAN);
+            assertThat(slice.readShort()).isEqualTo((short) 0x0100);
+            source.order(ByteOrder.BIG_ENDIAN);
+            assertThat(source.readShort()).isEqualTo((short) 0x0001);
+        }
+    }
+
+    @Test
+    void testReadSliceAdvancesParent() throws IOException {
+        try (var source = bytes(0x00, 0x11, 0x22, 0x33, 0x44, 0x55)) {
+            source.readByte();
+            var slice = source.readSlice(3);
+            assertThat(source.position()).isEqualTo(4);
+            assertThat(slice.size()).isEqualTo(3);
+            assertThat(slice.position()).isZero();
+            assertThat(slice.readByte()).isEqualTo((byte) 0x11);
+            assertThat(source.readByte()).isEqualTo((byte) 0x44);
+        }
+    }
+
+    @Test
+    void testReadSliceOnFileSourceInheritsByteOrder(@TempDir Path tempDir) throws IOException {
+        var path = tempDir.resolve("read-slice.bin");
+        Files.write(path, new byte[]{0x7F, 0x00, 0x00, 0x00, 0x01, 0x10});
+        try (var source = BinarySource.open(path)) {
+            source.order(ByteOrder.BIG_ENDIAN);
+            source.readByte();
+            var slice = source.readSlice(4);
+            assertThat(source.readByte()).isEqualTo((byte) 0x10);
+            assertThat(slice.readInt()).isEqualTo(1);
+        }
+    }
+
+    @Test
+    void testReadSliceBeyondRemainingThrowsWithoutConsuming() throws IOException {
+        try (var source = bytes(0x01, 0x02, 0x03)) {
+            source.readByte();
+            assertThatExceptionOfType(EOFException.class).isThrownBy(() -> source.readSlice(3));
+            assertThat(source.position()).isEqualTo(1);
         }
     }
 

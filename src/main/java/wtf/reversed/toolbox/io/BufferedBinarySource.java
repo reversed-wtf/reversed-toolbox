@@ -42,7 +42,7 @@ abstract class BufferedBinarySource extends BinarySource {
     @Override
     public final BinarySource slice(long offset, long length) {
         Check.fromIndexSize(offset, length, this.size);
-        return new SliceBinarySource(this, offset, length);
+        return new SliceBinarySource(this, offset, length).order(order());
     }
 
     @Override
@@ -122,11 +122,11 @@ abstract class BufferedBinarySource extends BinarySource {
     }
 
     private void refill(int length) throws IOException {
-        ensureRemaining(length);
         int remaining = bufferRemaining();
         if (remaining >= length) {
             return;
         }
+        ensureRemaining(length);
 
         // First we have to move the leftover data to the front
         buffer.slice(bufferPosition, remaining).copyTo(buffer, 0);

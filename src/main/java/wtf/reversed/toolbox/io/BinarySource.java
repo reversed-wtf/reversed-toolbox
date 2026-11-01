@@ -12,6 +12,10 @@ import java.util.*;
 /**
  * Random-access source of binary data with a configurable byte order. Supports reading primitives, bulk reads into
  * typed buffers, strings, and arbitrary user objects via a {@link Mapper}.
+ * <p>
+ * Methods that read data, such as {@code readInt} or {@code expectInt}, start at the current
+ * {@link #position() position} and advance it by the number of bytes consumed. Multibyte values are decoded using the
+ * current {@link #order() byte order}, which defaults to {@link ByteOrder#LITTLE_ENDIAN little-endian}.
  */
 public abstract class BinarySource implements Closeable {
     final long size;
@@ -135,7 +139,7 @@ public abstract class BinarySource implements Closeable {
     public abstract void readBytes(Bytes.Mutable target) throws IOException;
 
     /**
-     * Reads a single signed byte and advances the cursor by one byte.
+     * Reads a single signed byte.
      *
      * @return the byte read
      * @throws IOException if the read fails or no bytes remain
@@ -143,7 +147,7 @@ public abstract class BinarySource implements Closeable {
     public abstract byte readByte() throws IOException;
 
     /**
-     * Reads a 16-bit signed integer using the current byte order and advances the cursor by two bytes.
+     * Reads a 16-bit signed integer.
      *
      * @return the value read
      * @throws IOException if the read fails or fewer than two bytes remain
@@ -151,7 +155,7 @@ public abstract class BinarySource implements Closeable {
     public abstract short readShort() throws IOException;
 
     /**
-     * Reads a 32-bit signed integer using the current byte order and advances the cursor by four bytes.
+     * Reads a 32-bit signed integer.
      *
      * @return the value read
      * @throws IOException if the read fails or fewer than four bytes remain
@@ -159,7 +163,7 @@ public abstract class BinarySource implements Closeable {
     public abstract int readInt() throws IOException;
 
     /**
-     * Reads a 64-bit signed integer using the current byte order and advances the cursor by eight bytes.
+     * Reads a 64-bit signed integer.
      *
      * @return the value read
      * @throws IOException if the read fails or fewer than eight bytes remain
@@ -208,6 +212,36 @@ public abstract class BinarySource implements Closeable {
     }
 
     /**
+     * Reads a single unsigned byte.
+     *
+     * @return the value read, in {@code [0, 255]}
+     * @throws IOException if the read fails or no bytes remain
+     */
+    public final int readUnsignedByte() throws IOException {
+        return Byte.toUnsignedInt(readByte());
+    }
+
+    /**
+     * Reads a 16-bit unsigned integer.
+     *
+     * @return the value read, in {@code [0, 65535]}
+     * @throws IOException if the read fails or fewer than two bytes remain
+     */
+    public final int readUnsignedShort() throws IOException {
+        return Short.toUnsignedInt(readShort());
+    }
+
+    /**
+     * Reads a 32-bit unsigned integer.
+     *
+     * @return the value read, in {@code [0, 4294967295]}
+     * @throws IOException if the read fails or fewer than four bytes remain
+     */
+    public final long readUnsignedInt() throws IOException {
+        return Integer.toUnsignedLong(readInt());
+    }
+
+    /**
      * Reads {@code count} bytes into a new {@link Bytes}.
      *
      * @param count non-negative number of bytes to read
@@ -224,7 +258,7 @@ public abstract class BinarySource implements Closeable {
     }
 
     /**
-     * Reads {@code count} 16-bit signed integers using the current byte order.
+     * Reads {@code count} 16-bit signed integers.
      *
      * @param count non-negative number of values to read
      * @return the values read
@@ -240,7 +274,7 @@ public abstract class BinarySource implements Closeable {
     }
 
     /**
-     * Reads {@code count} 32-bit signed integers using the current byte order.
+     * Reads {@code count} 32-bit signed integers.
      *
      * @param count non-negative number of values to read
      * @return the values read
@@ -256,7 +290,7 @@ public abstract class BinarySource implements Closeable {
     }
 
     /**
-     * Reads {@code count} 64-bit signed integers using the current byte order.
+     * Reads {@code count} 64-bit signed integers.
      *
      * @param count non-negative number of values to read
      * @return the values read
@@ -272,7 +306,7 @@ public abstract class BinarySource implements Closeable {
     }
 
     /**
-     * Reads {@code count} 32-bit single-precision floats using the current byte order.
+     * Reads {@code count} 32-bit single-precision floats.
      *
      * @param count non-negative number of values to read
      * @return the values read
@@ -288,7 +322,7 @@ public abstract class BinarySource implements Closeable {
     }
 
     /**
-     * Reads {@code count} 64-bit double-precision floats using the current byte order.
+     * Reads {@code count} 64-bit double-precision floats.
      *
      * @param count non-negative number of values to read
      * @return the values read
@@ -346,6 +380,33 @@ public abstract class BinarySource implements Closeable {
         return result;
     }
 
+    /**
+     * Reads all bytes from the current position to the end of the source.
+     *
+     * @return the bytes read, empty if none remain
+     * @throws IOException if the read fails or more than {@code Integer.MAX_VALUE - 8} bytes remain
+     */
+    public final Bytes readRemaining() throws IOException {
+        if (remaining() > Integer.MAX_VALUE - 8) { // ArraysSupport.SOFT_MAX_ARRAY_LENGTH
+            throw new IOException("Remaining bytes (" + remaining() + ") exceed the maximum array length");
+        }
+        return readBytes((int) remaining());
+    }
+
+    /**
+     * Reads a slice of {@code length} bytes. The slice starts at its own position zero and inherits the byte order.
+     *
+     * @param length non-negative length of the slice in bytes
+     * @return the slice
+     * @throws IOException if insufficient bytes remain
+     * @see #slice(long, long)
+     */
+    public final BinarySource readSlice(long length) throws IOException {
+        ensureRemaining(length);
+        BinarySource result = slice(position(), length);
+        skip(length);
+        return result;
+    }
 
     /**
      * Reads a boolean encoded in the given format. Only {@code 0} and {@code 1} are accepted.
@@ -389,8 +450,8 @@ public abstract class BinarySource implements Closeable {
     public final String readString(StringFormat format, Charset charset) throws IOException {
         Check.nonNull(charset, "charset");
         return switch (format) {
-            case BYTE_LENGTH -> readString(Byte.toUnsignedInt(readByte()), charset);
-            case SHORT_LENGTH -> readString(Short.toUnsignedInt(readShort()), charset);
+            case BYTE_LENGTH -> readString(readUnsignedByte(), charset);
+            case SHORT_LENGTH -> readString(readUnsignedShort(), charset);
             case INT_LENGTH -> readString(readInt(), charset);
             case NULL_TERM -> readNullTerminatedString(charset);
         };
@@ -418,10 +479,41 @@ public abstract class BinarySource implements Closeable {
     public final String readString(int length, Charset charset) throws IOException {
         Check.positiveOrZero(length, "length");
         Check.nonNull(charset, "charset");
-        if (length == 0) {
-            return "";
-        }
         return readBytes(length).toString(charset);
+    }
+
+    /**
+     * Reads a null-terminated UTF-8 string from a fixed-size buffer, consuming all {@code size} bytes.
+     *
+     * @param size non-negative size of the buffer in bytes
+     * @return the decoded string, up to the first null terminator
+     * @throws IOException if the read fails or insufficient bytes remain
+     */
+    public final String readCString(int size) throws IOException {
+        return readCString(size, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Reads a null-terminated string in the given charset from a fixed-size buffer, consuming all {@code size} bytes.
+     * Bytes after the terminator are ignored; without a terminator the whole buffer is decoded.
+     *
+     * @param size    non-negative size of the buffer in bytes
+     * @param charset charset to decode with
+     * @return the decoded string, up to the first null terminator
+     * @throws IOException if the read fails or insufficient bytes remain
+     */
+    public final String readCString(int size, Charset charset) throws IOException {
+        Check.positiveOrZero(size, "size");
+        Check.nonNull(charset, "charset");
+
+        Bytes bytes = readBytes(size);
+        int length = switch (terminatorWidth(charset)) {
+            case 1 -> bytes.indexOf((byte) 0);
+            case 2 -> indexOfZero(bytes, Short.BYTES);
+            case 4 -> indexOfZero(bytes, Integer.BYTES);
+            default -> throw new AssertionError();
+        };
+        return bytes.slice(0, length < 0 ? size : length).toString(charset);
     }
 
     /**
@@ -561,6 +653,22 @@ public abstract class BinarySource implements Closeable {
     }
 
     /**
+     * Reads {@code count} bytes and throws if any of them is not zero.
+     *
+     * @param count non-negative number of bytes to read
+     * @throws IOException if the read fails, insufficient bytes remain, or a byte is not zero
+     */
+    public final void expectZeros(int count) throws IOException {
+        Check.positiveOrZero(count, "count");
+        ensureRemaining(count);
+        for (int i = 0; i < count; i++) {
+            if (readByte() != 0) {
+                throw new IOException("Expected " + count + " zero bytes, but got non-zero byte at position " + (position() - 1));
+            }
+        }
+    }
+
+    /**
      * Throws unless the cursor is at the end of this source.
      *
      * @throws IOException if any bytes remain
@@ -568,6 +676,18 @@ public abstract class BinarySource implements Closeable {
     public final void expectEnd() throws IOException {
         if (remaining() > 0) {
             throw new IOException("Expected end of stream, but " + remaining() + " bytes remain");
+        }
+    }
+
+    /**
+     * Throws unless the cursor is at {@code position}.
+     *
+     * @param position expected position
+     * @throws IOException if the cursor is elsewhere
+     */
+    public final void expectPosition(long position) throws IOException {
+        if (position() != position) {
+            throw new IOException("Expected position " + position + ", but got " + position());
         }
     }
 
@@ -590,55 +710,38 @@ public abstract class BinarySource implements Closeable {
     }
 
     private String readNullTerminatedString(Charset charset) throws IOException {
+        int width = terminatorWidth(charset);
+        ByteArrayOutputStream result = new ByteArrayOutputStream();
+        byte[] unit = new byte[width];
+        while (true) {
+            boolean zero = true;
+            for (int i = 0; i < width; i++) {
+                unit[i] = readByte();
+                zero &= unit[i] == 0;
+            }
+            if (zero) {
+                return result.toString(charset);
+            }
+            result.write(unit);
+        }
+    }
+
+    private int terminatorWidth(Charset charset) {
         return (switch (charset.name()) {
-            case "UTF-16", "UTF-16BE", "UTF-16LE" -> readNullTerminatedString2();
-            case "UTF-32", "UTF-32BE", "UTF-32LE" -> readNullTerminatedString4();
-            default -> readNullTerminatedString1();
-        }).toString(charset);
+            case "UTF-16", "UTF-16BE", "UTF-16LE" -> 2;
+            case "UTF-32", "UTF-32BE", "UTF-32LE" -> 4;
+            default -> 1;
+        });
     }
 
-    private ByteArrayOutputStream readNullTerminatedString1() throws IOException {
-        ByteArrayOutputStream result = new ByteArrayOutputStream();
-        while (true) {
-            byte b0 = readByte();
-            if (b0 == 0) {
-                break;
+    private int indexOfZero(Bytes bytes, int width) {
+        for (int i = 0; i + width <= bytes.length(); i += width) {
+            boolean zero = width == Short.BYTES ? bytes.getShort(i) == 0 : bytes.getInt(i) == 0;
+            if (zero) {
+                return i;
             }
-            result.write(b0);
         }
-        return result;
-    }
-
-    private ByteArrayOutputStream readNullTerminatedString2() throws IOException {
-        ByteArrayOutputStream result = new ByteArrayOutputStream();
-        while (true) {
-            byte b0 = readByte();
-            byte b1 = readByte();
-            if (b0 == 0 && b1 == 0) {
-                break;
-            }
-            result.write(b0);
-            result.write(b1);
-        }
-        return result;
-    }
-
-    private ByteArrayOutputStream readNullTerminatedString4() throws IOException {
-        ByteArrayOutputStream result = new ByteArrayOutputStream();
-        while (true) {
-            byte b0 = readByte();
-            byte b1 = readByte();
-            byte b2 = readByte();
-            byte b3 = readByte();
-            if (b0 == 0 && b1 == 0 && b2 == 0 && b3 == 0) {
-                break;
-            }
-            result.write(b0);
-            result.write(b1);
-            result.write(b2);
-            result.write(b3);
-        }
-        return result;
+        return -1;
     }
 
     /**
@@ -649,7 +752,7 @@ public abstract class BinarySource implements Closeable {
     @FunctionalInterface
     public interface Mapper<T> {
         /**
-         * Reads one object from {@code source}, advancing its cursor by however many bytes the encoding occupies.
+         * Reads one object from {@code source}.
          *
          * @param source source to read from
          * @return the decoded object
