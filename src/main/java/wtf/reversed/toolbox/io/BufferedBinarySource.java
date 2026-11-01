@@ -122,11 +122,11 @@ abstract class BufferedBinarySource extends BinarySource {
     }
 
     private void refill(int length) throws IOException {
-        ensureRemaining(length);
         int remaining = bufferRemaining();
         if (remaining >= length) {
             return;
         }
+        ensureRemaining(length);
 
         // First we have to move the leftover data to the front
         buffer.slice(bufferPosition, remaining).copyTo(buffer, 0);
