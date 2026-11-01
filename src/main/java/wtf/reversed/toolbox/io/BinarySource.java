@@ -450,8 +450,8 @@ public abstract class BinarySource implements Closeable {
     public final String readString(StringFormat format, Charset charset) throws IOException {
         Check.nonNull(charset, "charset");
         return switch (format) {
-            case BYTE_LENGTH -> readString(Byte.toUnsignedInt(readByte()), charset);
-            case SHORT_LENGTH -> readString(Short.toUnsignedInt(readShort()), charset);
+            case BYTE_LENGTH -> readString(readUnsignedByte(), charset);
+            case SHORT_LENGTH -> readString(readUnsignedShort(), charset);
             case INT_LENGTH -> readString(readInt(), charset);
             case NULL_TERM -> readNullTerminatedString(charset);
         };

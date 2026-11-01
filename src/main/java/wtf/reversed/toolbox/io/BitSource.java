@@ -167,7 +167,7 @@ public final class BitSource implements Closeable {
             }
             // Handle the end
             while (bitCount < count && source.remaining() > 0) {
-                refillByte(Byte.toUnsignedLong(source.readByte()));
+                refillByte(source.readUnsignedByte());
             }
         }
     }
