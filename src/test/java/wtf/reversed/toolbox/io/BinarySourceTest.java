@@ -536,6 +536,49 @@ class BinarySourceTest {
     }
 
     @Test
+    void testExpectZerosConsumesZeros() throws IOException {
+        try (var source = bytes(0x00, 0x00, 0x00, 0x05)) {
+            source.expectZeros(0);
+            source.expectZeros(3);
+            assertThat(source.position()).isEqualTo(3);
+        }
+    }
+
+    @Test
+    void testExpectZerosReportsPositionOfNonZeroByte() throws IOException {
+        try (var source = bytes(0x00, 0x00, 0x07, 0x00)) {
+            assertThatIOException()
+                .isThrownBy(() -> source.expectZeros(4))
+                .withMessageContaining("position 2");
+        }
+    }
+
+    @Test
+    void testExpectZerosBeyondRemainingThrowsWithoutConsuming() throws IOException {
+        try (var source = bytes(0x00, 0x00)) {
+            assertThatExceptionOfType(EOFException.class).isThrownBy(() -> source.expectZeros(3));
+            assertThat(source.position()).isZero();
+        }
+    }
+
+    @Test
+    void testExpectZerosRejectsNegative() throws IOException {
+        try (var source = bytes(0x00)) {
+            assertThatIllegalArgumentException().isThrownBy(() -> source.expectZeros(-1));
+        }
+    }
+
+    @Test
+    void testExpectPosition() throws IOException {
+        try (var source = bytes(0x01, 0x02, 0x03)) {
+            source.readByte();
+            assertThatNoException().isThrownBy(() -> source.expectPosition(1));
+            assertThatIOException().isThrownBy(() -> source.expectPosition(2));
+            assertThat(source.position()).isEqualTo(1);
+        }
+    }
+
+    @Test
     void testEnsureRemainingSufficient() throws IOException {
         try (var source = bytes(0x01, 0x02, 0x03)) {
             assertThatNoException().isThrownBy(() -> source.ensureRemaining(3));

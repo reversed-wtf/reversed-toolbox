@@ -653,6 +653,22 @@ public abstract class BinarySource implements Closeable {
     }
 
     /**
+     * Reads {@code count} bytes and throws if any of them is not zero.
+     *
+     * @param count non-negative number of bytes to read
+     * @throws IOException if the read fails, insufficient bytes remain, or a byte is not zero
+     */
+    public final void expectZeros(int count) throws IOException {
+        Check.positiveOrZero(count, "count");
+        ensureRemaining(count);
+        for (int i = 0; i < count; i++) {
+            if (readByte() != 0) {
+                throw new IOException("Expected " + count + " zero bytes, but got non-zero byte at position " + (position() - 1));
+            }
+        }
+    }
+
+    /**
      * Throws unless the cursor is at the end of this source.
      *
      * @throws IOException if any bytes remain
@@ -660,6 +676,18 @@ public abstract class BinarySource implements Closeable {
     public final void expectEnd() throws IOException {
         if (remaining() > 0) {
             throw new IOException("Expected end of stream, but " + remaining() + " bytes remain");
+        }
+    }
+
+    /**
+     * Throws unless the cursor is at {@code position}.
+     *
+     * @param position expected position
+     * @throws IOException if the cursor is elsewhere
+     */
+    public final void expectPosition(long position) throws IOException {
+        if (position() != position) {
+            throw new IOException("Expected position " + position + ", but got " + position());
         }
     }
 
