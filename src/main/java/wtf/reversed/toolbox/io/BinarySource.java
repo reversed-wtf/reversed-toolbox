@@ -380,6 +380,33 @@ public abstract class BinarySource implements Closeable {
         return result;
     }
 
+    /**
+     * Reads all bytes from the current position to the end of the source.
+     *
+     * @return the bytes read, empty if none remain
+     * @throws IOException if the read fails or more than {@code Integer.MAX_VALUE - 8} bytes remain
+     */
+    public final Bytes readRemaining() throws IOException {
+        if (remaining() > Integer.MAX_VALUE - 8) { // ArraysSupport.SOFT_MAX_ARRAY_LENGTH
+            throw new IOException("Remaining bytes (" + remaining() + ") exceed the maximum array length");
+        }
+        return readBytes((int) remaining());
+    }
+
+    /**
+     * Reads a slice of {@code length} bytes. The slice starts at its own position zero and inherits the byte order.
+     *
+     * @param length non-negative length of the slice in bytes
+     * @return the slice
+     * @throws IOException if insufficient bytes remain
+     * @see #slice(long, long)
+     */
+    public final BinarySource readSlice(long length) throws IOException {
+        ensureRemaining(length);
+        BinarySource result = slice(position(), length);
+        skip(length);
+        return result;
+    }
 
     /**
      * Reads a boolean encoded in the given format. Only {@code 0} and {@code 1} are accepted.

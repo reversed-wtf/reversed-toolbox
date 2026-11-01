@@ -217,6 +217,19 @@ class BinarySourceTest {
     }
 
     @Test
+    void testReadRemaining() throws IOException {
+        try (var source = bytes(0x01, 0x02, 0x03, 0x04)) {
+            source.readByte();
+            var read = source.readRemaining();
+            assertThat(read.length()).isEqualTo(3);
+            assertThat(read.get(0)).isEqualTo((byte) 0x02);
+            assertThat(read.get(2)).isEqualTo((byte) 0x04);
+            assertThat(source.remaining()).isZero();
+            assertThat(source.readRemaining().length()).isZero();
+        }
+    }
+
+    @Test
     void testReadShortsCount() throws IOException {
         try (var source = bytes(0x01, 0x00, 0x02, 0x00, 0x03, 0x00)) {
             var read = source.readShorts(3);
@@ -812,6 +825,41 @@ class BinarySourceTest {
             assertThat(slice.readShort()).isEqualTo((short) 0x0100);
             source.order(ByteOrder.BIG_ENDIAN);
             assertThat(source.readShort()).isEqualTo((short) 0x0001);
+        }
+    }
+
+    @Test
+    void testReadSliceAdvancesParent() throws IOException {
+        try (var source = bytes(0x00, 0x11, 0x22, 0x33, 0x44, 0x55)) {
+            source.readByte();
+            var slice = source.readSlice(3);
+            assertThat(source.position()).isEqualTo(4);
+            assertThat(slice.size()).isEqualTo(3);
+            assertThat(slice.position()).isZero();
+            assertThat(slice.readByte()).isEqualTo((byte) 0x11);
+            assertThat(source.readByte()).isEqualTo((byte) 0x44);
+        }
+    }
+
+    @Test
+    void testReadSliceOnFileSourceInheritsByteOrder(@TempDir Path tempDir) throws IOException {
+        var path = tempDir.resolve("read-slice.bin");
+        Files.write(path, new byte[]{0x7F, 0x00, 0x00, 0x00, 0x01, 0x10});
+        try (var source = BinarySource.open(path)) {
+            source.order(ByteOrder.BIG_ENDIAN);
+            source.readByte();
+            var slice = source.readSlice(4);
+            assertThat(source.readByte()).isEqualTo((byte) 0x10);
+            assertThat(slice.readInt()).isEqualTo(1);
+        }
+    }
+
+    @Test
+    void testReadSliceBeyondRemainingThrowsWithoutConsuming() throws IOException {
+        try (var source = bytes(0x01, 0x02, 0x03)) {
+            source.readByte();
+            assertThatExceptionOfType(EOFException.class).isThrownBy(() -> source.readSlice(3));
+            assertThat(source.position()).isEqualTo(1);
         }
     }
 
