@@ -10,24 +10,26 @@ import java.util.*;
 
 /**
  * A sealed abstract class representing a view over a segment of a byte array. Subclasses of this class provide
- * specialized access to the data for various data types such as bytes, shorts, ints, longs, floats, and doubles.
+ * specialized access to the data for various data types such as bytes, chars, shorts, ints, longs, floats, and doubles.
  * <p>
  * All data is stored in little-endian format. This is important when using {@link #asBytes()} or any of the other
  * conversion methods from bytes to other types.
  */
 public sealed abstract class Slice
-    permits Bytes, Shorts, Ints, Longs, Floats, Doubles {
+    permits Bytes, Chars, Shorts, Ints, Longs, Floats, Doubles {
 
     static final byte[] EMPTY_ARRAY = new byte[0];
 
     static final HashFunction HASH = HashFunction.xxHash64(0L);
 
+    static final VarHandle VH_CHAR_LE = MethodHandles.byteArrayViewVarHandle(char[].class, ByteOrder.LITTLE_ENDIAN).withInvokeExactBehavior();
     static final VarHandle VH_SHORT_LE = MethodHandles.byteArrayViewVarHandle(short[].class, ByteOrder.LITTLE_ENDIAN).withInvokeExactBehavior();
     static final VarHandle VH_INT_LE = MethodHandles.byteArrayViewVarHandle(int[].class, ByteOrder.LITTLE_ENDIAN).withInvokeExactBehavior();
     static final VarHandle VH_LONG_LE = MethodHandles.byteArrayViewVarHandle(long[].class, ByteOrder.LITTLE_ENDIAN).withInvokeExactBehavior();
     static final VarHandle VH_FLOAT_LE = MethodHandles.byteArrayViewVarHandle(float[].class, ByteOrder.LITTLE_ENDIAN).withInvokeExactBehavior();
     static final VarHandle VH_DOUBLE_LE = MethodHandles.byteArrayViewVarHandle(double[].class, ByteOrder.LITTLE_ENDIAN).withInvokeExactBehavior();
 
+    static final VarHandle VH_CHAR_BE = MethodHandles.byteArrayViewVarHandle(char[].class, ByteOrder.BIG_ENDIAN).withInvokeExactBehavior();
     static final VarHandle VH_SHORT_BE = MethodHandles.byteArrayViewVarHandle(short[].class, ByteOrder.BIG_ENDIAN).withInvokeExactBehavior();
     static final VarHandle VH_INT_BE = MethodHandles.byteArrayViewVarHandle(int[].class, ByteOrder.BIG_ENDIAN).withInvokeExactBehavior();
     static final VarHandle VH_LONG_BE = MethodHandles.byteArrayViewVarHandle(long[].class, ByteOrder.BIG_ENDIAN).withInvokeExactBehavior();

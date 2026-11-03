@@ -4,6 +4,7 @@ import java.nio.*;
 
 enum SliceType {
     Bytes(byte.class, Byte.class, ByteBuffer.class, 1),
+    Chars(char.class, Character.class, CharBuffer.class, 2),
     Shorts(short.class, Short.class, ShortBuffer.class, 2),
     Ints(int.class, Integer.class, IntBuffer.class, 4),
     Longs(long.class, Long.class, LongBuffer.class, 8),

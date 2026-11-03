@@ -45,6 +45,11 @@ public sealed class Bytes extends Slice implements Comparable<Bytes> {
         return getInternal(index);
     }
 
+    public char getChar(int offset) {
+        Check.fromIndexSize(offset, Character.BYTES, length);
+        return (char) VH_CHAR_LE.get(array, this.offset + offset);
+    }
+
     public short getShort(int offset) {
         Check.fromIndexSize(offset, Short.BYTES, length);
         return (short) VH_SHORT_LE.get(array, this.offset + offset);
@@ -121,6 +126,10 @@ public sealed class Bytes extends Slice implements Comparable<Bytes> {
     @Override
     public Bytes asBytes() {
         return this;
+    }
+
+    public Chars asChars() {
+        return new Chars(array, offset, length);
     }
 
     public Shorts asShorts() {
@@ -212,6 +221,12 @@ public sealed class Bytes extends Slice implements Comparable<Bytes> {
             return setInternal(index, value);
         }
 
+        public Mutable setChar(int offset, char value) {
+            Check.fromIndexSize(offset, Character.BYTES, this.length);
+            VH_CHAR_LE.set(array, this.offset + offset, value);
+            return this;
+        }
+
         public Mutable setShort(int offset, short value) {
             Check.fromIndexSize(offset, Short.BYTES, this.length);
             VH_SHORT_LE.set(array, this.offset + offset, value);
@@ -249,6 +264,10 @@ public sealed class Bytes extends Slice implements Comparable<Bytes> {
 
         public ByteBuffer asMutableBuffer() {
             return asByteBuffer().slice();
+        }
+
+        public Chars.Mutable asChars() {
+            return new Chars.Mutable(array, offset, length);
         }
 
         public Shorts.Mutable asShorts() {
