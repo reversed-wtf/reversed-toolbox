@@ -21,7 +21,13 @@ public abstract class BinarySource implements Closeable {
     final long size;
     boolean bigEndian;
 
-    BinarySource(long size) {
+    /**
+     * Creates a source with the given size and little-endian byte order.
+     *
+     * @param size total size in bytes
+     * @throws IllegalArgumentException if {@code size} is negative
+     */
+    protected BinarySource(long size) {
         this.size = Check.positiveOrZero(size, "size");
         this.bigEndian = false;
     }
