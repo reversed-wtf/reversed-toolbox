@@ -335,7 +335,7 @@ final class SliceGenerator {
 
     public static CodeBlock generateEquals(String left, String right, SliceType type) {
         return switch (type) {
-            case Bytes, Shorts, Ints, Longs -> CodeBlock.of("$L == $L", left, right);
+            case Bytes, Chars, Shorts, Ints, Longs -> CodeBlock.of("$L == $L", left, right);
             case Floats ->
                 CodeBlock.of("$T.floatToRawIntBits($L) == $T.floatToRawIntBits($L)", Float.class, left, Float.class, right);
             case Doubles ->
@@ -485,13 +485,13 @@ final class SliceGenerator {
 
     private MethodSpec generateStream() {
         var streamType = switch (type) {
-            case Bytes, Shorts, Ints -> IntStream.class;
+            case Bytes, Chars, Shorts, Ints -> IntStream.class;
             case Longs -> LongStream.class;
             case Floats, Doubles -> DoubleStream.class;
         };
 
         var streamMethod = switch (type) {
-            case Bytes, Shorts, Ints -> "";
+            case Bytes, Chars, Shorts, Ints -> "";
             case Longs -> "ToLong";
             case Floats, Doubles -> "ToDouble";
         };
@@ -642,7 +642,7 @@ final class SliceGenerator {
 
         var fastPathCheck = switch (type) {
             case Bytes -> null;
-            case Shorts -> CodeBlock.of("value == (value & 0xFF) * 0x0101");
+            case Chars, Shorts -> CodeBlock.of("value == (value & 0xFF) * 0x0101");
             case Ints -> CodeBlock.of("value == (value & 0xFF) * 0x0101_0101");
             case Longs -> CodeBlock.of("value == (value & 0xFF) * 0x0101_0101_0101_0101L");
             case Floats -> CodeBlock.of("$T.floatToRawIntBits(value) == 0", Float.class);
@@ -651,7 +651,7 @@ final class SliceGenerator {
 
         var fillValue = switch (type) {
             case Bytes -> CodeBlock.of("value");
-            case Shorts, Ints, Longs -> CodeBlock.of("(byte) value");
+            case Chars, Shorts, Ints, Longs -> CodeBlock.of("(byte) value");
             case Floats, Doubles -> CodeBlock.of("(byte) 0");
         };
 
