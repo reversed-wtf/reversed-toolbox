@@ -47,6 +47,10 @@ abstract class BufferedBinarySource extends BinarySource {
 
     @Override
     public final void readBytes(Bytes.Mutable target) throws IOException {
+        if (target.length() == 0) {
+            return;
+        }
+
         ensureRemaining(target.length());
 
         // If the buffer has enough data, just copy the data and return
