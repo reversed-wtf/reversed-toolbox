@@ -1,22 +1,18 @@
 package wtf.reversed.toolbox.type;
 
+import wtf.reversed.toolbox.util.*;
+
 import java.text.*;
 
 public final class FileCount extends Amount.OfLong<FileCount> {
     public static final FileCount ZERO = new FileCount(0);
 
-    private FileCount(long value) {
-        super(value);
+    private FileCount(long count) {
+        super(Check.nonNegative(count, "count"));
     }
 
     public static FileCount of(long count) {
-        if (count < 0) {
-            throw new IllegalArgumentException("count must be positive: " + count);
-        }
-        if (count == 0) {
-            return ZERO;
-        }
-        return new FileCount(count);
+        return count == 0 ? ZERO : new FileCount(count);
     }
 
     @Override

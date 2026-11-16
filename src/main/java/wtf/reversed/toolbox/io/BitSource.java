@@ -64,7 +64,7 @@ public final class BitSource implements Closeable {
      * @throws EOFException if fewer than {@code count} bits remain
      */
     public int read(int count) throws IOException {
-        Check.argument(0 <= count && count <= 31, "count must be between 0 and 31 inclusive");
+        Check.between(count, 0, 31, "count");
         return (int) readLong(count);
     }
 
@@ -75,7 +75,7 @@ public final class BitSource implements Closeable {
      * @throws EOFException if fewer than {@code count} bits remain
      */
     public long readLong(int count) throws IOException {
-        Check.argument(0 <= count && count <= 57, "count must be between 0 and 57 inclusive");
+        Check.between(count, 0, 57, "count");
         refillStrict(count);
         long result = peekBits(count);
         consume(count);
@@ -106,7 +106,7 @@ public final class BitSource implements Closeable {
      * @param count number of bits to peek, in {@code [0, 31]}
      */
     public int peek(int count) throws IOException {
-        Check.argument(0 <= count && count <= 31, "count must be between 0 and 31 inclusive");
+        Check.between(count, 0, 31, "count");
         return (int) peekLong(count);
     }
 
@@ -116,7 +116,7 @@ public final class BitSource implements Closeable {
      * @param count number of bits to peek, in {@code [0, 57]}
      */
     public long peekLong(int count) throws IOException {
-        Check.argument(0 <= count && count <= 57, "count must be between 0 and 57 inclusive");
+        Check.between(count, 0, 57, "count");
         refill(count);
         return peekBits(count);
     }
@@ -129,7 +129,7 @@ public final class BitSource implements Closeable {
      * @param count number of bits to skip, in {@code [0, 57]}
      */
     public void skip(int count) {
-        Check.argument(0 <= count && count <= 57, "count must be between 0 and 57 inclusive");
+        Check.between(count, 0, 57, "count");
         consume(count);
     }
 

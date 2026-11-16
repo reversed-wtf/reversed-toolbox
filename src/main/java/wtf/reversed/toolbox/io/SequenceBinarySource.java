@@ -11,8 +11,7 @@ final class SequenceBinarySource extends BufferedBinarySource {
     private BinarySource source;
 
     SequenceBinarySource(List<? extends BinarySource> sources) {
-        Check.nonNull(sources, "sources");
-        Check.argument(!sources.isEmpty(), "At least one reader must be provided");
+        Check.nonEmpty(sources, "sources");
         super(sources.stream().mapToLong(BinarySource::size).sum()); // This is weird
 
         long offset = 0;
@@ -43,7 +42,7 @@ final class SequenceBinarySource extends BufferedBinarySource {
 
     private void reposition(long position) {
         var entry = sources.floorEntry(position);
-        long base = (long) entry.getKey();
+        long base = entry.getKey();
         source = entry.getValue();
         source.position(position - base);
     }

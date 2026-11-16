@@ -1,20 +1,16 @@
 package wtf.reversed.toolbox.type;
 
+import wtf.reversed.toolbox.util.*;
+
 public final class FileSize extends Amount.OfLong<FileSize> {
     public static final FileSize ZERO = new FileSize(0);
 
-    private FileSize(long value) {
-        super(value);
+    private FileSize(long bytes) {
+        super(Check.nonNegative(bytes, "bytes"));
     }
 
     public static FileSize ofBytes(long bytes) {
-        if (bytes < 0) {
-            throw new IllegalArgumentException("size must be positive: " + bytes);
-        }
-        if (bytes == 0) {
-            return ZERO;
-        }
-        return new FileSize(bytes);
+        return bytes == 0 ? ZERO : new FileSize(bytes);
     }
 
     public long toBytes() {

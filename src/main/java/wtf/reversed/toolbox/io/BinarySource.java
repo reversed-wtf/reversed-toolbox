@@ -28,7 +28,7 @@ public abstract class BinarySource implements Closeable {
      * @throws IllegalArgumentException if {@code size} is negative
      */
     protected BinarySource(long size) {
-        this.size = Check.positiveOrZero(size, "size");
+        this.size = Check.nonNegative(size, "size");
         this.bigEndian = false;
     }
 
@@ -109,7 +109,7 @@ public abstract class BinarySource implements Closeable {
      * @return this source, for chaining
      */
     public final BinarySource skip(long count) {
-        return position(Math.addExact(position(), Check.positiveOrZero(count, "count")));
+        return position(Math.addExact(position(), Check.nonNegative(count, "count")));
     }
 
     /**
@@ -255,7 +255,7 @@ public abstract class BinarySource implements Closeable {
      * @throws IOException if the read fails or fewer than {@code count} bytes remain
      */
     public final Bytes readBytes(int count) throws IOException {
-        Check.positiveOrZero(count, "count");
+        Check.nonNegative(count, "count");
         if (count == 0) {
             return Bytes.empty();
         }
@@ -271,7 +271,7 @@ public abstract class BinarySource implements Closeable {
      * @throws IOException if the read fails or insufficient bytes remain
      */
     public final Shorts readShorts(int count) throws IOException {
-        Check.positiveOrZero(count, "count");
+        Check.nonNegative(count, "count");
         if (count == 0) {
             return Shorts.empty();
         }
@@ -287,7 +287,7 @@ public abstract class BinarySource implements Closeable {
      * @throws IOException if the read fails or insufficient bytes remain
      */
     public final Ints readInts(int count) throws IOException {
-        Check.positiveOrZero(count, "count");
+        Check.nonNegative(count, "count");
         if (count == 0) {
             return Ints.empty();
         }
@@ -303,7 +303,7 @@ public abstract class BinarySource implements Closeable {
      * @throws IOException if the read fails or insufficient bytes remain
      */
     public final Longs readLongs(int count) throws IOException {
-        Check.positiveOrZero(count, "count");
+        Check.nonNegative(count, "count");
         if (count == 0) {
             return Longs.empty();
         }
@@ -319,7 +319,7 @@ public abstract class BinarySource implements Closeable {
      * @throws IOException if the read fails or insufficient bytes remain
      */
     public final Floats readFloats(int count) throws IOException {
-        Check.positiveOrZero(count, "count");
+        Check.nonNegative(count, "count");
         if (count == 0) {
             return Floats.empty();
         }
@@ -335,7 +335,7 @@ public abstract class BinarySource implements Closeable {
      * @throws IOException if the read fails or insufficient bytes remain
      */
     public final Doubles readDoubles(int count) throws IOException {
-        Check.positiveOrZero(count, "count");
+        Check.nonNegative(count, "count");
         if (count == 0) {
             return Doubles.empty();
         }
@@ -352,7 +352,7 @@ public abstract class BinarySource implements Closeable {
      * @throws ArithmeticException if any value does not fit in an {@code int}
      */
     public final Ints readLongsAsInts(int count) throws IOException {
-        Check.positiveOrZero(count, "count");
+        Check.nonNegative(count, "count");
         if (count == 0) {
             return Ints.empty();
         }
@@ -373,7 +373,7 @@ public abstract class BinarySource implements Closeable {
      * @throws IOException if the read fails or insufficient bytes remain
      */
     public final Floats readHalfs(int count) throws IOException {
-        Check.positiveOrZero(count, "count");
+        Check.nonNegative(count, "count");
         if (count == 0) {
             return Floats.empty();
         }
@@ -483,7 +483,7 @@ public abstract class BinarySource implements Closeable {
      * @throws IOException if the read fails or insufficient bytes remain
      */
     public final String readString(int length, Charset charset) throws IOException {
-        Check.positiveOrZero(length, "length");
+        Check.nonNegative(length, "length");
         Check.nonNull(charset, "charset");
         return readBytes(length).toString(charset);
     }
@@ -509,7 +509,7 @@ public abstract class BinarySource implements Closeable {
      * @throws IOException if the read fails or insufficient bytes remain
      */
     public final String readCString(int size, Charset charset) throws IOException {
-        Check.positiveOrZero(size, "size");
+        Check.nonNegative(size, "size");
         Check.nonNull(charset, "charset");
 
         Bytes bytes = readBytes(size);
@@ -572,7 +572,7 @@ public abstract class BinarySource implements Closeable {
      */
     public final <T> List<T> readObjects(int count, Mapper<T> mapper) throws IOException {
         Check.nonNull(mapper, "mapper");
-        List<T> result = new ArrayList<>(Check.positiveOrZero(count, "count"));
+        List<T> result = new ArrayList<>(Check.nonNegative(count, "count"));
         for (int i = 0; i < count; i++) {
             result.add(mapper.read(this));
         }
@@ -665,7 +665,7 @@ public abstract class BinarySource implements Closeable {
      * @throws IOException if the read fails, insufficient bytes remain, or a byte is not zero
      */
     public final void expectZeros(int count) throws IOException {
-        Check.positiveOrZero(count, "count");
+        Check.nonNegative(count, "count");
         ensureRemaining(count);
         for (int i = 0; i < count; i++) {
             if (readByte() != 0) {
@@ -705,7 +705,7 @@ public abstract class BinarySource implements Closeable {
      * @throws IOException  if the position cannot be determined
      */
     public final void ensureRemaining(long expected) throws IOException {
-        Check.positiveOrZero(expected, "expected");
+        Check.nonNegative(expected, "expected");
         if (remaining() < expected) {
             throw eof(expected);
         }
