@@ -21,7 +21,10 @@ public final class Check {
      * @throws NullPointerException if {@code obj} is {@code null}
      */
     public static <T> T nonNull(T obj, String param) {
-        return Objects.requireNonNull(obj, () -> "'" + param + "' must not be null");
+        if (obj == null) {
+            throw new NullPointerException("'" + param + "' must not be null");
+        }
+        return obj;
     }
 
     /**
@@ -85,7 +88,10 @@ public final class Check {
      * @throws IndexOutOfBoundsException if the {@code index} is out of bounds
      */
     public static int index(int index, int size) {
-        return Objects.checkIndex(index, size);
+        if (index < 0 || index >= size) {
+            throw badIndex(index, size);
+        }
+        return index;
     }
 
     /**
@@ -97,7 +103,17 @@ public final class Check {
      * @throws IndexOutOfBoundsException if the {@code index} is out of bounds
      */
     public static long index(long index, long size) {
-        return Objects.checkIndex(index, size);
+        if (index < 0 || index >= size) {
+            throw badIndex(index, size);
+        }
+        return index;
+    }
+
+    private static IndexOutOfBoundsException badIndex(long index, long size) {
+        if (index < 0) {
+            throw new IndexOutOfBoundsException("index must not be negative, but was " + index);
+        }
+        throw new IndexOutOfBoundsException("index must be less than " + size + ", but was " + index);
     }
 
     /**
@@ -111,7 +127,7 @@ public final class Check {
      */
     public static int position(int position, int limit, String param) {
         if (position < 0 || position > limit) {
-            throw new IllegalArgumentException("'" + param + "' must be a valid position (0 <= position <= " + limit + ")");
+            throw badPosition(position, limit, param);
         }
         return position;
     }
@@ -127,9 +143,16 @@ public final class Check {
      */
     public static long position(long position, long limit, String param) {
         if (position < 0 || position > limit) {
-            throw new IllegalArgumentException("'" + param + "' must be a valid position (0 <= position <= " + limit + ")");
+            throw badPosition(position, limit, param);
         }
         return position;
+    }
+
+    private static IllegalArgumentException badPosition(long position, long limit, String param) {
+        if (position < 0) {
+            throw new IllegalArgumentException("'" + param + "' must not be negative, but was " + position);
+        }
+        throw new IllegalArgumentException("'" + param + "' must be at most " + limit + ", but was " + position);
     }
 
     /**
@@ -142,7 +165,10 @@ public final class Check {
      * @throws IndexOutOfBoundsException if the sub-range is out of bounds
      */
     public static int fromToIndex(int fromIndex, int toIndex, int size) {
-        return Objects.checkFromToIndex(fromIndex, toIndex, size);
+        if (fromIndex < 0 || fromIndex > toIndex || toIndex > size) {
+            throw badFromToIndex(fromIndex, toIndex, size);
+        }
+        return fromIndex;
     }
 
     /**
@@ -155,7 +181,20 @@ public final class Check {
      * @throws IndexOutOfBoundsException if the sub-range is out of bounds
      */
     public static long fromToIndex(long fromIndex, long toIndex, long size) {
-        return Objects.checkFromToIndex(fromIndex, toIndex, size);
+        if (fromIndex < 0 || fromIndex > toIndex || toIndex > size) {
+            throw badFromToIndex(fromIndex, toIndex, size);
+        }
+        return fromIndex;
+    }
+
+    private static IndexOutOfBoundsException badFromToIndex(long fromIndex, long toIndex, long size) {
+        if (fromIndex < 0) {
+            throw new IndexOutOfBoundsException("fromIndex must not be negative, but was " + fromIndex);
+        }
+        if (fromIndex > toIndex) {
+            throw new IndexOutOfBoundsException("fromIndex must be at most toIndex (" + toIndex + "), but was " + fromIndex);
+        }
+        throw new IndexOutOfBoundsException("toIndex must be at most " + size + ", but was " + toIndex);
     }
 
     /**
@@ -168,8 +207,9 @@ public final class Check {
      * @throws IndexOutOfBoundsException if the sub-range is out of bounds
      */
     public static int fromIndexSize(int fromIndex, int size, int length) {
-        if (fromIndex < 0 || size < 0 || fromIndex + size > length) {
-            throw new IndexOutOfBoundsException(String.format("Range [%s, %<s + %s) out of bounds for length %s", fromIndex, size, length));
+        // Rolling our own because I feel the Need for Speed
+        if (fromIndex < 0 || size < 0 || fromIndex > length - size) {
+            throw badFromIndexSize(fromIndex, size, length);
         }
         return fromIndex;
     }
@@ -184,10 +224,71 @@ public final class Check {
      * @throws IndexOutOfBoundsException if the sub-range is out of bounds
      */
     public static long fromIndexSize(long fromIndex, long size, long length) {
-        if (fromIndex < 0 || size < 0 || fromIndex + size > length) {
-            throw new IndexOutOfBoundsException(String.format("Range [%s, %<s + %s) out of bounds for length %s", fromIndex, size, length));
+        if (fromIndex < 0 || size < 0 || fromIndex > length - size) {
+            throw badFromIndexSize(fromIndex, size, length);
         }
         return fromIndex;
+    }
+
+    private static IndexOutOfBoundsException badFromIndexSize(long fromIndex, long size, long length) {
+        if (fromIndex < 0) {
+            throw new IndexOutOfBoundsException("fromIndex must not be negative, but was " + fromIndex);
+        }
+        if (size < 0) {
+            throw new IndexOutOfBoundsException("size must not be negative, but was " + size);
+        }
+        throw new IndexOutOfBoundsException("fromIndex + size must be at most " + length + ", but was " + Long.toUnsignedString(fromIndex + size));
+    }
+
+    /**
+     * Checks that the given array is not {@code null} and not empty.
+     *
+     * @param array the array to check
+     * @param param the name of the parameter for the error message
+     * @param <T>   the component type of the array
+     * @return {@code array} if it is not empty
+     * @throws NullPointerException     if {@code array} is {@code null}
+     * @throws IllegalArgumentException if {@code array} is empty
+     */
+    public static <T> T[] nonEmpty(T[] array, String param) {
+        if (nonNull(array, param).length == 0) {
+            throw new IllegalArgumentException("'" + param + "' must not be empty");
+        }
+        return array;
+    }
+
+    /**
+     * Checks that the given collection is not {@code null} and not empty.
+     *
+     * @param collection the collection to check
+     * @param param      the name of the parameter for the error message
+     * @param <C>        the type of the collection
+     * @return {@code collection} if it is not empty
+     * @throws NullPointerException     if {@code collection} is {@code null}
+     * @throws IllegalArgumentException if {@code collection} is empty
+     */
+    public static <C extends Collection<?>> C nonEmpty(C collection, String param) {
+        if (nonNull(collection, param).isEmpty()) {
+            throw new IllegalArgumentException("'" + param + "' must not be empty");
+        }
+        return collection;
+    }
+
+    /**
+     * Checks that the given map is not {@code null} and not empty.
+     *
+     * @param map   the map to check
+     * @param param the name of the parameter for the error message
+     * @param <M>   the type of the map
+     * @return {@code map} if it is not empty
+     * @throws NullPointerException     if {@code map} is {@code null}
+     * @throws IllegalArgumentException if {@code map} is empty
+     */
+    public static <M extends Map<?, ?>> M nonEmpty(M map, String param) {
+        if (nonNull(map, param).isEmpty()) {
+            throw new IllegalArgumentException("'" + param + "' must not be empty");
+        }
+        return map;
     }
 
     /**
@@ -200,7 +301,7 @@ public final class Check {
      */
     public static int positive(int value, String param) {
         if (value <= 0) {
-            throw new IllegalArgumentException("'" + param + "' must be greater than 0");
+            throw new IllegalArgumentException("'" + param + "' must be greater than 0, but was " + value);
         }
         return value;
     }
@@ -215,22 +316,38 @@ public final class Check {
      */
     public static long positive(long value, String param) {
         if (value <= 0) {
-            throw new IllegalArgumentException("'" + param + "' must be greater than 0");
+            throw new IllegalArgumentException("'" + param + "' must be greater than 0, but was " + value);
         }
         return value;
     }
 
     /**
-     * Checks that the given value is positive or zero.
-     *
-     * @param value the value to check
-     * @param param the name of the parameter for the error message
-     * @return {@code value} if it is 0 or greater
-     * @throws IllegalArgumentException if {@code value} is less than 0
+     * @deprecated Use {@link #nonNegative(int, String)} instead. Or just inline this method.
      */
+    @Deprecated(forRemoval = true)
     public static int positiveOrZero(int value, String param) {
+        return nonNegative(value, param);
+    }
+
+    /**
+     * @deprecated Use {@link #nonNegative(long, String)} instead. Or just inline this method.
+     */
+    @Deprecated(forRemoval = true)
+    public static long positiveOrZero(long value, String param) {
+        return nonNegative(value, param);
+    }
+
+    /**
+     * Checks that the given value is positive or zero.
+     *
+     * @param value the value to check
+     * @param param the name of the parameter for the error message
+     * @return {@code value} if it is 0 or greater
+     * @throws IllegalArgumentException if {@code value} is less than 0
+     */
+    public static int nonNegative(int value, String param) {
         if (value < 0) {
-            throw new IllegalArgumentException("'" + param + "' must be greater than or equal to 0");
+            throw new IllegalArgumentException("'" + param + "' must not be negative, but was " + value);
         }
         return value;
     }
@@ -243,10 +360,68 @@ public final class Check {
      * @return {@code value} if it is 0 or greater
      * @throws IllegalArgumentException if {@code value} is less than 0
      */
-    public static long positiveOrZero(long value, String param) {
+    public static long nonNegative(long value, String param) {
         if (value < 0) {
-            throw new IllegalArgumentException("'" + param + "' must be greater than or equal to 0");
+            throw new IllegalArgumentException("'" + param + "' must not be negative, but was " + value);
         }
         return value;
     }
+
+    /**
+     * Checks that the given value is between min and max inclusive.
+     * <p>
+     * Also asserts that min and max are ordered.
+     *
+     * @param value the value to check
+     * @param min   the minimum value
+     * @param max   the maximum value
+     * @param param the name of the parameter for the error message
+     * @return {@code value} if it is between min and max
+     * @throws IllegalArgumentException if {@code value} is less than min or greater than max
+     */
+    public static int between(int value, int min, int max, String param) {
+        assert min <= max : "min > max";
+        if (min > value || value > max) {
+            throw new IllegalArgumentException("'" + param + "' must be between " + min + " and " + max + ", but was " + value);
+        }
+        return value;
+    }
+
+    /**
+     * Checks that the given value is between min and max inclusive.
+     * <p>
+     * Also asserts that min and max are ordered.
+     *
+     * @param value the value to check
+     * @param min   the minimum value
+     * @param max   the maximum value
+     * @param param the name of the parameter for the error message
+     * @return {@code value} if it is between min and max
+     * @throws IllegalArgumentException if {@code value} is less than min or greater than max
+     */
+    public static long between(long value, long min, long max, String param) {
+        assert min <= max : "min > max";
+        if (min > value || value > max) {
+            throw new IllegalArgumentException("'" + param + "' must be between " + min + " and " + max + ", but was " + value);
+        }
+        return value;
+    }
+
+    /**
+     * Checks that the given value is a multiple of the divisor.
+     * <p>
+     * Also asserts that the divisor is greater than 0.
+     *
+     * @param value   the value to check
+     * @param divisor the divisor
+     * @param param   the name of the parameter for the error message
+     * @throws IllegalArgumentException if {@code value} is not a multiple of {@code divisor}
+     */
+    public static void multipleOf(long value, long divisor, String param) {
+        assert divisor > 0 : "divisor <= 0";
+        if (value % divisor != 0) {
+            throw new IllegalArgumentException("'" + param + "' must be a multiple of " + divisor + ", but was " + value);
+        }
+    }
+
 }
