@@ -67,7 +67,7 @@ public record Platform(OS os, Arch arch) {
     public enum OS {
         LINUX,
         WINDOWS,
-        MAC,
+        MACOS,
         ;
 
         private static final OS CURRENT;
@@ -77,7 +77,7 @@ public record Platform(OS os, Arch arch) {
             CURRENT = switch (os.split(" ")[0]) {
                 case "linux" -> LINUX;
                 case "windows" -> WINDOWS;
-                case "mac" -> MAC;
+                case "mac" -> MACOS;
                 default -> throw new ExceptionInInitializerError("Unsupported OS: " + os);
             };
         }

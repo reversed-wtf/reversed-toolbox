@@ -50,7 +50,7 @@ public final class SteamApps {
         return switch (Platform.OS.current()) {
             case WINDOWS -> Path.of("C:\\Program Files (x86)\\Steam");
             case LINUX -> Path.of(userHome, ".steam/steam");
-            case MAC -> Path.of(userHome, "Library/Application Support/Steam");
+            case MACOS -> Path.of(userHome, "Library/Application Support/Steam");
         };
     }
 
