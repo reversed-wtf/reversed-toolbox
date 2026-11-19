@@ -225,7 +225,7 @@ class BitSourceTest {
         void testThrowsOnNullSource(Endian endian) {
             assertThatNullPointerException()
                 .isThrownBy(() -> endian.factory().apply(null))
-                .withMessage("'source' must not be null");
+                .withMessage("'reader' must not be null");
         }
 
         @ParameterizedTest
@@ -515,8 +515,8 @@ class BitSourceTest {
             for (var i = 0; i < 16; i++) {
                 data.set(i, (byte) i);
             }
-            var source = BinaryReader.wrap(data).order(sourceOrder);
-            try (var bits = endian.factory().apply(source)) {
+            var reader = BinaryReader.wrap(data).order(sourceOrder);
+            try (var bits = endian.factory().apply(reader)) {
                 for (var i = 0; i < 16; i++) {
                     assertThat(bits.read(8)).as("byte %d", i).isEqualTo(i);
                 }

@@ -8,13 +8,13 @@ import java.io.*;
  * Reads variable-width bit fields from a {@link BinaryReader}. Supports both little and big endian bit sources.
  */
 public final class BitSource implements Closeable {
-    final BinaryReader source;
+    final BinaryReader reader;
     final boolean bigEndian;
     long bitBuf;
     int bitCount;
 
-    private BitSource(BinaryReader source, boolean bigEndian) {
-        this.source = Check.nonNull(source, "source");
+    private BitSource(BinaryReader reader, boolean bigEndian) {
+        this.reader = Check.nonNull(reader, "reader");
         this.bigEndian = bigEndian;
     }
 
@@ -22,16 +22,16 @@ public final class BitSource implements Closeable {
      * Creates a big-endian bit source: bits within each byte are read MSB-first. For a byte {@code 0xAB},
      * {@code read(4)} yields {@code 0xA} then {@code 0xB}.
      */
-    public static BitSource big(BinaryReader source) {
-        return new BitSource(source, true);
+    public static BitSource big(BinaryReader reader) {
+        return new BitSource(reader, true);
     }
 
     /**
      * Creates a little-endian bit source: bits within each byte are read LSB-first. For a byte {@code 0xAB},
      * {@code read(4)} yields {@code 0xB} then {@code 0xA}.
      */
-    public static BitSource little(BinaryReader source) {
-        return new BitSource(source, false);
+    public static BitSource little(BinaryReader reader) {
+        return new BitSource(reader, false);
     }
 
     /**
@@ -47,14 +47,14 @@ public final class BitSource implements Closeable {
      * Unaffected by {@link #peek} and {@link #peekLong}.
      */
     public long bitsRead() {
-        return source.position() * 8L - bitCount;
+        return reader.position() * 8L - bitCount;
     }
 
     /**
      * Returns the number of bits still available to read.
      */
     public long bitsRemaining() {
-        return bitCount + source.remaining() * 8L;
+        return bitCount + reader.remaining() * 8L;
     }
 
     /**
@@ -162,20 +162,20 @@ public final class BitSource implements Closeable {
 
     private void refill(int count) throws IOException {
         if (bitCount < count) {
-            if (bitCount <= 56 && source.remaining() >= 8) {
+            if (bitCount <= 56 && reader.remaining() >= 8) {
                 refillLong();
             }
             // Handle the end
-            while (bitCount < count && source.remaining() > 0) {
-                refillByte(source.readUnsignedByte());
+            while (bitCount < count && reader.remaining() > 0) {
+                refillByte(reader.readUnsignedByte());
             }
         }
     }
 
     private void refillLong() throws IOException {
         // Read 8 bytes and flip if we need to
-        long value = source.readLong();
-        if (source.bigEndian ^ bigEndian) {
+        long value = reader.readLong();
+        if (reader.bigEndian ^ bigEndian) {
             value = Long.reverseBytes(value);
         }
 
@@ -189,7 +189,7 @@ public final class BitSource implements Closeable {
 
         // Adjust the position, in case we read too much
         int usedBytes = (64 - bitCount) >>> 3;
-        source.position(source.position() - (8 - usedBytes));
+        reader.position(reader.position() - (8 - usedBytes));
         bitCount += usedBytes << 3;
     }
 
@@ -204,6 +204,6 @@ public final class BitSource implements Closeable {
 
     @Override
     public void close() throws IOException {
-        source.close();
+        reader.close();
     }
 }

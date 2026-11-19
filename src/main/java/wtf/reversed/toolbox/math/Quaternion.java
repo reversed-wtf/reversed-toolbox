@@ -26,17 +26,17 @@ public record Quaternion(
     public static final Quaternion IDENTITY = new Quaternion(0.0f, 0.0f, 0.0f, 1.0f);
 
     /**
-     * Creates a new quaternion from a binary source.
+     * Creates a new quaternion from a binary reader.
      *
-     * @param source The binary source.
+     * @param reader The binary reader.
      * @return The quaternion.
      * @throws IOException If an I/O error occurs.
      */
-    public static Quaternion read(BinaryReader source) throws IOException {
-        float x = source.readFloat();
-        float y = source.readFloat();
-        float z = source.readFloat();
-        float w = source.readFloat();
+    public static Quaternion read(BinaryReader reader) throws IOException {
+        float x = reader.readFloat();
+        float y = reader.readFloat();
+        float z = reader.readFloat();
+        float w = reader.readFloat();
         return new Quaternion(x, y, z, w);
     }
 

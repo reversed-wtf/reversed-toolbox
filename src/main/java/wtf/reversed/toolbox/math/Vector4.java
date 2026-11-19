@@ -87,17 +87,17 @@ public record Vector4(
     }
 
     /**
-     * Creates a new vector from a binary source.
+     * Creates a new vector from a binary reader.
      *
-     * @param source The binary source.
+     * @param reader The binary reader.
      * @return The vector.
      * @throws IOException If an I/O error occurs.
      */
-    public static Vector4 read(BinaryReader source) throws IOException {
-        float x = source.readFloat();
-        float y = source.readFloat();
-        float z = source.readFloat();
-        float w = source.readFloat();
+    public static Vector4 read(BinaryReader reader) throws IOException {
+        float x = reader.readFloat();
+        float y = reader.readFloat();
+        float z = reader.readFloat();
+        float w = reader.readFloat();
         return new Vector4(x, y, z, w);
     }
 

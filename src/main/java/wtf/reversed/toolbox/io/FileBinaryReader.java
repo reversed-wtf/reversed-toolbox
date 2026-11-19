@@ -27,7 +27,7 @@ final class FileBinaryReader extends BufferedBinaryReader {
     @Override
     int readImpl(Bytes.Mutable target, long position) throws IOException {
         if (channel == null) {
-            throw new IOException("Source is closed");
+            throw new IOException("Reader is closed");
         }
         if (!channel.isOpen()) {
             channel = newChannel(path);

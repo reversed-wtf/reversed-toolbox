@@ -196,9 +196,9 @@ public sealed class Ints extends Slice implements Comparable<Ints> {
             return this;
         }
 
-        public Mutable fillFrom(BinaryReader source) throws IOException {
-            source.readBytes(new Bytes.Mutable(array, offset, length));
-            if (source.order() == ByteOrder.BIG_ENDIAN) {
+        public Mutable fillFrom(BinaryReader reader) throws IOException {
+            reader.readBytes(new Bytes.Mutable(array, offset, length));
+            if (reader.order() == ByteOrder.BIG_ENDIAN) {
                 for (int i = 0, len = length(); i < len; i++) {
                     setInternal(i, (int) VH_INT_BE.get(array, offset + i * Integer.BYTES));
                 }

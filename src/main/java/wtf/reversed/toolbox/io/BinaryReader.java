@@ -10,7 +10,7 @@ import java.nio.file.*;
 import java.util.*;
 
 /**
- * Random-access source of binary data with a configurable byte order. Supports reading primitives, bulk reads into
+ * Random-access reader of binary data with a configurable byte order. Supports reading primitives, bulk reads into
  * typed buffers, strings, and arbitrary user objects via a {@link Mapper}.
  * <p>
  * Methods that read data, such as {@code readInt} or {@code expectInt}, start at the current
@@ -22,7 +22,7 @@ public abstract class BinaryReader implements Closeable {
     boolean bigEndian;
 
     /**
-     * Creates a source with the given size and little-endian byte order.
+     * Creates a reader with the given size and little-endian byte order.
      *
      * @param size total size in bytes
      * @throws IllegalArgumentException if {@code size} is negative
@@ -33,10 +33,10 @@ public abstract class BinaryReader implements Closeable {
     }
 
     /**
-     * Opens the file at the given path as a binary source.
+     * Opens the file at the given path as a binary reader.
      *
      * @param path file to open
-     * @return a binary source backed by the file
+     * @return a binary reader backed by the file
      * @throws IOException if the file cannot be opened
      */
     public static BinaryReader open(Path path) throws IOException {
@@ -44,23 +44,23 @@ public abstract class BinaryReader implements Closeable {
     }
 
     /**
-     * Wraps the given byte sequence as a binary source.
+     * Wraps the given byte sequence as a binary reader.
      *
      * @param bytes bytes to wrap
-     * @return a binary source backed by the bytes
+     * @return a binary reader backed by the bytes
      */
     public static BinaryReader wrap(Bytes bytes) {
         return new BytesBinaryReader(bytes);
     }
 
     /**
-     * Creates a binary source that reads through the given sources in order, as if they were concatenated.
+     * Creates a binary reader that reads through the given readers in order, as if they were concatenated.
      *
-     * @param sources non-empty list of sources to concatenate
-     * @return a binary source over the concatenation
+     * @param readers non-empty list of readers to concatenate
+     * @return a binary reader over the concatenation
      */
-    public static BinaryReader sequence(List<? extends BinaryReader> sources) {
-        return new SequenceBinaryReader(sources);
+    public static BinaryReader sequence(List<? extends BinaryReader> readers) {
+        return new SequenceBinaryReader(readers);
     }
 
 
@@ -77,7 +77,7 @@ public abstract class BinaryReader implements Closeable {
      * Sets the byte order used when reading multibyte primitives.
      *
      * @param order new byte order
-     * @return this source, for chaining
+     * @return this reader, for chaining
      */
     public final BinaryReader order(ByteOrder order) {
         this.bigEndian = Check.nonNull(order, "order") == ByteOrder.BIG_ENDIAN;
@@ -85,7 +85,7 @@ public abstract class BinaryReader implements Closeable {
     }
 
     /**
-     * Returns the total size of this source in bytes.
+     * Returns the total size of this reader in bytes.
      *
      * @return total size in bytes
      */
@@ -94,7 +94,7 @@ public abstract class BinaryReader implements Closeable {
     }
 
     /**
-     * Returns the number of bytes between the current position and the end of this source.
+     * Returns the number of bytes between the current position and the end of this reader.
      *
      * @return number of bytes remaining
      */
@@ -106,7 +106,7 @@ public abstract class BinaryReader implements Closeable {
      * Advances the cursor by {@code count} bytes.
      *
      * @param count non-negative number of bytes to skip
-     * @return this source, for chaining
+     * @return this reader, for chaining
      */
     public final BinaryReader skip(long count) {
         return position(Math.addExact(position(), Check.nonNegative(count, "count")));
@@ -123,12 +123,12 @@ public abstract class BinaryReader implements Closeable {
      * Sets the current cursor position in bytes.
      *
      * @param position new position, in {@code [0, size()]}
-     * @return this source, for chaining
+     * @return this reader, for chaining
      */
     public abstract BinaryReader position(long position);
 
     /**
-     * Returns a view over a sub-range of this source. The returned source is independent of this one.
+     * Returns a view over a sub-range of this reader. The returned reader is independent of this one.
      *
      * @param offset start offset, in {@code [0, size()]}
      * @param length length of the slice, with {@code offset + length <= size()}
@@ -387,7 +387,7 @@ public abstract class BinaryReader implements Closeable {
     }
 
     /**
-     * Reads all bytes from the current position to the end of the source.
+     * Reads all bytes from the current position to the end of the reader.
      *
      * @return the bytes read, empty if none remain
      * @throws IOException if the read fails or more than {@code Integer.MAX_VALUE - 8} bytes remain
@@ -551,7 +551,7 @@ public abstract class BinaryReader implements Closeable {
     /**
      * Reads a single object using the given mapper.
      *
-     * @param mapper mapper that decodes the object from this source
+     * @param mapper mapper that decodes the object from this reader
      * @param <T>    object type produced by the mapper
      * @return the decoded object
      * @throws IOException if the mapper fails
@@ -565,7 +565,7 @@ public abstract class BinaryReader implements Closeable {
      * Reads {@code count} consecutive objects using the given mapper.
      *
      * @param count  non-negative number of objects to read
-     * @param mapper mapper that decodes each object from this source
+     * @param mapper mapper that decodes each object from this reader
      * @param <T>    object type produced by the mapper
      * @return an immutable list of the decoded objects
      * @throws IOException if any mapper invocation fails
@@ -675,7 +675,7 @@ public abstract class BinaryReader implements Closeable {
     }
 
     /**
-     * Throws unless the cursor is at the end of this source.
+     * Throws unless the cursor is at the end of this reader.
      *
      * @throws IOException if any bytes remain
      */
@@ -758,12 +758,12 @@ public abstract class BinaryReader implements Closeable {
     @FunctionalInterface
     public interface Mapper<T> {
         /**
-         * Reads one object from {@code source}.
+         * Reads one object from {@code reader}.
          *
-         * @param source source to read from
+         * @param reader reader to read from
          * @return the decoded object
          * @throws IOException if the read fails
          */
-        T read(BinaryReader source) throws IOException;
+        T read(BinaryReader reader) throws IOException;
     }
 }

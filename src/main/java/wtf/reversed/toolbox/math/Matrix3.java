@@ -47,20 +47,20 @@ public record Matrix3(
     /**
      * Reads a matrix from a {@link BinaryReader}.
      *
-     * @param source The source to read from.
+     * @param reader The reader to read from.
      * @return The read matrix.
      * @throws IOException If an I/O error occurs.
      */
-    public static Matrix3 read(BinaryReader source) throws IOException {
-        float m11 = source.readFloat();
-        float m21 = source.readFloat();
-        float m31 = source.readFloat();
-        float m12 = source.readFloat();
-        float m22 = source.readFloat();
-        float m32 = source.readFloat();
-        float m13 = source.readFloat();
-        float m23 = source.readFloat();
-        float m33 = source.readFloat();
+    public static Matrix3 read(BinaryReader reader) throws IOException {
+        float m11 = reader.readFloat();
+        float m21 = reader.readFloat();
+        float m31 = reader.readFloat();
+        float m12 = reader.readFloat();
+        float m22 = reader.readFloat();
+        float m32 = reader.readFloat();
+        float m13 = reader.readFloat();
+        float m23 = reader.readFloat();
+        float m33 = reader.readFloat();
         return new Matrix3(
             m11, m21, m31,
             m12, m22, m32,

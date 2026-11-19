@@ -192,9 +192,9 @@ public sealed class Longs extends Slice implements Comparable<Longs> {
             return this;
         }
 
-        public Mutable fillFrom(BinaryReader source) throws IOException {
-            source.readBytes(new Bytes.Mutable(array, offset, length));
-            if (source.order() == ByteOrder.BIG_ENDIAN) {
+        public Mutable fillFrom(BinaryReader reader) throws IOException {
+            reader.readBytes(new Bytes.Mutable(array, offset, length));
+            if (reader.order() == ByteOrder.BIG_ENDIAN) {
                 for (int i = 0, len = length(); i < len; i++) {
                     setInternal(i, (long) VH_LONG_BE.get(array, offset + i * Long.BYTES));
                 }

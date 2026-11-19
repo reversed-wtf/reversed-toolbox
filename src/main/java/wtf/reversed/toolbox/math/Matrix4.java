@@ -56,27 +56,27 @@ public record Matrix4(
     /**
      * Reads a matrix from a {@link BinaryReader}.
      *
-     * @param source The source to read from.
+     * @param reader The reader to read from.
      * @return The read matrix.
      * @throws IOException If an I/O error occurs.
      */
-    public static Matrix4 read(BinaryReader source) throws IOException {
-        float m11 = source.readFloat();
-        float m21 = source.readFloat();
-        float m31 = source.readFloat();
-        float m41 = source.readFloat();
-        float m12 = source.readFloat();
-        float m22 = source.readFloat();
-        float m32 = source.readFloat();
-        float m42 = source.readFloat();
-        float m13 = source.readFloat();
-        float m23 = source.readFloat();
-        float m33 = source.readFloat();
-        float m43 = source.readFloat();
-        float m14 = source.readFloat();
-        float m24 = source.readFloat();
-        float m34 = source.readFloat();
-        float m44 = source.readFloat();
+    public static Matrix4 read(BinaryReader reader) throws IOException {
+        float m11 = reader.readFloat();
+        float m21 = reader.readFloat();
+        float m31 = reader.readFloat();
+        float m41 = reader.readFloat();
+        float m12 = reader.readFloat();
+        float m22 = reader.readFloat();
+        float m32 = reader.readFloat();
+        float m42 = reader.readFloat();
+        float m13 = reader.readFloat();
+        float m23 = reader.readFloat();
+        float m33 = reader.readFloat();
+        float m43 = reader.readFloat();
+        float m14 = reader.readFloat();
+        float m24 = reader.readFloat();
+        float m34 = reader.readFloat();
+        float m44 = reader.readFloat();
         return new Matrix4(
             m11, m21, m31, m41,
             m12, m22, m32, m42,
@@ -88,23 +88,23 @@ public record Matrix4(
     /**
      * Reads a 3x4 matrix from a {@link BinaryReader}, in column-major order, skipping the last row.
      *
-     * @param source The source to read from.
+     * @param reader The reader to read from.
      * @return The read matrix.
      * @throws IOException If an I/O error occurs.
      */
-    public static Matrix4 read3x4(BinaryReader source) throws IOException {
-        float m11 = source.readFloat();
-        float m12 = source.readFloat();
-        float m13 = source.readFloat();
-        float m14 = source.readFloat();
-        float m21 = source.readFloat();
-        float m22 = source.readFloat();
-        float m23 = source.readFloat();
-        float m24 = source.readFloat();
-        float m31 = source.readFloat();
-        float m32 = source.readFloat();
-        float m33 = source.readFloat();
-        float m34 = source.readFloat();
+    public static Matrix4 read3x4(BinaryReader reader) throws IOException {
+        float m11 = reader.readFloat();
+        float m12 = reader.readFloat();
+        float m13 = reader.readFloat();
+        float m14 = reader.readFloat();
+        float m21 = reader.readFloat();
+        float m22 = reader.readFloat();
+        float m23 = reader.readFloat();
+        float m24 = reader.readFloat();
+        float m31 = reader.readFloat();
+        float m32 = reader.readFloat();
+        float m33 = reader.readFloat();
+        float m34 = reader.readFloat();
         return new Matrix4(
             m11, m21, m31, 0.f,
             m12, m22, m32, 0.f,

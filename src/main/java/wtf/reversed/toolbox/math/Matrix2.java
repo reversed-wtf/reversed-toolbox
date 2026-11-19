@@ -40,15 +40,15 @@ public record Matrix2(
     /**
      * Reads a matrix from a {@link BinaryReader}.
      *
-     * @param source The source to read from.
+     * @param reader The reader to read from.
      * @return The read matrix.
      * @throws IOException If an I/O error occurs.
      */
-    public static Matrix2 read(BinaryReader source) throws IOException {
-        float m11 = source.readFloat();
-        float m21 = source.readFloat();
-        float m12 = source.readFloat();
-        float m22 = source.readFloat();
+    public static Matrix2 read(BinaryReader reader) throws IOException {
+        float m11 = reader.readFloat();
+        float m21 = reader.readFloat();
+        float m12 = reader.readFloat();
+        float m22 = reader.readFloat();
         return new Matrix2(
             m11, m21,
             m12, m22

@@ -18,28 +18,28 @@ class BytesBinaryReaderTest {
             .setInt(4, 3)
             .setLong(8, 4);
 
-        try (BinaryReader source = BinaryReader.wrap(bytes)) {
-            assertEquals(0, source.position());
-            assertEquals(16, source.size());
-            assertEquals(16, source.remaining());
-            assertNotEquals(0, source.remaining());
+        try (BinaryReader reader = BinaryReader.wrap(bytes)) {
+            assertEquals(0, reader.position());
+            assertEquals(16, reader.size());
+            assertEquals(16, reader.remaining());
+            assertNotEquals(0, reader.remaining());
 
-            assertEquals(0, source.readByte());
-            assertEquals(1, source.readByte());
-            assertEquals(2, source.readShort());
-            assertEquals(3, source.readInt());
-            assertEquals(4, source.readLong());
+            assertEquals(0, reader.readByte());
+            assertEquals(1, reader.readByte());
+            assertEquals(2, reader.readShort());
+            assertEquals(3, reader.readInt());
+            assertEquals(4, reader.readLong());
 
-            assertEquals(16, source.position());
-            assertEquals(0, source.remaining());
-            assertEquals(0, source.remaining());
+            assertEquals(16, reader.position());
+            assertEquals(0, reader.remaining());
+            assertEquals(0, reader.remaining());
 
-            source.position(8);
-            assertEquals(8, source.position());
-            assertEquals(8, source.remaining());
+            reader.position(8);
+            assertEquals(8, reader.position());
+            assertEquals(8, reader.remaining());
 
-            assertEquals(4, source.readLong());
-            assertEquals(0, source.remaining());
+            assertEquals(4, reader.readLong());
+            assertEquals(0, reader.remaining());
         }
     }
 
@@ -50,15 +50,15 @@ class BytesBinaryReaderTest {
             .setInt(4, Integer.reverseBytes(0x10203040))
             .setInt(8, 0x10203040);
 
-        try (BinaryReader source = BinaryReader.wrap(buffer)) {
-            source.order(ByteOrder.nativeOrder());
-            assertEquals(0x10203040, source.readInt());
+        try (BinaryReader reader = BinaryReader.wrap(buffer)) {
+            reader.order(ByteOrder.nativeOrder());
+            assertEquals(0x10203040, reader.readInt());
 
-            source.order(ByteOrder.BIG_ENDIAN);
-            assertEquals(0x10203040, source.readInt());
+            reader.order(ByteOrder.BIG_ENDIAN);
+            assertEquals(0x10203040, reader.readInt());
 
-            source.order(ByteOrder.LITTLE_ENDIAN);
-            assertEquals(0x10203040, source.readInt());
+            reader.order(ByteOrder.LITTLE_ENDIAN);
+            assertEquals(0x10203040, reader.readInt());
         }
     }
 }
