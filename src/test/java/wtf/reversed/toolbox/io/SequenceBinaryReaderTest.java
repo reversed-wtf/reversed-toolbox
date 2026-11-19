@@ -8,7 +8,7 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class SequenceBinarySourceTest {
+class SequenceBinaryReaderTest {
     @Test
     void testSource() throws IOException {
         // Internally, SequenceBinaryReader uses a 4KB buffer, so allocate enough
@@ -18,15 +18,15 @@ class SequenceBinarySourceTest {
         random.nextBytes(data);
 
         // Arbitrary-sized chunks
-        List<BinarySource> sources = List.of(
-            BinarySource.wrap(Bytes.wrap(data, 0, 16383)),
-            BinarySource.wrap(Bytes.wrap(data, 16383, 16385)),
-            BinarySource.wrap(Bytes.wrap(data, 32768, 32768)),
-            BinarySource.wrap(Bytes.wrap(data, 65536, 131072)),
-            BinarySource.wrap(Bytes.wrap(data, 196608, 65536))
+        List<BinaryReader> sources = List.of(
+                BinaryReader.wrap(Bytes.wrap(data, 0, 16383)),
+                BinaryReader.wrap(Bytes.wrap(data, 16383, 16385)),
+                BinaryReader.wrap(Bytes.wrap(data, 32768, 32768)),
+                BinaryReader.wrap(Bytes.wrap(data, 65536, 131072)),
+                BinaryReader.wrap(Bytes.wrap(data, 196608, 65536))
         );
 
-        try (BinarySource source = BinarySource.sequence(sources)) {
+        try (BinaryReader source = BinaryReader.sequence(sources)) {
             assertEquals(data.length, source.size());
 
             // Read back one byte at a time, so it can't perform a bulk read operation

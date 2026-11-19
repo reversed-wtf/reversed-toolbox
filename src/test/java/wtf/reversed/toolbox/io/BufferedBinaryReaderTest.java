@@ -10,7 +10,7 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class BufferedBinarySourceTest {
+class BufferedBinaryReaderTest {
     private static final int BUFFER_SIZE = 0x2000;
 
     @TempDir
@@ -45,7 +45,7 @@ class BufferedBinarySourceTest {
     @Test
     void primitiveAndBulkReadsAccumulateShortReads() throws IOException {
         byte[] data = data(BUFFER_SIZE * 2);
-        var source = new BufferedBinarySource(data.length) {
+        var source = new BufferedBinaryReader(data.length) {
             @Override
             int readImpl(Bytes.Mutable target, long position) {
                 int length = (int) Math.min(3, Math.min(target.length(), data.length - position));
@@ -66,8 +66,8 @@ class BufferedBinarySourceTest {
         }
     }
 
-    private BinarySource open(byte[] data) throws IOException {
-        return BinarySource.open(Files.write(directory.resolve("source.bin"), data));
+    private BinaryReader open(byte[] data) throws IOException {
+        return BinaryReader.open(Files.write(directory.resolve("source.bin"), data));
     }
 
     private static byte[] data(int length) {

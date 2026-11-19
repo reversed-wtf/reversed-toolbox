@@ -17,7 +17,7 @@ import java.util.*;
  * {@link #position() position} and advance it by the number of bytes consumed. Multibyte values are decoded using the
  * current {@link #order() byte order}, which defaults to {@link ByteOrder#LITTLE_ENDIAN little-endian}.
  */
-public abstract class BinarySource implements Closeable {
+public abstract class BinaryReader implements Closeable {
     final long size;
     boolean bigEndian;
 
@@ -27,7 +27,7 @@ public abstract class BinarySource implements Closeable {
      * @param size total size in bytes
      * @throws IllegalArgumentException if {@code size} is negative
      */
-    protected BinarySource(long size) {
+    protected BinaryReader(long size) {
         this.size = Check.nonNegative(size, "size");
         this.bigEndian = false;
     }
@@ -39,8 +39,8 @@ public abstract class BinarySource implements Closeable {
      * @return a binary source backed by the file
      * @throws IOException if the file cannot be opened
      */
-    public static BinarySource open(Path path) throws IOException {
-        return FileBinarySource.create(path);
+    public static BinaryReader open(Path path) throws IOException {
+        return FileBinaryReader.create(path);
     }
 
     /**
@@ -49,8 +49,8 @@ public abstract class BinarySource implements Closeable {
      * @param bytes bytes to wrap
      * @return a binary source backed by the bytes
      */
-    public static BinarySource wrap(Bytes bytes) {
-        return new BytesBinarySource(bytes);
+    public static BinaryReader wrap(Bytes bytes) {
+        return new BytesBinaryReader(bytes);
     }
 
     /**
@@ -59,8 +59,8 @@ public abstract class BinarySource implements Closeable {
      * @param sources non-empty list of sources to concatenate
      * @return a binary source over the concatenation
      */
-    public static BinarySource sequence(List<? extends BinarySource> sources) {
-        return new SequenceBinarySource(sources);
+    public static BinaryReader sequence(List<? extends BinaryReader> sources) {
+        return new SequenceBinaryReader(sources);
     }
 
 
@@ -79,7 +79,7 @@ public abstract class BinarySource implements Closeable {
      * @param order new byte order
      * @return this source, for chaining
      */
-    public final BinarySource order(ByteOrder order) {
+    public final BinaryReader order(ByteOrder order) {
         this.bigEndian = Check.nonNull(order, "order") == ByteOrder.BIG_ENDIAN;
         return this;
     }
@@ -108,7 +108,7 @@ public abstract class BinarySource implements Closeable {
      * @param count non-negative number of bytes to skip
      * @return this source, for chaining
      */
-    public final BinarySource skip(long count) {
+    public final BinaryReader skip(long count) {
         return position(Math.addExact(position(), Check.nonNegative(count, "count")));
     }
 
@@ -125,7 +125,7 @@ public abstract class BinarySource implements Closeable {
      * @param position new position, in {@code [0, size()]}
      * @return this source, for chaining
      */
-    public abstract BinarySource position(long position);
+    public abstract BinaryReader position(long position);
 
     /**
      * Returns a view over a sub-range of this source. The returned source is independent of this one.
@@ -134,7 +134,7 @@ public abstract class BinarySource implements Closeable {
      * @param length length of the slice, with {@code offset + length <= size()}
      * @return a slice over the requested range
      */
-    public abstract BinarySource slice(long offset, long length);
+    public abstract BinaryReader slice(long offset, long length);
 
     /**
      * Fills the given mutable byte buffer from the current position.
@@ -407,9 +407,9 @@ public abstract class BinarySource implements Closeable {
      * @throws IOException if insufficient bytes remain
      * @see #slice(long, long)
      */
-    public final BinarySource readSlice(long length) throws IOException {
+    public final BinaryReader readSlice(long length) throws IOException {
         ensureRemaining(length);
-        BinarySource result = slice(position(), length);
+        BinaryReader result = slice(position(), length);
         skip(length);
         return result;
     }
@@ -751,7 +751,7 @@ public abstract class BinarySource implements Closeable {
     }
 
     /**
-     * Decodes a single object from a {@link BinarySource}.
+     * Decodes a single object from a {@link BinaryReader}.
      *
      * @param <T> type of object produced
      */
@@ -764,6 +764,6 @@ public abstract class BinarySource implements Closeable {
          * @return the decoded object
          * @throws IOException if the read fails
          */
-        T read(BinarySource source) throws IOException;
+        T read(BinaryReader source) throws IOException;
     }
 }

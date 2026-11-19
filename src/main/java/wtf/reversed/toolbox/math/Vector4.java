@@ -93,7 +93,7 @@ public record Vector4(
      * @return The vector.
      * @throws IOException If an I/O error occurs.
      */
-    public static Vector4 read(BinarySource source) throws IOException {
+    public static Vector4 read(BinaryReader source) throws IOException {
         float x = source.readFloat();
         float y = source.readFloat();
         float z = source.readFloat();

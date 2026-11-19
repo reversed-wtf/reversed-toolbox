@@ -75,7 +75,7 @@ public record Vector3(
      * @return The vector.
      * @throws IOException If an I/O error occurs.
      */
-    public static Vector3 read(BinarySource source) throws IOException {
+    public static Vector3 read(BinaryReader source) throws IOException {
         float x = source.readFloat();
         float y = source.readFloat();
         float z = source.readFloat();

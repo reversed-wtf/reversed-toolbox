@@ -41,7 +41,7 @@ public record Bounds(
      * @return The read bounds
      * @throws IOException If an I/O error occurs
      */
-    public static Bounds read(BinarySource source) throws IOException {
+    public static Bounds read(BinaryReader source) throws IOException {
         float minX = source.readFloat();
         float minY = source.readFloat();
         float minZ = source.readFloat();

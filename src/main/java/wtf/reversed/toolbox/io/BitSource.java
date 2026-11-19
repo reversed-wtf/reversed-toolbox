@@ -5,15 +5,15 @@ import wtf.reversed.toolbox.util.*;
 import java.io.*;
 
 /**
- * Reads variable-width bit fields from a {@link BinarySource}. Supports both little and big endian bit sources.
+ * Reads variable-width bit fields from a {@link BinaryReader}. Supports both little and big endian bit sources.
  */
 public final class BitSource implements Closeable {
-    final BinarySource source;
+    final BinaryReader source;
     final boolean bigEndian;
     long bitBuf;
     int bitCount;
 
-    private BitSource(BinarySource source, boolean bigEndian) {
+    private BitSource(BinaryReader source, boolean bigEndian) {
         this.source = Check.nonNull(source, "source");
         this.bigEndian = bigEndian;
     }
@@ -22,7 +22,7 @@ public final class BitSource implements Closeable {
      * Creates a big-endian bit source: bits within each byte are read MSB-first. For a byte {@code 0xAB},
      * {@code read(4)} yields {@code 0xA} then {@code 0xB}.
      */
-    public static BitSource big(BinarySource source) {
+    public static BitSource big(BinaryReader source) {
         return new BitSource(source, true);
     }
 
@@ -30,7 +30,7 @@ public final class BitSource implements Closeable {
      * Creates a little-endian bit source: bits within each byte are read LSB-first. For a byte {@code 0xAB},
      * {@code read(4)} yields {@code 0xB} then {@code 0xA}.
      */
-    public static BitSource little(BinarySource source) {
+    public static BitSource little(BinaryReader source) {
         return new BitSource(source, false);
     }
 

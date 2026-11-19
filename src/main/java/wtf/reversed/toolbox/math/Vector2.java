@@ -58,7 +58,7 @@ public record Vector2(
      * @return The vector.
      * @throws IOException If an I/O error occurs.
      */
-    public static Vector2 read(BinarySource source) throws IOException {
+    public static Vector2 read(BinaryReader source) throws IOException {
         float x = source.readFloat();
         float y = source.readFloat();
         return new Vector2(x, y);

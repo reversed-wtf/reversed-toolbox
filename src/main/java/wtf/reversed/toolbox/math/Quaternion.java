@@ -32,7 +32,7 @@ public record Quaternion(
      * @return The quaternion.
      * @throws IOException If an I/O error occurs.
      */
-    public static Quaternion read(BinarySource source) throws IOException {
+    public static Quaternion read(BinaryReader source) throws IOException {
         float x = source.readFloat();
         float y = source.readFloat();
         float z = source.readFloat();

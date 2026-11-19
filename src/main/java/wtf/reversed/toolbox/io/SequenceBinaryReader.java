@@ -6,16 +6,16 @@ import wtf.reversed.toolbox.util.*;
 import java.io.*;
 import java.util.*;
 
-final class SequenceBinarySource extends BufferedBinarySource {
-    private final NavigableMap<Long, BinarySource> sources = new TreeMap<>(Long::compareUnsigned);
-    private BinarySource source;
+final class SequenceBinaryReader extends BufferedBinaryReader {
+    private final NavigableMap<Long, BinaryReader> sources = new TreeMap<>(Long::compareUnsigned);
+    private BinaryReader source;
 
-    SequenceBinarySource(List<? extends BinarySource> sources) {
+    SequenceBinaryReader(List<? extends BinaryReader> sources) {
         Check.nonEmpty(sources, "sources");
-        super(sources.stream().mapToLong(BinarySource::size).sum()); // This is weird
+        super(sources.stream().mapToLong(BinaryReader::size).sum()); // This is weird
 
         long offset = 0;
-        for (BinarySource source : sources) {
+        for (BinaryReader source : sources) {
             this.sources.put(offset, source);
             offset += source.size();
         }
@@ -50,7 +50,7 @@ final class SequenceBinarySource extends BufferedBinarySource {
     @Override
     public void close() throws IOException {
         reset();
-        for (BinarySource source : sources.values()) {
+        for (BinaryReader source : sources.values()) {
             source.close();
         }
     }

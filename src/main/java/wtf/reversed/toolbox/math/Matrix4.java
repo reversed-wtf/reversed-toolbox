@@ -54,13 +54,13 @@ public record Matrix4(
     );
 
     /**
-     * Reads a matrix from a {@link BinarySource}.
+     * Reads a matrix from a {@link BinaryReader}.
      *
      * @param source The source to read from.
      * @return The read matrix.
      * @throws IOException If an I/O error occurs.
      */
-    public static Matrix4 read(BinarySource source) throws IOException {
+    public static Matrix4 read(BinaryReader source) throws IOException {
         float m11 = source.readFloat();
         float m21 = source.readFloat();
         float m31 = source.readFloat();
@@ -86,13 +86,13 @@ public record Matrix4(
     }
 
     /**
-     * Reads a 3x4 matrix from a {@link BinarySource}, in column-major order, skipping the last row.
+     * Reads a 3x4 matrix from a {@link BinaryReader}, in column-major order, skipping the last row.
      *
      * @param source The source to read from.
      * @return The read matrix.
      * @throws IOException If an I/O error occurs.
      */
-    public static Matrix4 read3x4(BinarySource source) throws IOException {
+    public static Matrix4 read3x4(BinaryReader source) throws IOException {
         float m11 = source.readFloat();
         float m12 = source.readFloat();
         float m13 = source.readFloat();

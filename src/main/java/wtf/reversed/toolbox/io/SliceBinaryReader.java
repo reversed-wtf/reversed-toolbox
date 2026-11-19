@@ -4,11 +4,11 @@ import wtf.reversed.toolbox.collect.*;
 
 import java.io.*;
 
-final class SliceBinarySource extends BufferedBinarySource {
-    private final BufferedBinarySource source;
+final class SliceBinaryReader extends BufferedBinaryReader {
+    private final BufferedBinaryReader source;
     private final long offset;
 
-    SliceBinarySource(BufferedBinarySource source, long offset, long length) {
+    SliceBinaryReader(BufferedBinaryReader source, long offset, long length) {
         super(length);
         this.source = source;
         this.offset = offset;

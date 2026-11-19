@@ -670,7 +670,7 @@ final class SliceGenerator {
     private MethodSpec generateFillFrom() {
         var builder = MethodSpec.methodBuilder("fillFrom")
             .addModifiers(Modifier.PUBLIC)
-            .addParameter(BinarySource.class, "source")
+                .addParameter(BinaryReader.class, "source")
             .addException(IOException.class)
             .returns(mutableType);
 

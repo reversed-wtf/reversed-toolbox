@@ -14,7 +14,7 @@ import java.util.*;
 
 import static org.assertj.core.api.Assertions.*;
 
-class BinarySourceTest {
+class BinaryReaderTest {
     @Test
     void testInitialPositionIsZero() throws IOException {
         try (var source = bytes(0x01, 0x02, 0x03)) {
@@ -375,7 +375,7 @@ class BinarySourceTest {
     @ParameterizedTest(name = "{0}")
     @MethodSource("cStringNullPositions")
     void testReadCStringNullPosition(String name, byte[] data, String expected) throws IOException {
-        try (var source = BinarySource.wrap(Bytes.wrap(data))) {
+        try (var source = BinaryReader.wrap(Bytes.wrap(data))) {
             assertThat(source.readCString(data.length)).isEqualTo(expected);
             assertThat(source.position()).isEqualTo(data.length);
         }
@@ -394,7 +394,7 @@ class BinarySourceTest {
     void testReadCStringTerminatorWidth(String charsetName) throws IOException {
         var charset = Charset.forName(charsetName);
         var data = "AB\0Z".getBytes(charset);
-        try (var source = BinarySource.wrap(Bytes.wrap(data))) {
+        try (var source = BinaryReader.wrap(Bytes.wrap(data))) {
             assertThat(source.readCString(data.length, charset)).isEqualTo("AB");
             assertThat(source.position()).isEqualTo(data.length);
         }
@@ -445,14 +445,14 @@ class BinarySourceTest {
     @Test
     void testReadObject() throws IOException {
         try (var source = bytes(0x05, 0x00, 0x00, 0x00)) {
-            assertThat(source.readObject(BinarySource::readInt)).isEqualTo(5);
+            assertThat(source.readObject(BinaryReader::readInt)).isEqualTo(5);
         }
     }
 
     @Test
     void testReadObjects() throws IOException {
         try (var source = bytes(0x01, 0x00, 0x02, 0x00, 0x03, 0x00)) {
-            var values = source.readObjects(3, BinarySource::readShort);
+            var values = source.readObjects(3, BinaryReader::readShort);
             assertThat(values).containsExactly((short) 1, (short) 2, (short) 3);
         }
     }
@@ -460,7 +460,7 @@ class BinarySourceTest {
     @Test
     void testReadObjectsZeroCountReturnsEmpty() throws IOException {
         try (var source = bytes(0x01, 0x02)) {
-            assertThat(source.readObjects(0, BinarySource::readByte)).isEmpty();
+            assertThat(source.readObjects(0, BinaryReader::readByte)).isEmpty();
         }
     }
 
@@ -621,14 +621,14 @@ class BinarySourceTest {
 
     @Test
     void testWrapRejectsNullBytes() {
-        assertThatNullPointerException().isThrownBy(() -> BinarySource.wrap(null));
+        assertThatNullPointerException().isThrownBy(() -> BinaryReader.wrap(null));
     }
 
     @Test
     void testFileSourceReadsSequentially(@TempDir Path tempDir) throws IOException {
         var path = tempDir.resolve("test.bin");
         Files.write(path, new byte[]{0x01, 0x02, 0x03, 0x04, 0x05});
-        try (var source = BinarySource.open(path)) {
+        try (var source = BinaryReader.open(path)) {
             assertThat(source.size()).isEqualTo(5);
             assertThat(source.readByte()).isEqualTo((byte) 0x01);
             assertThat(source.readByte()).isEqualTo((byte) 0x02);
@@ -642,7 +642,7 @@ class BinarySourceTest {
     void testFileSourceRepeatedReadPastEndStayClean(@TempDir Path tempDir) throws IOException {
         var path = tempDir.resolve("eof.bin");
         Files.write(path, new byte[]{0x01});
-        try (var source = BinarySource.open(path)) {
+        try (var source = BinaryReader.open(path)) {
             source.readByte();
             assertThatExceptionOfType(EOFException.class).isThrownBy(source::readByte);
             assertThatExceptionOfType(EOFException.class).isThrownBy(source::readByte);
@@ -653,7 +653,7 @@ class BinarySourceTest {
     void testFileSourcePositionThenReadAfterEof(@TempDir Path tempDir) throws IOException {
         var path = tempDir.resolve("eof2.bin");
         Files.write(path, new byte[]{0x01, 0x02, 0x03});
-        try (var source = BinarySource.open(path)) {
+        try (var source = BinaryReader.open(path)) {
             source.position(3);
             assertThatExceptionOfType(EOFException.class).isThrownBy(source::readByte);
             source.position(0);
@@ -663,7 +663,7 @@ class BinarySourceTest {
 
     @Test
     void testBufferedRefillReturnsPartialAtEof() {
-        try (var source = new TestBufferedSource(new byte[]{1, 2, 3, 4})) {
+        try (var source = new TestBufferedReader(new byte[]{1, 2, 3, 4})) {
             assertThatExceptionOfType(EOFException.class).isThrownBy(source::readLong);
             assertThatExceptionOfType(EOFException.class).isThrownBy(source::readLong);
         }
@@ -674,7 +674,7 @@ class BinarySourceTest {
         var first = bytes(0x01, 0x02);
         var second = bytes(0x03, 0x04);
         var third = bytes(0x05, 0x06);
-        try (var seq = BinarySource.sequence(List.of(first, second, third))) {
+        try (var seq = BinaryReader.sequence(List.of(first, second, third))) {
             assertThat(seq.size()).isEqualTo(6);
             for (var i = 1; i <= 6; i++) {
                 assertThat(seq.readByte()).as("byte %d", i).isEqualTo((byte) i);
@@ -684,7 +684,7 @@ class BinarySourceTest {
 
     @Test
     void testSequenceWithEmptyMembersStillReadsCleanly() throws IOException {
-        try (var seq = BinarySource.sequence(List.of(
+        try (var seq = BinaryReader.sequence(List.of(
             bytes(0x01, 0x02),
             bytes(),
             bytes(0x03, 0x04),
@@ -699,7 +699,7 @@ class BinarySourceTest {
 
     @Test
     void testSequenceReadPastEndThrowsCleanly() throws IOException {
-        try (var seq = BinarySource.sequence(List.of(bytes(0x01, 0x02), bytes(0x03)))) {
+        try (var seq = BinaryReader.sequence(List.of(bytes(0x01, 0x02), bytes(0x03)))) {
             seq.readByte();
             seq.readByte();
             seq.readByte();
@@ -785,7 +785,7 @@ class BinarySourceTest {
     void testSliceOnFileSource(@TempDir Path tempDir) throws IOException {
         var path = tempDir.resolve("slice.bin");
         Files.write(path, new byte[]{0x10, 0x20, 0x30, 0x40, 0x50, 0x60});
-        try (var source = BinarySource.open(path)) {
+        try (var source = BinaryReader.open(path)) {
             var slice = source.slice(2, 3);
             assertThat(slice.size()).isEqualTo(3);
             assertThat(slice.readByte()).isEqualTo((byte) 0x30);
@@ -798,7 +798,7 @@ class BinarySourceTest {
 
     @Test
     void testSliceOnSequenceSpansSubSources() throws IOException {
-        try (var seq = BinarySource.sequence(java.util.List.of(
+        try (var seq = BinaryReader.sequence(java.util.List.of(
             bytes(0x10, 0x20, 0x30),
             bytes(0x40, 0x50, 0x60)))) {
             var slice = seq.slice(2, 3);
@@ -812,7 +812,7 @@ class BinarySourceTest {
     void testInterleavedSlicesOnFileSourceDontInterfere(@TempDir Path tempDir) throws IOException {
         var path = tempDir.resolve("interleave.bin");
         Files.write(path, new byte[]{0x10, 0x20, 0x30, 0x40, 0x50, 0x60});
-        try (var source = BinarySource.open(path)) {
+        try (var source = BinaryReader.open(path)) {
             var sliceA = source.slice(0, 3);
             var sliceB = source.slice(3, 3);
             assertThat(sliceA.readByte()).isEqualTo((byte) 0x10);
@@ -828,7 +828,7 @@ class BinarySourceTest {
     void testCloseSliceDoesNotClosePartFileSource(@TempDir Path tempDir) throws IOException {
         var path = tempDir.resolve("slice-close.bin");
         Files.write(path, new byte[]{0x10, 0x20, 0x30, 0x40});
-        try (var source = BinarySource.open(path)) {
+        try (var source = BinaryReader.open(path)) {
             var slice = source.slice(0, 2);
             slice.close();
             assertThat(source.readByte()).isEqualTo((byte) 0x10);
@@ -849,7 +849,7 @@ class BinarySourceTest {
     void testSliceOnFileSourceInheritsByteOrder(@TempDir Path tempDir) throws IOException {
         var path = tempDir.resolve("slice-order.bin");
         Files.write(path, new byte[]{0x00, 0x00, 0x00, 0x00, 0x01});
-        try (var source = BinarySource.open(path)) {
+        try (var source = BinaryReader.open(path)) {
             source.order(ByteOrder.BIG_ENDIAN);
             var slice = source.slice(1, 4);
             assertThat(slice.order()).isEqualTo(ByteOrder.BIG_ENDIAN);
@@ -888,7 +888,7 @@ class BinarySourceTest {
     void testReadSliceOnFileSourceInheritsByteOrder(@TempDir Path tempDir) throws IOException {
         var path = tempDir.resolve("read-slice.bin");
         Files.write(path, new byte[]{0x7F, 0x00, 0x00, 0x00, 0x01, 0x10});
-        try (var source = BinarySource.open(path)) {
+        try (var source = BinaryReader.open(path)) {
             source.order(ByteOrder.BIG_ENDIAN);
             source.readByte();
             var slice = source.readSlice(4);
@@ -906,18 +906,18 @@ class BinarySourceTest {
         }
     }
 
-    private static BinarySource bytes(int... values) {
+    private static BinaryReader bytes(int... values) {
         var data = Bytes.Mutable.allocate(values.length);
         for (var i = 0; i < values.length; i++) {
             data.set(i, (byte) values[i]);
         }
-        return BinarySource.wrap(data);
+        return BinaryReader.wrap(data);
     }
 
-    private static final class TestBufferedSource extends BufferedBinarySource {
+    private static final class TestBufferedReader extends BufferedBinaryReader {
         private final byte[] data;
 
-        TestBufferedSource(byte[] data) {
+        TestBufferedReader(byte[] data) {
             super(data.length);
             this.data = data;
         }

@@ -45,13 +45,13 @@ public record Matrix3(
     );
 
     /**
-     * Reads a matrix from a {@link BinarySource}.
+     * Reads a matrix from a {@link BinaryReader}.
      *
      * @param source The source to read from.
      * @return The read matrix.
      * @throws IOException If an I/O error occurs.
      */
-    public static Matrix3 read(BinarySource source) throws IOException {
+    public static Matrix3 read(BinaryReader source) throws IOException {
         float m11 = source.readFloat();
         float m21 = source.readFloat();
         float m31 = source.readFloat();

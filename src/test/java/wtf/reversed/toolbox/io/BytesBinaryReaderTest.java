@@ -8,7 +8,7 @@ import java.nio.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class BytesBinarySourceTest {
+class BytesBinaryReaderTest {
     @Test
     void testReader() throws IOException {
         Bytes.Mutable bytes = Bytes.allocate(16)
@@ -18,7 +18,7 @@ class BytesBinarySourceTest {
             .setInt(4, 3)
             .setLong(8, 4);
 
-        try (BinarySource source = BinarySource.wrap(bytes)) {
+        try (BinaryReader source = BinaryReader.wrap(bytes)) {
             assertEquals(0, source.position());
             assertEquals(16, source.size());
             assertEquals(16, source.remaining());
@@ -50,7 +50,7 @@ class BytesBinarySourceTest {
             .setInt(4, Integer.reverseBytes(0x10203040))
             .setInt(8, 0x10203040);
 
-        try (BinarySource source = BinarySource.wrap(buffer)) {
+        try (BinaryReader source = BinaryReader.wrap(buffer)) {
             source.order(ByteOrder.nativeOrder());
             assertEquals(0x10203040, source.readInt());
 

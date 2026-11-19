@@ -192,7 +192,7 @@ public sealed class Longs extends Slice implements Comparable<Longs> {
             return this;
         }
 
-        public Mutable fillFrom(BinarySource source) throws IOException {
+        public Mutable fillFrom(BinaryReader source) throws IOException {
             source.readBytes(new Bytes.Mutable(array, offset, length));
             if (source.order() == ByteOrder.BIG_ENDIAN) {
                 for (int i = 0, len = length(); i < len; i++) {
