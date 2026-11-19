@@ -732,7 +732,7 @@ public abstract class BinarySource implements Closeable {
         }
     }
 
-    private int terminatorWidth(Charset charset) {
+    static int terminatorWidth(Charset charset) {
         return (switch (charset.name()) {
             case "UTF-16", "UTF-16BE", "UTF-16LE" -> 2;
             case "UTF-32", "UTF-32BE", "UTF-32LE" -> 4;

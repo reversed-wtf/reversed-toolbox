@@ -1,71 +1,73 @@
 package wtf.reversed.toolbox.io;
 
 import wtf.reversed.toolbox.collect.*;
-
-import java.nio.*;
-import java.util.*;
+import wtf.reversed.toolbox.util.*;
 
 public final class BytesBinaryWriter extends BinaryWriter {
-    private ByteBuffer buffer;
+    private Bytes.Mutable buffer;
+    private int position = 0;
     private int length = 0;
 
     public BytesBinaryWriter() {
         this(32);
     }
 
-    public BytesBinaryWriter(int size) {
-        if (size < 0) {
-            throw new IllegalArgumentException("Negative initial size: " + size);
-        }
-        buffer = ByteBuffer.allocate(size).order(ByteOrder.LITTLE_ENDIAN);
+    public BytesBinaryWriter(int capacity) {
+        Check.nonNegative(capacity, "capacity");
+        buffer = Bytes.allocate(capacity);
     }
 
     @Override
     public void writeBytes(Bytes values) {
+        if (values.length() == 0) {
+            return;
+        }
         reserve(values.length());
-        buffer.put(values.asBuffer());
+        values.copyTo(buffer, position);
+        position += values.length();
+        length = Math.max(length, position);
     }
 
     @Override
     public void writeByte(byte value) {
         reserve(Byte.BYTES);
-        buffer.put(value);
+        buffer.set(position, value);
+        position += Byte.BYTES;
+        length = Math.max(length, position);
     }
 
     @Override
     public void writeShort(short value) {
         reserve(Short.BYTES);
-        buffer.putShort(bigEndian ? Short.reverseBytes(value) : value);
+        buffer.setShort(position, bigEndian ? Short.reverseBytes(value) : value);
+        position += Short.BYTES;
+        length = Math.max(length, position);
     }
 
     @Override
     public void writeInt(int value) {
         reserve(Integer.BYTES);
-        buffer.putInt(bigEndian ? Integer.reverseBytes(value) : value);
+        buffer.setInt(position, bigEndian ? Integer.reverseBytes(value) : value);
+        position += Integer.BYTES;
+        length = Math.max(length, position);
     }
 
     @Override
     public void writeLong(long value) {
         reserve(Long.BYTES);
-        buffer.putLong(bigEndian ? Long.reverseBytes(value) : value);
+        buffer.setLong(position, bigEndian ? Long.reverseBytes(value) : value);
+        position += Long.BYTES;
     }
 
     @Override
     public long position() {
-        return buffer.position();
+        return position;
     }
 
     @Override
     public BinaryWriter position(long pos) {
-        Objects.checkIndex(pos, Integer.MAX_VALUE);
-        int curPos = buffer.position();
-        int newPos = Math.toIntExact(pos);
-        if (curPos != newPos) {
-            if (newPos > curPos) {
-                reserve(newPos - curPos);
-            }
-            buffer.position(newPos);
-        }
+        Check.nonNegative(pos, "position");
+        position = Math.toIntExact(pos);
         return this;
     }
 
@@ -76,27 +78,25 @@ public final class BytesBinaryWriter extends BinaryWriter {
 
     @Override
     public void close() {
-        buffer = null;
+        // Do nothing
     }
 
     /**
      * Returns an independent snapshot of the bytes written so far.
      */
     public Bytes toBytes() {
-        byte[] dst = new byte[length];
-        buffer.get(0, dst, 0, length);
-        return Bytes.wrap(dst);
+        var result = Bytes.allocate(length);
+        buffer.slice(0, length).copyTo(result, 0);
+        return result;
     }
 
     private void reserve(int count) {
-        if (buffer.remaining() < count) {
-            int position = buffer.position();
-            buffer = ByteBuffer
-                .allocate(Math.max(buffer.capacity() * 2, buffer.capacity() + count))
-                .order(buffer.order())
-                .put(buffer.duplicate().position(0).limit(length))
-                .position(position);
+        if (buffer.length() - position < count) {
+            int newCapacity = Math.max(buffer.length() * 2, position + count);
+            var newBuffer = Bytes.allocate(newCapacity);
+            buffer.slice(0, length).copyTo(newBuffer, 0);
+            buffer = newBuffer;
         }
-        length = Math.max(length, buffer.position() + count);
+        length = Math.max(length, position + count);
     }
 }

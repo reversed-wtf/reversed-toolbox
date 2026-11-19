@@ -29,7 +29,7 @@ abstract class BufferedBinaryWriter extends BinaryWriter {
 
     @Override
     public final BinaryWriter position(long pos) throws IOException {
-        Check.positiveOrZero(pos, "position");
+        Check.nonNegative(pos, "position");
         if (pos >= sourcePosition && pos - sourcePosition <= bufferLength) {
             // If we fit in the current buffer, just adjust the position
             bufferPosition = (int) (pos - sourcePosition);

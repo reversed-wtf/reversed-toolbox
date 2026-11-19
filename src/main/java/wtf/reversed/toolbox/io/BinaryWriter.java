@@ -8,6 +8,8 @@ import java.nio.*;
 import java.nio.charset.*;
 import java.nio.file.*;
 
+import static wtf.reversed.toolbox.io.BinarySource.*;
+
 /**
  * Random-access binary writer with a configurable byte order. Supports writing primitives,
  * bulk writes from typed buffers, strings, and arbitrary user objects via a {@link Mapper}.
@@ -22,25 +24,17 @@ import java.nio.file.*;
 public abstract class BinaryWriter implements Flushable, Closeable {
     boolean bigEndian;
 
+    /**
+     * Opens or creates a file at the given path for writing.
+     * If the file already exists, it will be <b>truncated</b> to zero length.
+     *
+     * @param path the path to the file to open or create
+     * @return a binary writer backed by the file
+     * @throws IOException if the file cannot be opened or created
+     */
     public static BinaryWriter open(Path path) throws IOException {
         return FileBinaryWriter.create(path);
     }
-
-    /**
-     * Returns the current position of the writer in bytes.
-     *
-     * @return current position
-     */
-    public abstract long position();
-
-    /**
-     * Sets the current position of the writer in bytes.
-     *
-     * @param pos new position
-     * @return this writer
-     * @throws IOException if the seek fails
-     */
-    public abstract BinaryWriter position(long pos) throws IOException;
 
     /**
      * Returns the byte order used when writing multibyte primitives.
@@ -61,6 +55,30 @@ public abstract class BinaryWriter implements Flushable, Closeable {
         this.bigEndian = Check.nonNull(order, "order") == ByteOrder.BIG_ENDIAN;
         return this;
     }
+
+    /**
+     * Returns the current position of the writer in bytes.
+     *
+     * @return current position
+     */
+    public abstract long position();
+
+    /**
+     * Sets the current position of the writer in bytes.
+     *
+     * @param pos new position
+     * @return this writer
+     * @throws IOException if the seek fails
+     */
+    public abstract BinaryWriter position(long pos) throws IOException;
+
+    /**
+     * Writes bytes from {@code values}.
+     *
+     * @param values the values to write
+     * @throws IOException if the write fails
+     */
+    public abstract void writeBytes(Bytes values) throws IOException;
 
     /**
      * Writes a single signed byte.
@@ -140,25 +158,25 @@ public abstract class BinaryWriter implements Flushable, Closeable {
     }
 
     /**
-     * Writes a string in the given format. The string is encoded in UTF-8.
+     * Writes a string in the given format using UTF-8.
      *
      * @param value  the string to write
      * @param format the format to use
      * @throws IOException if the write fails
      */
-    public void writeString(String value, StringFormat format) throws IOException {
+    public final void writeString(String value, StringFormat format) throws IOException {
         writeString(value, format, StandardCharsets.UTF_8);
     }
 
     /**
-     * Writes a string in the given format. The string is encoded in the given charset.
+     * Writes a string in the given format and charset.
      *
      * @param value   the string to write
      * @param format  the format to use
      * @param charset the charset to use
      * @throws IOException if the write fails
      */
-    public void writeString(String value, StringFormat format, Charset charset) throws IOException {
+    public final void writeString(String value, StringFormat format, Charset charset) throws IOException {
         var bytes = Bytes.wrap(value.getBytes(charset));
         switch (format) {
             case BYTE_LENGTH -> {
@@ -175,18 +193,53 @@ public abstract class BinaryWriter implements Flushable, Closeable {
                 writeInt(bytes.length());
                 writeBytes(bytes);
             }
-            case NULL_TERM -> throw new UnsupportedOperationException("NULL_TERM strings are not supported by BinaryWriter");
+            case NULL_TERM -> {
+                writeBytes(bytes);
+                switch (terminatorWidth(charset)) {
+                    case 1 -> writeByte((byte) 0);
+                    case 2 -> writeShort((short) 0);
+                    case 4 -> writeInt(0);
+                    default -> throw new AssertionError();
+                }
+            }
             default -> throw new AssertionError();
         }
     }
 
     /**
-     * Writes bytes from {@code values}.
+     * Writes a string of fixed length using UTF-8.
+     * <p>
+     * If the string is shorter than {@code length}, it will be padded with null bytes.
+     * <p>
+     * If the string is longer than {@code length}, it will be truncated.
      *
-     * @param values the values to write
-     * @throws IOException if the write fails
+     * @param value  the string to write
+     * @param length the fixed length in bytes
      */
-    public abstract void writeBytes(Bytes values) throws IOException;
+    public final void writeString(String value, int length) throws IOException {
+        writeString(value, length, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Writes a string of fixed length using the given charset.
+     * <p>
+     * If the string is shorter than {@code length}, it will be padded with null bytes.
+     * <p>
+     * If the string is longer than {@code length}, it will be truncated.
+     *
+     * @param value   the string to write
+     * @param length  the fixed length in bytes
+     * @param charset the charset to use
+     */
+    public final void writeString(String value, int length, Charset charset) throws IOException {
+        var bytes = Bytes.wrap(value.getBytes(charset));
+        if (bytes.length() > length) {
+            writeBytes(bytes.slice(0, length));
+        } else {
+            writeBytes(bytes);
+            writeZeros(length - bytes.length());
+        }
+    }
 
     /**
      * Writes 16-bit signed integers from {@code values}.
@@ -296,6 +349,31 @@ public abstract class BinaryWriter implements Flushable, Closeable {
     }
 
     /**
+     * Writes {@code count} zero bytes.
+     *
+     * @param count the number of zero bytes to write
+     * @throws IOException if the write fails
+     */
+    public final void writeZeros(long count) throws IOException {
+        Check.nonNegative(count, "count");
+        while (count > 0) {
+            if (count >= 8) {
+                writeLong(0L);
+                count -= 8;
+            } else if (count >= 4) {
+                writeInt(0);
+                count -= 4;
+            } else if (count >= 2) {
+                writeShort((short) 0);
+                count -= 2;
+            } else {
+                writeByte((byte) 0);
+                count -= 1;
+            }
+        }
+    }
+
+    /**
      * Creates an {@link OutputStream} that writes to this {@link BinaryWriter}.
      * <p>
      * The stream will flush the writer when closed, but will not close the writer itself.
@@ -336,22 +414,5 @@ public abstract class BinaryWriter implements Flushable, Closeable {
      */
     public Writer asWriter(Charset charset) {
         return new OutputStreamWriter(asOutputStream(), charset);
-    }
-
-    /**
-     * Writes a single object to a {@link BinaryWriter}.
-     *
-     * @param <T> the type of the object to encode
-     */
-    @FunctionalInterface
-    public interface Mapper<T> {
-        /**
-         * Writes a single object to a {@link BinaryWriter}.
-         *
-         * @param value  the object to write
-         * @param writer the writer to write to
-         * @throws IOException if the write fails
-         */
-        void write(T value, BinaryWriter writer) throws IOException;
     }
 }

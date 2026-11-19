@@ -49,7 +49,7 @@ final class FileBinarySource extends BufferedBinarySource {
         return FileChannel.open(path, StandardOpenOption.READ);
     }
 
-    private static void trySetUninterruptible(FileChannel channel) {
+    static void trySetUninterruptible(FileChannel channel) {
         try {
             @SuppressWarnings("Java9ReflectionClassVisibility")
             var fileChannelImpl = Class.forName("sun.nio.ch.FileChannelImpl");
