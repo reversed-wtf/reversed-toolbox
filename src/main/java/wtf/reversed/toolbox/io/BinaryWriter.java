@@ -356,20 +356,20 @@ public abstract class BinaryWriter implements Flushable, Closeable {
      */
     public final void writeZeros(long count) throws IOException {
         Check.nonNegative(count, "count");
-        while (count > 0) {
-            if (count >= 8) {
-                writeLong(0L);
-                count -= 8;
-            } else if (count >= 4) {
-                writeInt(0);
-                count -= 4;
-            } else if (count >= 2) {
-                writeShort((short) 0);
-                count -= 2;
-            } else {
-                writeByte((byte) 0);
-                count -= 1;
-            }
+        while (count >= 8) {
+            writeLong(0L);
+            count -= 8;
+        }
+        if (count >= 4) {
+            writeInt(0);
+            count -= 4;
+        }
+        if (count >= 2) {
+            writeShort((short) 0);
+            count -= 2;
+        }
+        if (count >= 1) {
+            writeByte((byte) 0);
         }
     }
 
