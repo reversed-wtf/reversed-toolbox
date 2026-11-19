@@ -24,32 +24,28 @@ public final class BytesBinaryWriter extends BinaryWriter {
         }
         reserve(values.length());
         values.copyTo(buffer, position);
-        position += values.length();
-        length = Math.max(length, position);
+        advance(values.length());
     }
 
     @Override
     public void writeByte(byte value) {
         reserve(Byte.BYTES);
         buffer.set(position, value);
-        position += Byte.BYTES;
-        length = Math.max(length, position);
+        advance(Byte.BYTES);
     }
 
     @Override
     public void writeShort(short value) {
         reserve(Short.BYTES);
         buffer.setShort(position, bigEndian ? Short.reverseBytes(value) : value);
-        position += Short.BYTES;
-        length = Math.max(length, position);
+        advance(Short.BYTES);
     }
 
     @Override
     public void writeInt(int value) {
         reserve(Integer.BYTES);
         buffer.setInt(position, bigEndian ? Integer.reverseBytes(value) : value);
-        position += Integer.BYTES;
-        length = Math.max(length, position);
+        advance(Integer.BYTES);
     }
 
     @Override
@@ -88,6 +84,11 @@ public final class BytesBinaryWriter extends BinaryWriter {
         var result = Bytes.allocate(length);
         buffer.slice(0, length).copyTo(result, 0);
         return result;
+    }
+
+    private void advance(int values) {
+        position += values;
+        length = Math.max(length, position);
     }
 
     private void reserve(int count) {

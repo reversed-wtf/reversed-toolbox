@@ -10,7 +10,7 @@ abstract class BufferedBinaryWriter extends BinaryWriter {
 
     private final Bytes.Mutable buffer = Bytes.allocate(BUFFER_SIZE);
     private long sourcePosition = 0; // Always points to buffer[0]
-    private int bufferPosition = 0; // Points to the next byte to write
+    private long position = 0; // Logical position; may be outside the buffered range
     private int bufferLength = 0; // Number of bytes in the buffer
 
     /**
@@ -24,20 +24,13 @@ abstract class BufferedBinaryWriter extends BinaryWriter {
 
     @Override
     public final long position() {
-        return sourcePosition + bufferPosition;
+        return position;
     }
 
     @Override
-    public final BinaryWriter position(long pos) throws IOException {
+    public final BinaryWriter position(long pos) {
         Check.nonNegative(pos, "position");
-        if (pos >= sourcePosition && pos - sourcePosition <= bufferLength) {
-            // If we fit in the current buffer, just adjust the position
-            bufferPosition = (int) (pos - sourcePosition);
-        } else {
-            // If not, flush the buffer and mark it empty
-            flush();
-            sourcePosition = pos;
-        }
+        position = pos;
         return this;
     }
 
@@ -49,59 +42,59 @@ abstract class BufferedBinaryWriter extends BinaryWriter {
 
         // If the buffer has enough space, just copy the data and return
         if (bufferRemaining() >= values.length()) {
-            values.copyTo(buffer, bufferPosition);
-            bufferPosition += values.length();
-            bufferLength = Math.max(bufferLength, bufferPosition);
+            values.copyTo(buffer, bufferPosition());
+            advance(values.length());
+            bufferLength = Math.max(bufferLength, bufferPosition());
             return;
         }
 
         // Otherwise, write directly to the output
         flush();
-        writeInternal(values, sourcePosition);
-        sourcePosition += values.length();
+        writeInternal(values, position);
+        advance(values.length());
+        sourcePosition = position;
     }
 
     @Override
     public final void writeByte(byte value) throws IOException {
         reserve(Byte.BYTES);
-        buffer.set(bufferPosition, value);
-        bufferPosition++;
+        buffer.set(bufferPosition(), value);
+        advance(Byte.BYTES);
     }
 
     @Override
     public final void writeShort(short value) throws IOException {
         reserve(Short.BYTES);
-        buffer.setShort(bufferPosition, bigEndian ? Short.reverseBytes(value) : value);
-        bufferPosition += Short.BYTES;
+        buffer.setShort(bufferPosition(), bigEndian ? Short.reverseBytes(value) : value);
+        advance(Short.BYTES);
     }
 
     @Override
     public final void writeInt(int value) throws IOException {
         reserve(Integer.BYTES);
-        buffer.setInt(bufferPosition, bigEndian ? Integer.reverseBytes(value) : value);
-        bufferPosition += Integer.BYTES;
+        buffer.setInt(bufferPosition(), bigEndian ? Integer.reverseBytes(value) : value);
+        advance(Integer.BYTES);
     }
 
     @Override
     public final void writeLong(long value) throws IOException {
         reserve(Long.BYTES);
-        buffer.setLong(bufferPosition, bigEndian ? Long.reverseBytes(value) : value);
-        bufferPosition += Long.BYTES;
+        buffer.setLong(bufferPosition(), bigEndian ? Long.reverseBytes(value) : value);
+        advance(Long.BYTES);
     }
 
     private void reserve(int count) throws IOException {
         if (count > bufferRemaining()) {
             flush();
         }
-        bufferLength = Math.max(bufferLength, bufferPosition + count);
+        bufferLength = Math.max(bufferLength, bufferPosition() + count);
     }
 
     @Override
     public final void flush() throws IOException {
         writeInternal(buffer.slice(0, bufferLength), sourcePosition);
 
-        sourcePosition += bufferPosition;
-        bufferPosition = 0;
+        sourcePosition = position;
         bufferLength = 0;
     }
 
@@ -119,13 +112,26 @@ abstract class BufferedBinaryWriter extends BinaryWriter {
         }
     }
 
+    private void advance(int bytes) {
+        position += bytes;
+    }
+
     private int bufferRemaining() {
-        return BUFFER_SIZE - bufferPosition;
+        long offset = position - sourcePosition;
+        // A seek must not expose a gap of stale buffer contents as pending data.
+        if (offset < 0 || offset > bufferLength) {
+            return 0;
+        }
+        return BUFFER_SIZE - (int) offset;
+    }
+
+    private int bufferPosition() {
+        return (int) (position - sourcePosition);
     }
 
     void reset() {
         sourcePosition = 0;
-        bufferPosition = 0;
+        position = 0;
         bufferLength = 0;
     }
 }
