@@ -10,7 +10,7 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class BufferedBinarySourceTest {
+class BufferedBinaryReaderTest {
     private static final int BUFFER_SIZE = 0x2000;
 
     @TempDir
@@ -19,20 +19,20 @@ class BufferedBinarySourceTest {
     @Test
     void bulkReadAfterExhaustingBuffer() throws IOException {
         byte[] data = data(BUFFER_SIZE * 2);
-        try (var source = open(data)) {
-            source.readByte();
-            source.readBytes(Bytes.allocate(BUFFER_SIZE - 1));
+        try (var reader = open(data)) {
+            reader.readByte();
+            reader.readBytes(Bytes.allocate(BUFFER_SIZE - 1));
             var target = Bytes.allocate(BUFFER_SIZE);
-            source.readBytes(target);
+            reader.readBytes(target);
             assertArrayEquals(Arrays.copyOfRange(data, BUFFER_SIZE, data.length), target.toArray());
-            assertEquals(data.length, source.position());
+            assertEquals(data.length, reader.position());
         }
     }
 
     @Test
     void sliceStopsAtItsEnd() throws IOException {
         byte[] data = data(32);
-        try (var source = open(data); var slice = source.slice(10, 2)) {
+        try (var reader = open(data); var slice = reader.slice(10, 2)) {
             assertEquals(data[10], slice.readByte());
             assertThrows(EOFException.class, slice::readShort);
             assertThrows(EOFException.class, () -> slice.readBytes(Bytes.allocate(2)));
@@ -45,7 +45,7 @@ class BufferedBinarySourceTest {
     @Test
     void primitiveAndBulkReadsAccumulateShortReads() throws IOException {
         byte[] data = data(BUFFER_SIZE * 2);
-        var source = new BufferedBinarySource(data.length) {
+        var reader = new BufferedBinaryReader(data.length) {
             @Override
             int readImpl(Bytes.Mutable target, long position) {
                 int length = (int) Math.min(3, Math.min(target.length(), data.length - position));
@@ -57,17 +57,17 @@ class BufferedBinarySourceTest {
             public void close() {
             }
         };
-        try (source) {
-            assertEquals(Bytes.wrap(data).getLong(0), source.readLong());
+        try (reader) {
+            assertEquals(Bytes.wrap(data).getLong(0), reader.readLong());
             var target = Bytes.allocate(data.length - 8);
-            source.readBytes(target);
+            reader.readBytes(target);
             assertArrayEquals(Arrays.copyOfRange(data, 8, data.length), target.toArray());
-            assertEquals(data.length, source.position());
+            assertEquals(data.length, reader.position());
         }
     }
 
-    private BinarySource open(byte[] data) throws IOException {
-        return BinarySource.open(Files.write(directory.resolve("source.bin"), data));
+    private BinaryReader open(byte[] data) throws IOException {
+        return BinaryReader.open(Files.write(directory.resolve("source.bin"), data));
     }
 
     private static byte[] data(int length) {

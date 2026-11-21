@@ -52,15 +52,15 @@ public record Vector2(
     }
 
     /**
-     * Creates a new vector from a binary source.
+     * Creates a new vector from a binary reader.
      *
-     * @param source The binary source.
+     * @param reader The binary reader.
      * @return The vector.
      * @throws IOException If an I/O error occurs.
      */
-    public static Vector2 read(BinarySource source) throws IOException {
-        float x = source.readFloat();
-        float y = source.readFloat();
+    public static Vector2 read(BinaryReader reader) throws IOException {
+        float x = reader.readFloat();
+        float y = reader.readFloat();
         return new Vector2(x, y);
     }
 

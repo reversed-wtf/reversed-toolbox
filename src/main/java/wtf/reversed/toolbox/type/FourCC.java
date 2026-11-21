@@ -1,17 +1,15 @@
 package wtf.reversed.toolbox.type;
 
+import wtf.reversed.toolbox.util.*;
+
 import java.nio.charset.*;
 
 public record FourCC(int value) {
     public static FourCC of(String value) {
         byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
-        if (bytes.length != 4) {
-            throw new IllegalArgumentException("value must be four ASCII characters long");
-        }
+        Check.argument(bytes.length == 4, "value must be four ASCII characters long");
         for (byte b : bytes) {
-            if (b <= 0) {
-                throw new IllegalArgumentException("found a non-ASCII character");
-            }
+            Check.argument(b > 0, "found a non-ASCII character");
         }
         return of(bytes[0], bytes[1], bytes[2], bytes[3]);
     }

@@ -21,12 +21,12 @@ class BitSourceTest {
         return Stream.of(BIG, LITTLE);
     }
 
-    private static BinarySource bytes(int... values) {
+    private static BinaryReader bytes(int... values) {
         var data = Bytes.Mutable.allocate(values.length);
         for (var i = 0; i < values.length; i++) {
             data.set(i, (byte) values[i]);
         }
-        return BinarySource.wrap(data);
+        return BinaryReader.wrap(data);
     }
 
     @Nested
@@ -225,7 +225,7 @@ class BitSourceTest {
         void testThrowsOnNullSource(Endian endian) {
             assertThatNullPointerException()
                 .isThrownBy(() -> endian.factory().apply(null))
-                .withMessage("'source' must not be null");
+                .withMessage("'reader' must not be null");
         }
 
         @ParameterizedTest
@@ -515,8 +515,8 @@ class BitSourceTest {
             for (var i = 0; i < 16; i++) {
                 data.set(i, (byte) i);
             }
-            var source = BinarySource.wrap(data).order(sourceOrder);
-            try (var bits = endian.factory().apply(source)) {
+            var reader = BinaryReader.wrap(data).order(sourceOrder);
+            try (var bits = endian.factory().apply(reader)) {
                 for (var i = 0; i < 16; i++) {
                     assertThat(bits.read(8)).as("byte %d", i).isEqualTo(i);
                 }
@@ -524,7 +524,7 @@ class BitSourceTest {
         }
     }
 
-    private record Endian(String name, boolean big, Function<BinarySource, BitSource> factory) {
+    private record Endian(String name, boolean big, Function<BinaryReader, BitSource> factory) {
         @Override
         public String toString() {
             return name;
