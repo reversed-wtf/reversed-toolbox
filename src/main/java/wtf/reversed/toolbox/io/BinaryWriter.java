@@ -8,8 +8,6 @@ import java.nio.*;
 import java.nio.charset.*;
 import java.nio.file.*;
 
-import static wtf.reversed.toolbox.io.BinarySource.*;
-
 /**
  * Random-access binary writer with a configurable byte order. Supports writing primitives,
  * bulk writes from typed buffers, strings, and arbitrary user objects via a {@link Mapper}.
@@ -195,7 +193,7 @@ public abstract class BinaryWriter implements Flushable, Closeable {
             }
             case NULL_TERM -> {
                 writeBytes(bytes);
-                switch (terminatorWidth(charset)) {
+                switch (BinaryReader.terminatorWidth(charset)) {
                     case 1 -> writeByte((byte) 0);
                     case 2 -> writeShort((short) 0);
                     case 4 -> writeInt(0);
