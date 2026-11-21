@@ -10,7 +10,7 @@ import java.nio.file.*;
 
 /**
  * Random-access binary writer with a configurable byte order. Supports writing primitives,
- * bulk writes from typed buffers, strings, and arbitrary user objects via a {@link Mapper}.
+ * bulk writes from typed buffers, strings, and arbitrary user objects.
  * <p>
  * Methods that write data, such as {@code writeInt}, start at the current {@link #position() position}
  * and advance it by the number of bytes written. Multibyte values are encoded using the current
