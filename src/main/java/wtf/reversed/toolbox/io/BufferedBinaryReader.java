@@ -5,14 +5,14 @@ import wtf.reversed.toolbox.util.*;
 
 import java.io.*;
 
-abstract class BufferedBinarySource extends BinarySource {
+abstract class BufferedBinaryReader extends BinaryReader {
     private static final int BUFFER_SIZE = 0x2000;
     private final Bytes.Mutable buffer = Bytes.allocate(BUFFER_SIZE);
     private long sourcePosition = 0; // Always points to buffer[0]
     private int bufferPosition = 0; // Points to the next byte to read
     private int bufferLength = 0; // Number of bytes in the buffer
 
-    BufferedBinarySource(long size) {
+    BufferedBinaryReader(long size) {
         super(size);
     }
 
@@ -24,7 +24,7 @@ abstract class BufferedBinarySource extends BinarySource {
     }
 
     @Override
-    public final BinarySource position(long position) {
+    public final BinaryReader position(long position) {
         Check.position(position, size, "position");
 
         if (position >= sourcePosition && position < sourcePosition + bufferLength) {
@@ -40,9 +40,9 @@ abstract class BufferedBinarySource extends BinarySource {
     }
 
     @Override
-    public final BinarySource slice(long offset, long length) {
+    public final BinaryReader slice(long offset, long length) {
         Check.fromIndexSize(offset, length, this.size);
-        return new SliceBinarySource(this, offset, length).order(order());
+        return new SliceBinaryReader(this, offset, length).order(order());
     }
 
     @Override

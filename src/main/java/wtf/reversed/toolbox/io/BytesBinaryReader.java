@@ -5,11 +5,11 @@ import wtf.reversed.toolbox.util.*;
 
 import java.io.*;
 
-final class BytesBinarySource extends BinarySource {
+final class BytesBinaryReader extends BinaryReader {
     private final Bytes bytes;
     private int position = 0;
 
-    BytesBinarySource(Bytes bytes) {
+    BytesBinaryReader(Bytes bytes) {
         super(Check.nonNull(bytes, "bytes").length());
         this.bytes = bytes;
     }
@@ -20,16 +20,16 @@ final class BytesBinarySource extends BinarySource {
     }
 
     @Override
-    public BinarySource position(long position) {
+    public BinaryReader position(long position) {
         this.position = Math.toIntExact(Check.position(position, size, "position"));
         return this;
     }
 
     @Override
-    public BinarySource slice(long offset, long length) {
+    public BinaryReader slice(long offset, long length) {
         Check.fromIndexSize(offset, length, size);
         Bytes sliced = bytes.slice(Math.toIntExact(offset), Math.toIntExact(length));
-        return new BytesBinarySource(sliced).order(order());
+        return new BytesBinaryReader(sliced).order(order());
     }
 
     @Override

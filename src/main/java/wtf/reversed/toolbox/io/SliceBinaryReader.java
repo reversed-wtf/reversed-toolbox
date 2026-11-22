@@ -4,20 +4,20 @@ import wtf.reversed.toolbox.collect.*;
 
 import java.io.*;
 
-final class SliceBinarySource extends BufferedBinarySource {
-    private final BufferedBinarySource source;
+final class SliceBinaryReader extends BufferedBinaryReader {
+    private final BufferedBinaryReader reader;
     private final long offset;
 
-    SliceBinarySource(BufferedBinarySource source, long offset, long length) {
+    SliceBinaryReader(BufferedBinaryReader reader, long offset, long length) {
         super(length);
-        this.source = source;
+        this.reader = reader;
         this.offset = offset;
     }
 
     @Override
     int readImpl(Bytes.Mutable target, long position) throws IOException {
         assert position >= 0 && target.length() <= size - position : "read past end of slice";
-        return source.readImpl(target, offset + position);
+        return reader.readImpl(target, offset + position);
     }
 
     @Override

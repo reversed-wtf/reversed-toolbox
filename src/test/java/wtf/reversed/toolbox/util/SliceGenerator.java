@@ -670,15 +670,15 @@ final class SliceGenerator {
     private MethodSpec generateFillFrom() {
         var builder = MethodSpec.methodBuilder("fillFrom")
             .addModifiers(Modifier.PUBLIC)
-            .addParameter(BinarySource.class, "source")
+            .addParameter(BinaryReader.class, "reader")
             .addException(IOException.class)
             .returns(mutableType);
 
         if (type.isByte()) {
-            builder.addStatement("source.readBytes(this)");
+            builder.addStatement("reader.readBytes(this)");
         } else {
-            builder.addStatement("source.readBytes(new Bytes.Mutable(array, offset, length))")
-                .beginControlFlow("if (source.order() == $T.BIG_ENDIAN)", ByteOrder.class);
+            builder.addStatement("reader.readBytes(new Bytes.Mutable(array, offset, length))")
+                .beginControlFlow("if (reader.order() == $T.BIG_ENDIAN)", ByteOrder.class);
             forEachElement(builder, CodeBlock.of(
                 "setInternal(i, ($T) $L.get(array, offset + $L));\n",
                 primitiveType, type.varHandleName(ByteOrder.BIG_ENDIAN), toByteOffsetUnchecked("i")));
@@ -741,7 +741,7 @@ final class SliceGenerator {
             .builder(PACKAGE_NAME, typeSpec)
             .indent("    ")
             .build()
-            .writeTo(Path.of("lib/reversed-toolbox/src/main/java"));
+            .writeTo(Path.of("src/main/java"));
     }
 
     // endregion

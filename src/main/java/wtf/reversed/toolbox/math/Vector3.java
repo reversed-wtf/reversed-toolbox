@@ -69,16 +69,16 @@ public record Vector3(
     }
 
     /**
-     * Creates a new vector from a binary source.
+     * Creates a new vector from a binary reader.
      *
-     * @param source The binary source.
+     * @param reader The binary reader.
      * @return The vector.
      * @throws IOException If an I/O error occurs.
      */
-    public static Vector3 read(BinarySource source) throws IOException {
-        float x = source.readFloat();
-        float y = source.readFloat();
-        float z = source.readFloat();
+    public static Vector3 read(BinaryReader reader) throws IOException {
+        float x = reader.readFloat();
+        float y = reader.readFloat();
+        float z = reader.readFloat();
         return new Vector3(x, y, z);
     }
 

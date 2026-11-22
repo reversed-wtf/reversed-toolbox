@@ -35,19 +35,19 @@ public record Bounds(
     }
 
     /**
-     * Reads bounds from a binary source.
+     * Reads bounds from a binary reader.
      *
-     * @param source The source to read from
+     * @param reader The reader to read from
      * @return The read bounds
      * @throws IOException If an I/O error occurs
      */
-    public static Bounds read(BinarySource source) throws IOException {
-        float minX = source.readFloat();
-        float minY = source.readFloat();
-        float minZ = source.readFloat();
-        float maxX = source.readFloat();
-        float maxY = source.readFloat();
-        float maxZ = source.readFloat();
+    public static Bounds read(BinaryReader reader) throws IOException {
+        float minX = reader.readFloat();
+        float minY = reader.readFloat();
+        float minZ = reader.readFloat();
+        float maxX = reader.readFloat();
+        float maxY = reader.readFloat();
+        float maxZ = reader.readFloat();
 
         return new Bounds(
             minX, minY, minZ,

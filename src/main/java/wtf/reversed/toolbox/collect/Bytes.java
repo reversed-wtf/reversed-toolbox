@@ -296,8 +296,8 @@ public sealed class Bytes extends Slice implements Comparable<Bytes> {
             return this;
         }
 
-        public Mutable fillFrom(BinarySource source) throws IOException {
-            source.readBytes(this);
+        public Mutable fillFrom(BinaryReader reader) throws IOException {
+            reader.readBytes(this);
             return this;
         }
 

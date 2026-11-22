@@ -7,9 +7,6 @@ import java.io.*;
 import java.nio.channels.*;
 import java.nio.file.*;
 
-import static java.nio.file.StandardOpenOption.*;
-import static wtf.reversed.toolbox.io.FileBinarySource.*;
-
 final class FileBinaryWriter extends BufferedBinaryWriter {
     private final Path path;
     private FileChannel channel;
@@ -21,8 +18,12 @@ final class FileBinaryWriter extends BufferedBinaryWriter {
 
     static FileBinaryWriter create(Path path) throws IOException {
         Check.nonNull(path, "path");
-        var channel = newChannel(path, WRITE, CREATE, TRUNCATE_EXISTING);
-        trySetUninterruptible(channel);
+        var channel = newChannel(path,
+            StandardOpenOption.WRITE,
+            StandardOpenOption.CREATE,
+            StandardOpenOption.TRUNCATE_EXISTING
+        );
+        FileBinaryReader.trySetUninterruptible(channel);
         return new FileBinaryWriter(path, channel);
     }
 
@@ -32,7 +33,7 @@ final class FileBinaryWriter extends BufferedBinaryWriter {
             throw new IOException("Writer is closed");
         }
         if (!channel.isOpen()) {
-            channel = newChannel(path, WRITE);
+            channel = newChannel(path, StandardOpenOption.WRITE);
         }
         return Math.max(channel.write(source.asBuffer(), position), 0);
     }
