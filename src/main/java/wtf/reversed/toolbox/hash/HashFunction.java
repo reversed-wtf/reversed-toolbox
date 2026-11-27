@@ -41,6 +41,15 @@ public interface HashFunction {
     }
 
     /**
+     * Returns a hash function implementing MurmurHash 2A.
+     *
+     * @param seed the seed value mixed into the initial state
+     */
+    static HashFunction murmur2A(int seed) {
+        return new MurmurHash2A(seed);
+    }
+
+    /**
      * Returns a hash function implementing the 64-bit "B" variant of MurmurHash 2.
      *
      * @param seed the seed value mixed into the initial state
